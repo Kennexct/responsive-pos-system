@@ -71,19 +71,18 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
     setPin('');
   };
 
-  const printReceipt = (order: RecentOrder) => {
-    // Print logic similar to CheckoutModal
+  const getReceiptHtml = (order: RecentOrder) => {
     const now = new Date(order.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
     const orderTypeLabel = { 'dine-in': 'Dine-in', 'takeaway': 'Takeaway', 'delivery': 'Delivery' }[order.orderType] || order.orderType;
 
-    const html = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <title>Receipt ${order.orderNumber}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Courier New', monospace; font-size: 12px; max-width: 280px; margin: 0 auto; padding: 12px; }
+    body { font-family: 'Courier New', monospace; font-size: 12px; max-width: 280px; margin: 0 auto; padding: 12px; background: white; color: black; }
     .center { text-align: center; }
     .bold   { font-weight: bold; }
     .div    { border-top: 1px dashed #000; margin: 8px 0; }
@@ -122,6 +121,10 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
   <div class="center" style="margin-top:8px"><strong>** Thank you! **</strong></div>
 </body>
 </html>`;
+  };
+
+  const printReceipt = (order: RecentOrder) => {
+    const html = getReceiptHtml(order);
 
     const win = window.open('', '_blank', 'width=320,height=500');
     if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => win.print(), 400); }
@@ -159,63 +162,11 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
             </div>
           )}
 
-          <div className={`rounded-2xl shadow-sm border p-5 sm:p-6 mb-6 ${surface}`}>
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <p className={`text-sm ${t2}`}>Cashier</p>
-                <p className={`font-medium ${t1}`}>{selectedOrder.cashier}</p>
-              </div>
-              <div className="text-right">
-                <p className={`text-sm ${t2}`}>Payment Method</p>
-                <p className={`font-medium capitalize ${t1}`}>{selectedOrder.paymentMethod}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              {(selectedOrder.items || []).map((item, idx) => {
-                const basePrice = item.product.price + (item.variant?.priceModifier || 0);
-                const linePrice = basePrice * item.qty;
-                let after = linePrice;
-                if (item.itemDiscountNominal) after -= (item.itemDiscountNominal * item.qty);
-                else if (item.discount) after -= linePrice * (item.discount / 100);
-
-                return (
-                  <div key={idx} className="flex justify-between">
-                    <div>
-                      <p className={`text-sm font-medium ${t1}`}>
-                        {item.product.name}
-                        {item.variant && <span className={`text-xs ml-1 ${dm ? 'text-blue-400' : 'text-blue-600'}`}>({item.variant.name})</span>}
-                      </p>
-                      <p className={`text-xs ${t2}`}>{item.qty} × {formatIDR(basePrice)}</p>
-                      {item.discount > 0 && <p className="text-xs text-orange-500">-{item.discount}% discount</p>}
-                      {item.itemDiscountNominal && <p className="text-xs text-orange-500">-Rp{item.itemDiscountNominal} discount</p>}
-                    </div>
-                    <p className={`text-sm font-medium tabular-nums ${t1}`}>{formatIDR(after)}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className={`border-t pt-4 space-y-2 tabular-nums ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-              <div className={`flex justify-between text-sm ${t2}`}>
-                <span>Subtotal</span><span>{formatIDR(selectedOrder.subtotalBeforeDiscount || selectedOrder.subtotal)}</span>
-              </div>
-              {selectedOrder.promoCode && (
-                <div className="flex justify-between text-sm text-emerald-500">
-                  <span>Promo Code ({selectedOrder.promoCode})</span>
-                  <span>-{formatIDR((selectedOrder.subtotalBeforeDiscount || 0) - selectedOrder.subtotal - (selectedOrder.discountTotal || 0))}</span>
-                </div>
-              )}
-              <div className={`flex justify-between text-sm ${t2}`}>
-                <span>Tax</span><span>{formatIDR(selectedOrder.tax)}</span>
-              </div>
-              <div className={`flex justify-between font-bold pt-2 mt-2 border-t ${t1} ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-                <span>Total</span><span className="text-blue-500">{formatIDR(selectedOrder.total)}</span>
-              </div>
-            </div>
+          <div className="w-full max-w-sm mx-auto h-[500px] border rounded-xl overflow-hidden bg-white shadow-inner mb-6 shrink-0">
+            <iframe srcDoc={getReceiptHtml(selectedOrder)} className="w-full h-full border-0" title="Receipt Preview" />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 max-w-sm mx-auto w-full">
             <button
               onClick={() => printReceipt(selectedOrder)}
               className={`flex-1 flex items-center justify-center gap-2 border rounded-xl py-3 font-medium transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
