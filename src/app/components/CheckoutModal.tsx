@@ -95,19 +95,19 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const NUMPAD = ['7','8','9','4','5','6','1','2','3','C','0','⌫'];
 
   // ── Print receipt ─────────────────────────────────────────────────────
-  const printReceipt = () => {
+  const getReceiptHtml = () => {
     const paymentLabel = PAYMENT_OPTIONS.find(p => p.id === method)?.label ?? method;
     const orderTypeLabel = { 'dine-in': 'Dine-in', 'takeaway': 'Takeaway', 'delivery': 'Delivery' }[orderType];
     const now = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
 
-    const html = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <title>Receipt ${orderNumber}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Courier New', monospace; font-size: 12px; max-width: 280px; margin: 0 auto; padding: 12px; }
+    body { font-family: 'Courier New', monospace; font-size: 12px; max-width: 280px; margin: 0 auto; padding: 12px; background: white; color: black; }
     .center { text-align: center; }
     .bold   { font-weight: bold; }
     .div    { border-top: 1px dashed #000; margin: 8px 0; }
@@ -146,7 +146,10 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   <div class="center" style="color:#999;font-size:10px;margin-top:4px">Powered by POS Pro</div>
 </body>
 </html>`;
+  };
 
+  const printReceipt = () => {
+    const html = getReceiptHtml();
     const win = window.open('', '_blank', 'width=320,height=500');
     if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => win.print(), 400); }
   };
@@ -166,7 +169,11 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
             <CheckCircle size={32} className="text-emerald-600" />
           </div>
           <h2 className={`text-xl font-bold mb-1 ${t1}`}>Payment Received</h2>
-          <p className={`text-sm mb-6 ${t2}`}>{orderNumber}</p>
+          <p className={`text-sm mb-4 ${t2}`}>Order: {orderNumber}</p>
+
+          <div className="w-full h-64 border rounded-xl overflow-hidden bg-white shadow-inner mb-2">
+            <iframe srcDoc={getReceiptHtml()} className="w-full h-full border-0" title="Receipt Preview" />
+          </div>
 
           <div className="flex gap-3 w-full mt-4">
             <button

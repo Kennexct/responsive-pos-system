@@ -15,6 +15,8 @@ interface DailySalesViewProps {
 export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onVoid }: DailySalesViewProps) {
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<RecentOrder | null>(null);
+  const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
+  const [modalOrder, setModalOrder] = useState<RecentOrder | null>(null);
   
   // Refund/Void Modals
   const [refundModal, setRefundModal] = useState(false);
@@ -57,14 +59,14 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
       return;
     }
 
-    if (selectedOrder) {
-      if (action === 'refund') onRefund(selectedOrder.id, reason);
-      else onVoid(selectedOrder.id, reason);
+    if (modalOrder) {
+      if (action === 'refund') onRefund(modalOrder.id, reason);
+      else onVoid(modalOrder.id, reason);
     }
     
     setRefundModal(false);
     setVoidModal(false);
-    setSelectedOrder(null);
+    setModalOrder(null);
     setReason('');
     setPin('');
   };
@@ -224,13 +226,13 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
             {selectedOrder.status === 'completed' && (
               <>
                 <button
-                  onClick={() => setRefundModal(true)}
+                  onClick={() => { setModalOrder(selectedOrder); setRefundModal(true); }}
                   className="flex-1 flex items-center justify-center gap-2 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-xl py-3 font-medium hover:bg-amber-500/20 transition-colors"
                 >
                   <RefreshCcw size={16} /> Refund Order
                 </button>
                 <button
-                  onClick={() => setVoidModal(true)}
+                  onClick={() => { setModalOrder(selectedOrder); setVoidModal(true); }}
                   className="flex-1 flex items-center justify-center gap-2 bg-red-500/10 text-red-600 border border-red-500/20 rounded-xl py-3 font-medium hover:bg-red-500/20 transition-colors"
                 >
                   <XCircle size={16} /> Void Order
@@ -356,11 +358,15 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
                   filteredOrders.map(order => (
                     <tr 
                       key={order.id} 
-                      onClick={() => setSelectedOrder(order)}
-                      className={`transition-colors cursor-pointer ${dm ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50/80'}`}
+                      className={`transition-colors ${dm ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50/80'}`}
                     >
                       <td className="px-5 py-3">
-                        <span className={`font-medium ${t1}`}>{order.orderNumber}</span>
+                        <button 
+                          onClick={() => setSelectedOrder(order)}
+                          className={`font-semibold hover:underline ${dm ? 'text-blue-400' : 'text-blue-600'}`}
+                        >
+                          {order.orderNumber}
+                        </button>
                         <p className={`text-xs ${t2}`}>{order.cashier}</p>
                       </td>
                       <td className={`px-5 py-3 ${t2}`}>
@@ -380,7 +386,46 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
                         {order.status === 'voided' && <span className="inline-flex px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 text-[10px] font-bold uppercase tracking-wide">Voided</span>}
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <ChevronRight size={16} className={`inline-block ${t2}`} />
+                        <div className="relative inline-block text-left">
+                          <button
+                            onClick={() => setActionMenuOpen(actionMenuOpen === order.id ? null : order.id)}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${dm ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-700 hover:bg-slate-100'}`}
+                          >
+                            Actions <ChevronRight size={14} className={actionMenuOpen === order.id ? "rotate-90 transition-transform" : "transition-transform"} />
+                          </button>
+                          
+                          {actionMenuOpen === order.id && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setActionMenuOpen(null)}></div>
+                              <div className={`absolute right-0 mt-2 w-36 rounded-xl shadow-lg border z-20 overflow-hidden ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                <div className="p-1">
+                                  <button
+                                    onClick={() => { setSelectedOrder(order); setActionMenuOpen(null); }}
+                                    className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${dm ? 'hover:bg-slate-700 text-slate-200' : 'hover:bg-slate-100 text-slate-700'}`}
+                                  >
+                                    View Details
+                                  </button>
+                                  {order.status === 'completed' && (
+                                    <>
+                                      <button
+                                        onClick={() => { setModalOrder(order); setRefundModal(true); setActionMenuOpen(null); }}
+                                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors text-amber-600 ${dm ? 'hover:bg-slate-700' : 'hover:bg-amber-50'}`}
+                                      >
+                                        Refund Order
+                                      </button>
+                                      <button
+                                        onClick={() => { setModalOrder(order); setVoidModal(true); setActionMenuOpen(null); }}
+                                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors text-red-600 ${dm ? 'hover:bg-slate-700' : 'hover:bg-red-50'}`}
+                                      >
+                                        Void Order
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
