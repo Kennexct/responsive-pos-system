@@ -134,7 +134,7 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
 
   if (selectedOrder) {
     return (
-      <div className={`flex flex-col h-full ${bg}`}>
+      <div className={`flex flex-col h-full flex-1 w-full ${bg}`}>
         <div className={`flex items-center gap-3 px-4 py-3 border-b ${surface}`}>
           <button onClick={() => setSelectedOrder(null)} className={`p-1.5 -ml-1.5 rounded-lg transition-colors ${dm ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-600'}`}>
             <ArrowLeft size={20} />
