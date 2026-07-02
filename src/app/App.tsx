@@ -51,6 +51,8 @@ export default function App() {
     }, 0);
     const tax   = Math.round(subtotal * 0.11);
     const total = subtotal + tax;
+    
+    const totalCost = cart.reduce((sum, item) => sum + (item.product.costPrice * item.qty), 0);
 
     const newOrder: RecentOrder = {
       id:            String(Date.now()),
@@ -59,6 +61,7 @@ export default function App() {
       subtotal,
       tax,
       total,
+      totalCost,
       paymentMethod,
       orderType,
       status:        'completed',

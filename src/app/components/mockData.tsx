@@ -30,6 +30,7 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  costPrice: number;
   category: string;
   stock: number;
   emoji: string;
@@ -57,6 +58,7 @@ export interface RecentOrder {
   subtotal: number;
   tax: number;
   total: number;
+  totalCost: number;
   paymentMethod: PaymentMethod;
   orderType: OrderType;
   status: OrderStatus;
@@ -77,39 +79,39 @@ export const TAX_RATE = 0.11;
 export const CATEGORIES = ['All', 'Coffee', 'Tea', 'Food', 'Snacks', 'Dessert', 'Juice', 'Others'];
 
 export const PRODUCTS: Product[] = [
-  { id: '1',  name: 'Americano',         price: 28000, category: 'Coffee',  stock: 50,  emoji: '☕', lowStockThreshold: 10 },
-  { id: '2',  name: 'Cappuccino',         price: 35000, category: 'Coffee',  stock: 45,  emoji: '☕', lowStockThreshold: 10 },
-  { id: '3',  name: 'Caramel Latte',      price: 40000, category: 'Coffee',  stock: 38,  emoji: '🥛', lowStockThreshold: 10 },
-  { id: '4',  name: 'Cold Brew',          price: 42000, category: 'Coffee',  stock: 8,   emoji: '🧊', lowStockThreshold: 10 },
-  { id: '5',  name: 'Matcha Latte',       price: 42000, category: 'Tea',     stock: 30,  emoji: '🍵', lowStockThreshold: 8  },
-  { id: '6',  name: 'Teh Tarik',          price: 18000, category: 'Tea',     stock: 60,  emoji: '🍵', lowStockThreshold: 10 },
-  { id: '7',  name: 'Chamomile Tea',      price: 30000, category: 'Tea',     stock: 25,  emoji: '🫖', lowStockThreshold: 8  },
-  { id: '8',  name: 'Nasi Goreng',        price: 38000, category: 'Food',    stock: 15,  emoji: '🍳', lowStockThreshold: 5  },
-  { id: '9',  name: 'Mie Goreng',         price: 35000, category: 'Food',    stock: 12,  emoji: '🍜', lowStockThreshold: 5  },
-  { id: '10', name: 'Club Sandwich',      price: 45000, category: 'Food',    stock: 10,  emoji: '🥪', lowStockThreshold: 5  },
-  { id: '11', name: 'Avocado Toast',      price: 48000, category: 'Food',    stock: 4,   emoji: '🥑', lowStockThreshold: 5  },
-  { id: '12', name: 'Pisang Goreng',      price: 18000, category: 'Snacks',  stock: 30,  emoji: '🍌', lowStockThreshold: 10 },
-  { id: '13', name: 'Risoles',            price: 12000, category: 'Snacks',  stock: 40,  emoji: '🥟', lowStockThreshold: 10 },
-  { id: '14', name: 'Croissant',          price: 28000, category: 'Snacks',  stock: 15,  emoji: '🥐', lowStockThreshold: 8  },
-  { id: '15', name: 'Brownies Slice',     price: 25000, category: 'Dessert', stock: 20,  emoji: '🍫', lowStockThreshold: 8  },
-  { id: '16', name: 'Cheesecake',         price: 48000, category: 'Dessert', stock: 5,   emoji: '🍰', lowStockThreshold: 8  },
-  { id: '17', name: 'Tiramisu',           price: 52000, category: 'Dessert', stock: 8,   emoji: '🍮', lowStockThreshold: 8  },
-  { id: '18', name: 'Avocado Juice',      price: 32000, category: 'Juice',   stock: 28,  emoji: '🥑', lowStockThreshold: 8  },
-  { id: '19', name: 'Orange Juice',       price: 25000, category: 'Juice',   stock: 35,  emoji: '🍊', lowStockThreshold: 8  },
-  { id: '20', name: 'Strawberry Smoothie',price: 38000, category: 'Juice',   stock: 22,  emoji: '🍓', lowStockThreshold: 8  },
-  { id: '21', name: 'Mineral Water',      price: 8000,  category: 'Others',  stock: 100, emoji: '💧', lowStockThreshold: 20 },
-  { id: '22', name: 'Sparkling Water',    price: 15000, category: 'Others',  stock: 3,   emoji: '💦', lowStockThreshold: 15 },
+  { id: '1',  name: 'Americano',         price: 28000, costPrice: 8000,  category: 'Coffee',  stock: 50,  emoji: '☕', lowStockThreshold: 10 },
+  { id: '2',  name: 'Cappuccino',         price: 35000, costPrice: 12000, category: 'Coffee',  stock: 45,  emoji: '☕', lowStockThreshold: 10 },
+  { id: '3',  name: 'Caramel Latte',      price: 40000, costPrice: 14000, category: 'Coffee',  stock: 38,  emoji: '🥛', lowStockThreshold: 10 },
+  { id: '4',  name: 'Cold Brew',          price: 42000, costPrice: 15000, category: 'Coffee',  stock: 8,   emoji: '🧊', lowStockThreshold: 10 },
+  { id: '5',  name: 'Matcha Latte',       price: 42000, costPrice: 16000, category: 'Tea',     stock: 30,  emoji: '🍵', lowStockThreshold: 8  },
+  { id: '6',  name: 'Teh Tarik',          price: 18000, costPrice: 6000,  category: 'Tea',     stock: 60,  emoji: '🍵', lowStockThreshold: 10 },
+  { id: '7',  name: 'Chamomile Tea',      price: 30000, costPrice: 8000,  category: 'Tea',     stock: 25,  emoji: '🫖', lowStockThreshold: 8  },
+  { id: '8',  name: 'Nasi Goreng',        price: 38000, costPrice: 15000, category: 'Food',    stock: 15,  emoji: '🍳', lowStockThreshold: 5  },
+  { id: '9',  name: 'Mie Goreng',         price: 35000, costPrice: 14000, category: 'Food',    stock: 12,  emoji: '🍜', lowStockThreshold: 5  },
+  { id: '10', name: 'Club Sandwich',      price: 45000, costPrice: 18000, category: 'Food',    stock: 10,  emoji: '🥪', lowStockThreshold: 5  },
+  { id: '11', name: 'Avocado Toast',      price: 48000, costPrice: 20000, category: 'Food',    stock: 4,   emoji: '🥑', lowStockThreshold: 5  },
+  { id: '12', name: 'Pisang Goreng',      price: 18000, costPrice: 6000,  category: 'Snacks',  stock: 30,  emoji: '🍌', lowStockThreshold: 10 },
+  { id: '13', name: 'Risoles',            price: 12000, costPrice: 4000,  category: 'Snacks',  stock: 40,  emoji: '🥟', lowStockThreshold: 10 },
+  { id: '14', name: 'Croissant',          price: 28000, costPrice: 10000, category: 'Snacks',  stock: 15,  emoji: '🥐', lowStockThreshold: 8  },
+  { id: '15', name: 'Brownies Slice',     price: 25000, costPrice: 8000,  category: 'Dessert', stock: 20,  emoji: '🍫', lowStockThreshold: 8  },
+  { id: '16', name: 'Cheesecake',         price: 48000, costPrice: 16000, category: 'Dessert', stock: 5,   emoji: '🍰', lowStockThreshold: 8  },
+  { id: '17', name: 'Tiramisu',           price: 52000, costPrice: 18000, category: 'Dessert', stock: 8,   emoji: '🍮', lowStockThreshold: 8  },
+  { id: '18', name: 'Avocado Juice',      price: 32000, costPrice: 12000, category: 'Juice',   stock: 28,  emoji: '🥑', lowStockThreshold: 8  },
+  { id: '19', name: 'Orange Juice',       price: 25000, costPrice: 8000,  category: 'Juice',   stock: 35,  emoji: '🍊', lowStockThreshold: 8  },
+  { id: '20', name: 'Strawberry Smoothie',price: 38000, costPrice: 14000, category: 'Juice',   stock: 22,  emoji: '🍓', lowStockThreshold: 8  },
+  { id: '21', name: 'Mineral Water',      price: 8000,  costPrice: 2000,  category: 'Others',  stock: 100, emoji: '💧', lowStockThreshold: 20 },
+  { id: '22', name: 'Sparkling Water',    price: 15000, costPrice: 4000,  category: 'Others',  stock: 3,   emoji: '💦', lowStockThreshold: 15 },
 ];
 
 export const RECENT_ORDERS: RecentOrder[] = [
-  { id: '1',  orderNumber: 'INV-001241', itemCount: 3, subtotal: 101000, tax: 11110, total: 112110, paymentMethod: 'qris',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T11:42:00', cashier: 'Budi'   },
-  { id: '2',  orderNumber: 'INV-001240', itemCount: 2, subtotal: 63000,  tax: 6930,  total: 69930,  paymentMethod: 'cash',          orderType: 'takeaway', status: 'completed', createdAt: '2026-07-01T11:28:00', cashier: 'Ani'    },
-  { id: '3',  orderNumber: 'INV-001239', itemCount: 5, subtotal: 175000, tax: 19250, total: 194250, paymentMethod: 'card',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T10:55:00', cashier: 'Budi'   },
-  { id: '4',  orderNumber: 'INV-001238', itemCount: 1, subtotal: 28000,  tax: 3080,  total: 31080,  paymentMethod: 'cash',          orderType: 'takeaway', status: 'completed', createdAt: '2026-07-01T10:33:00', cashier: 'Ani'    },
-  { id: '5',  orderNumber: 'INV-001237', itemCount: 4, subtotal: 133000, tax: 14630, total: 147630, paymentMethod: 'bank-transfer', orderType: 'delivery', status: 'completed', createdAt: '2026-07-01T10:10:00', cashier: 'Budi'   },
-  { id: '6',  orderNumber: 'INV-001236', itemCount: 2, subtotal: 70000,  tax: 7700,  total: 77700,  paymentMethod: 'qris',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T09:48:00', cashier: 'Citra'  },
-  { id: '7',  orderNumber: 'INV-001235', itemCount: 3, subtotal: 93000,  tax: 10230, total: 103230, paymentMethod: 'cash',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T09:22:00', cashier: 'Citra'  },
-  { id: '8',  orderNumber: 'INV-001234', itemCount: 2, subtotal: 56000,  tax: 6160,  total: 62160,  paymentMethod: 'qris',          orderType: 'takeaway', status: 'completed', createdAt: '2026-07-01T09:05:00', cashier: 'Budi'   },
+  { id: '1',  orderNumber: 'INV-001241', itemCount: 3, subtotal: 101000, tax: 11110, total: 112110, totalCost: 35000, paymentMethod: 'qris',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T11:42:00', cashier: 'Budi'   },
+  { id: '2',  orderNumber: 'INV-001240', itemCount: 2, subtotal: 63000,  tax: 6930,  total: 69930,  totalCost: 20000, paymentMethod: 'cash',          orderType: 'takeaway', status: 'completed', createdAt: '2026-07-01T11:28:00', cashier: 'Ani'    },
+  { id: '3',  orderNumber: 'INV-001239', itemCount: 5, subtotal: 175000, tax: 19250, total: 194250, totalCost: 65000, paymentMethod: 'card',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T10:55:00', cashier: 'Budi'   },
+  { id: '4',  orderNumber: 'INV-001238', itemCount: 1, subtotal: 28000,  tax: 3080,  total: 31080,  totalCost: 8000,  paymentMethod: 'cash',          orderType: 'takeaway', status: 'completed', createdAt: '2026-07-01T10:33:00', cashier: 'Ani'    },
+  { id: '5',  orderNumber: 'INV-001237', itemCount: 4, subtotal: 133000, tax: 14630, total: 147630, totalCost: 45000, paymentMethod: 'bank-transfer', orderType: 'delivery', status: 'completed', createdAt: '2026-07-01T10:10:00', cashier: 'Budi'   },
+  { id: '6',  orderNumber: 'INV-001236', itemCount: 2, subtotal: 70000,  tax: 7700,  total: 77700,  totalCost: 25000, paymentMethod: 'qris',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T09:48:00', cashier: 'Citra'  },
+  { id: '7',  orderNumber: 'INV-001235', itemCount: 3, subtotal: 93000,  tax: 10230, total: 103230, totalCost: 30000, paymentMethod: 'cash',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T09:22:00', cashier: 'Citra'  },
+  { id: '8',  orderNumber: 'INV-001234', itemCount: 2, subtotal: 56000,  tax: 6160,  total: 62160,  totalCost: 18000, paymentMethod: 'qris',          orderType: 'takeaway', status: 'completed', createdAt: '2026-07-01T09:05:00', cashier: 'Budi'   },
 ];
 
 export const WEEKLY_SALES = [

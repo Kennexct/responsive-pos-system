@@ -40,6 +40,13 @@ export function ReportsView({ orders }: Props) {
   const totalTax    = orders.reduce((s, o) => s + o.tax, 0) || salesData.reduce((s, d) => s + Math.round(d.sales * 0.11 / 1.11), 0);
   const totalOrders = orders.length;
 
+  const totalCost = orders.length > 0
+    ? orders.reduce((s, o) => s + (o.totalCost || 0), 0)
+    : salesData.reduce((s, d) => s + (d.sales * 0.45), 0); // Fake 55% margin for empty state
+  
+  const grossProfit = totalSales - totalTax - totalCost;
+  const profitMargin = totalSales > 0 ? Math.round((grossProfit / (totalSales - totalTax)) * 100) : 0;
+
   const exportCSV = () => {
     const headers = ['Order #', 'Items', 'Type', 'Payment', 'Subtotal (IDR)', 'Tax (IDR)', 'Total (IDR)', 'Cashier', 'Date'];
     const rows = orders.map(o => [
@@ -106,7 +113,7 @@ export function ReportsView({ orders }: Props) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: 'Total Sales',   value: formatIDR(totalSales),  sub: period === 'week' ? 'This week' : 'This month' },
-            { label: 'Tax Collected', value: formatIDR(totalTax),    sub: 'PPN 11%'                                      },
+            { label: 'Gross Profit',  value: formatIDR(grossProfit), sub: `${profitMargin}% Margin`                      },
             { label: 'Total Orders',  value: String(totalOrders || (period === 'week' ? 214 : 892)), sub: 'Completed'   },
             { label: 'Top Category',  value: 'Coffee',               sub: '38% of sales'                                },
           ].map(card => (

@@ -42,10 +42,12 @@ export function InventoryView({ products, onProductsChange }: Props) {
   const [adjType, setAdjType]     = useState<'in' | 'out'>('in');
   const [adjNote, setAdjNote]     = useState('');
 
-  // Add product modal
-  const [addModal, setAddModal]   = useState(false);
+  // Product modal (Add/Edit)
+  const [productModal, setProductModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newName, setNewName]     = useState('');
   const [newPrice, setNewPrice]   = useState('');
+  const [newCostPrice, setNewCostPrice] = useState('');
   const [newCat, setNewCat]       = useState('Coffee');
   const [newStock, setNewStock]   = useState('');
   const [newThreshold, setNewThreshold] = useState('10');
@@ -93,32 +95,64 @@ export function InventoryView({ products, onProductsChange }: Props) {
     setAdjModal(false);
   };
 
-  const saveNewProduct = () => {
-    if (!newName.trim() || !newPrice || !newStock) return;
-    const product: Product = {
-      id:                Date.now().toString(),
-      name:              newName.trim(),
-      price:             Number(newPrice),
-      category:          newCat,
-      stock:             Number(newStock),
-      emoji:             newEmoji,
-      lowStockThreshold: Number(newThreshold) || 10,
-    };
-    onProductsChange([...products, product]);
-    setStockLog(prev => [
-      {
-        id: Date.now().toString(),
-        product: product.name,
-        type: 'in',
-        qty: product.stock,
-        note: 'Initial stock',
-        date: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
-      },
-      ...prev,
-    ]);
-    // reset form
-    setNewName(''); setNewPrice(''); setNewStock(''); setNewThreshold('10'); setNewEmoji('☕');
-    setAddModal(false);
+  const openAddProduct = () => {
+    setEditingId(null);
+    setNewName(''); setNewPrice(''); setNewCostPrice(''); setNewStock(''); setNewThreshold('10'); setNewEmoji('☕');
+    setProductModal(true);
+  };
+
+  const openEditProduct = (p: Product) => {
+    setEditingId(p.id);
+    setNewName(p.name);
+    setNewPrice(String(p.price));
+    setNewCostPrice(String(p.costPrice));
+    setNewCat(p.category);
+    setNewStock(String(p.stock));
+    setNewThreshold(String(p.lowStockThreshold));
+    setNewEmoji(p.emoji);
+    setProductModal(true);
+  };
+
+  const saveProduct = () => {
+    if (!newName.trim() || !newPrice || !newCostPrice || (!editingId && !newStock)) return;
+    
+    if (editingId) {
+      onProductsChange(
+        products.map(p => p.id === editingId ? {
+          ...p,
+          name: newName.trim(),
+          price: Number(newPrice),
+          costPrice: Number(newCostPrice),
+          category: newCat,
+          lowStockThreshold: Number(newThreshold) || 10,
+          emoji: newEmoji,
+        } : p)
+      );
+    } else {
+      const product: Product = {
+        id:                Date.now().toString(),
+        name:              newName.trim(),
+        price:             Number(newPrice),
+        costPrice:         Number(newCostPrice),
+        category:          newCat,
+        stock:             Number(newStock),
+        emoji:             newEmoji,
+        lowStockThreshold: Number(newThreshold) || 10,
+      };
+      onProductsChange([...products, product]);
+      setStockLog(prev => [
+        {
+          id: Date.now().toString(),
+          product: product.name,
+          type: 'in',
+          qty: product.stock,
+          note: 'Initial stock',
+          date: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+        },
+        ...prev,
+      ]);
+    }
+    setProductModal(false);
   };
 
   const deleteProduct = (id: string) => {
@@ -141,7 +175,7 @@ export function InventoryView({ products, onProductsChange }: Props) {
             <p className="text-slate-500 text-sm mt-0.5">{products.length} products · {lowStockItems.length} low stock</p>
           </div>
           <button
-            onClick={() => setAddModal(true)}
+            onClick={openAddProduct}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors text-sm"
           >
             <Plus size={16} />
@@ -204,6 +238,8 @@ export function InventoryView({ products, onProductsChange }: Props) {
                 {filtered.map(product => {
                   const isLow = product.stock <= product.lowStockThreshold;
                   const stockPct = Math.min(100, (product.stock / (product.lowStockThreshold * 3)) * 100);
+                  const marginPct = product.price > 0 ? Math.round(((product.price - product.costPrice) / product.price) * 100) : 0;
+                  
                   return (
                     <tr key={product.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-5 py-3">
@@ -213,7 +249,10 @@ export function InventoryView({ products, onProductsChange }: Props) {
                         </div>
                       </td>
                       <td className="px-5 py-3 text-slate-500 hidden sm:table-cell">{product.category}</td>
-                      <td className="px-5 py-3 text-slate-700">{formatIDR(product.price)}</td>
+                      <td className="px-5 py-3 text-slate-700">
+                        {formatIDR(product.price)}
+                        <span className="ml-2 text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{marginPct}%</span>
+                      </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -243,6 +282,12 @@ export function InventoryView({ products, onProductsChange }: Props) {
                             className="text-xs text-blue-600 hover:text-blue-800 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
                           >
                             Adjust
+                          </button>
+                          <button
+                            onClick={() => openEditProduct(product)}
+                            className="text-xs text-emerald-600 hover:text-emerald-800 px-3 py-1.5 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors"
+                          >
+                            Edit
                           </button>
                           <button
                             onClick={() => deleteProduct(product.id)}
@@ -362,9 +407,9 @@ export function InventoryView({ products, onProductsChange }: Props) {
         </Modal>
       )}
 
-      {/* ─── Add product modal ───────────────────────────────── */}
-      {addModal && (
-        <Modal title="Add New Product" onClose={() => setAddModal(false)}>
+      {/* ─── Product modal (Add/Edit) ───────────────────────────────── */}
+      {productModal && (
+        <Modal title={editingId ? "Edit Product" : "Add New Product"} onClose={() => setProductModal(false)}>
           <div className="space-y-3">
             <div>
               <label className="text-sm text-slate-500 block mb-1">Product Name *</label>
@@ -380,7 +425,7 @@ export function InventoryView({ products, onProductsChange }: Props) {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm text-slate-500 block mb-1">Price (IDR) *</label>
+                <label className="text-sm text-slate-500 block mb-1">Selling Price (IDR) *</label>
                 <input
                   type="number"
                   min={0}
@@ -390,6 +435,20 @@ export function InventoryView({ products, onProductsChange }: Props) {
                   className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 text-slate-700"
                 />
               </div>
+              <div>
+                <label className="text-sm text-slate-500 block mb-1">Cost Price (IDR) *</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={newCostPrice}
+                  onChange={e => setNewCostPrice(e.target.value)}
+                  placeholder="10000"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 text-slate-700"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-sm text-slate-500 block mb-1">Category *</label>
                 <select
@@ -401,20 +460,6 @@ export function InventoryView({ products, onProductsChange }: Props) {
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm text-slate-500 block mb-1">Initial Stock *</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={newStock}
-                  onChange={e => setNewStock(e.target.value)}
-                  placeholder="50"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 text-slate-700"
-                />
               </div>
               <div>
                 <label className="text-sm text-slate-500 block mb-1">Low Stock Alert</label>
@@ -428,6 +473,20 @@ export function InventoryView({ products, onProductsChange }: Props) {
                 />
               </div>
             </div>
+
+            {!editingId && (
+              <div>
+                <label className="text-sm text-slate-500 block mb-1">Initial Stock *</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={newStock}
+                  onChange={e => setNewStock(e.target.value)}
+                  placeholder="50"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 text-slate-700"
+                />
+              </div>
+            )}
 
             <div>
               <label className="text-sm text-slate-500 block mb-1">Icon</label>
@@ -449,11 +508,11 @@ export function InventoryView({ products, onProductsChange }: Props) {
           </div>
 
           <button
-            disabled={!newName.trim() || !newPrice || !newStock}
-            onClick={saveNewProduct}
+            disabled={!newName.trim() || !newPrice || !newCostPrice || (!editingId && !newStock)}
+            onClick={saveProduct}
             className="mt-5 w-full bg-blue-600 text-white rounded-xl py-3 hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Add Product
+            {editingId ? "Save Changes" : "Add Product"}
           </button>
         </Modal>
       )}
