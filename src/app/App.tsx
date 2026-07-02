@@ -10,7 +10,7 @@ import { MobileOwnerView } from './components/MobileOwnerView';
 import { AuthView } from './components/AuthView';
 import { DailySalesView } from './components/DailySalesView';
 import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings } from './components/mockData';
-import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES } from './components/mockData';
+import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, TAX_RATE } from './components/mockData';
 
 const MOBILE_NAV: { id: ViewType; label: string; icon: ElementType }[] = [
   { id: 'pos',       label: 'POS',        icon: Monitor         },
