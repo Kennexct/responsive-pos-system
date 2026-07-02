@@ -337,7 +337,7 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
             </div>
           </div>
           
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[300px]">
             <table className="w-full text-sm">
               <thead>
                 <tr className={`text-left border-b ${dm ? 'bg-slate-700/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
@@ -355,7 +355,7 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
                     <td colSpan={6} className={`px-5 py-8 text-center ${t2}`}>No invoices found for today.</td>
                   </tr>
                 ) : (
-                  filteredOrders.map(order => (
+                  filteredOrders.map((order, index) => (
                     <tr 
                       key={order.id} 
                       className={`transition-colors ${dm ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50/80'}`}
@@ -397,7 +397,7 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
                           {actionMenuOpen === order.id && (
                             <>
                               <div className="fixed inset-0 z-10" onClick={() => setActionMenuOpen(null)}></div>
-                              <div className={`absolute right-0 mt-2 w-36 rounded-xl shadow-lg border z-20 overflow-hidden ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                              <div className={`absolute right-0 ${index >= filteredOrders.length - 2 && filteredOrders.length > 2 ? 'bottom-full mb-1' : 'mt-1'} w-36 rounded-xl shadow-lg border z-20 overflow-hidden ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                                 <div className="p-1">
                                   <button
                                     onClick={() => { setSelectedOrder(order); setActionMenuOpen(null); }}
