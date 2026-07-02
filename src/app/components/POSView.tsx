@@ -101,7 +101,7 @@ export function POSView({ businessType, products, onOrderComplete }: POSViewProp
   };
 
   return (
-    <div className="flex h-full overflow-hidden bg-slate-100">
+    <div className="flex h-full w-full overflow-hidden bg-slate-100">
       {/* Left: product area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Toolbar */}
