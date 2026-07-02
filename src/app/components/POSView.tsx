@@ -4,8 +4,8 @@ import {
   AlertTriangle, PlayCircle, X, Package, Percent, UserPlus, Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { BusinessType, CartItem, HeldOrder, OrderType, PaymentMethod, Product, User, Category, DiscountSettings, ProductVariant, Customer, LoyaltySettings } from './mockData';
-import { formatIDR, TAX_RATE } from './mockData';
+import type { BusinessType, CartItem, HeldOrder, OrderType, PaymentMethod, Product, User, Category, DiscountSettings, ProductVariant, Customer, LoyaltySettings, TaxRule, TerminalViewMode } from './mockData';
+import { formatIDR } from './mockData';
 import { CheckoutModal } from './CheckoutModal';
 
 interface POSViewProps {
@@ -18,6 +18,8 @@ interface POSViewProps {
   darkMode: boolean;
   customers: Customer[];
   loyaltySettings: LoyaltySettings;
+  taxRules?: TaxRule[];
+  terminalViewMode?: TerminalViewMode;
   onOrderComplete: (cart: CartItem[], orderType: OrderType, paymentMethod: PaymentMethod, amountPaid: number, promoCode?: string, customerId?: string, pointsEarned?: number, pointsRedeemed?: number, pointsDiscountAmt?: number) => void;
 }
 
@@ -27,7 +29,7 @@ const ORDER_TYPES: { id: OrderType; label: string }[] = [
   { id: 'delivery', label: 'Delivery' },
 ];
 
-export function POSView({ businessType, products, categories, discountSettings, currentUser, bizName, darkMode, customers, loyaltySettings, onOrderComplete }: POSViewProps) {
+export function POSView({ businessType, products, categories, discountSettings, currentUser, bizName, darkMode, customers, loyaltySettings, taxRules = [], terminalViewMode = 'grid', onOrderComplete }: POSViewProps) {
   const [category, setCategory]       = useState('All');
   const [search, setSearch]           = useState('');
   const [cart, setCart]               = useState<CartItem[]>([]);
@@ -95,26 +97,20 @@ export function POSView({ businessType, products, categories, discountSettings, 
   const removeItem = (id: string) => setCart(prev => prev.filter(i => i.id !== id));
   const clearCart  = () => setCart([]);
 
-  const { subtotal, tierDiscountAmt, tax, total } = useMemo(() => {
+  const { subtotal, tierDiscountAmt, tax, exclusiveTax, total } = useMemo(() => {
     let sub = 0;
-    let taxAmt = 0;
+    let totalTaxableBase = 0;
     
     cart.forEach(item => {
       const basePrice = item.product.price + (item.variant?.priceModifier || 0);
-      const linePrice = basePrice * item.qty;
-      
-      let itemTotal = linePrice;
-      if (item.itemDiscountNominal) {
-        itemTotal -= (item.itemDiscountNominal * item.qty);
-      } else if (item.discount) {
-        itemTotal -= linePrice * (item.discount / 100);
-      }
+      let itemTotal = basePrice * item.qty;
+      if (item.itemDiscountNominal) itemTotal -= (item.itemDiscountNominal * item.qty);
+      else if (item.discount) itemTotal -= (basePrice * item.qty) * (item.discount / 100);
       
       sub += itemTotal;
-      
       const cat = categories.find(c => c.name === item.product.category);
       if (cat?.isTaxable) {
-        taxAmt += itemTotal * TAX_RATE;
+        totalTaxableBase += itemTotal;
       }
     });
 
@@ -123,12 +119,29 @@ export function POSView({ businessType, products, categories, discountSettings, 
     const tierDiscountPercent = tier?.discountPercent || 0;
     const tierDisc = Math.round(sub * (tierDiscountPercent / 100));
     
-    // Tax is typically calculated after discounts, but for simplicity let's keep taxAmt based on item taxable amount minus tier discount portion
-    // Actually, to be simple, let's just subtract tierDisc from subtotal for the final total.
-    const finalTotal = sub - tierDisc + Math.round(taxAmt);
+    const taxableAfterTierDisc = totalTaxableBase * (1 - (tierDiscountPercent / 100));
+    let currentTaxBase = taxableAfterTierDisc;
+    
+    let exclusiveTaxTotal = 0;
+    let totalTaxReporting = 0; // sum of both inclusive and exclusive taxes
+    
+    const sortedTaxes = [...taxRules].sort((a, b) => a.order - b.order);
+    sortedTaxes.forEach(rule => {
+      if (!rule.isInclusive) {
+        const taxAmt = currentTaxBase * (rule.rate / 100);
+        exclusiveTaxTotal += taxAmt;
+        totalTaxReporting += taxAmt;
+        currentTaxBase += taxAmt; // Sequential compounding
+      } else {
+        const taxAmt = currentTaxBase - (currentTaxBase / (1 + rule.rate / 100));
+        totalTaxReporting += taxAmt;
+      }
+    });
 
-    return { subtotal: sub, tierDiscountAmt: tierDisc, tax: Math.round(taxAmt), total: finalTotal };
-  }, [cart, categories, customers, selectedCustomerId, loyaltySettings]);
+    const finalTotal = sub - tierDisc + Math.round(exclusiveTaxTotal);
+
+    return { subtotal: sub, tierDiscountAmt: tierDisc, tax: Math.round(totalTaxReporting), exclusiveTax: Math.round(exclusiveTaxTotal), total: finalTotal };
+  }, [cart, categories, customers, selectedCustomerId, loyaltySettings, taxRules]);
 
   const itemCount = cart.reduce((s, i) => s + i.qty, 0);
 
@@ -178,6 +191,40 @@ export function POSView({ businessType, products, categories, discountSettings, 
     <div className={`flex h-full w-full overflow-hidden ${bg}`}>
       {/* Left: product area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {terminalViewMode === 'scanner' ? (
+          <div className="flex-1 p-6 flex flex-col items-center justify-center gap-6">
+            <Package size={64} className={dm ? 'text-slate-700' : 'text-slate-300'} />
+            <h2 className={`text-xl font-bold ${t1}`}>Scanner Mode Active</h2>
+            <p className={`text-sm ${t2} text-center max-w-md`}>Use your barcode scanner or type a barcode / SKU below and press Enter to instantly add to cart.</p>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!search.trim()) return;
+              const q = search.trim().toLowerCase();
+              const p = products.find(p => (p.barcode?.toLowerCase() === q || p.sku?.toLowerCase() === q || p.name.toLowerCase() === q));
+              if (p) {
+                if (p.trackInventory && p.stock === 0) {
+                  alert('Product out of stock!');
+                } else {
+                  handleProductClick(p);
+                  setSearch('');
+                }
+              } else {
+                alert('Product not found!');
+              }
+            }} className="w-full max-w-md relative">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Scan barcode..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className={`w-full text-center text-xl font-bold px-4 py-4 border-2 rounded-2xl focus:border-blue-500 focus:outline-none shadow-sm ${dm ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+              />
+              <button type="submit" className="hidden" />
+            </form>
+          </div>
+        ) : (
+          <>
         {/* Toolbar */}
         <div className={`border-b px-4 py-3 flex flex-col gap-3 ${toolbar}`}>
           <div className="flex items-center gap-3">
@@ -338,6 +385,8 @@ export function POSView({ businessType, products, categories, discountSettings, 
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
 
       {/* Right: Cart panel */}
@@ -466,7 +515,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
           loyaltySettings={loyaltySettings}
           selectedCustomerId={selectedCustomerId}
           subtotalBeforePromo={subtotal - tierDiscountAmt}
-          taxAmount={tax}
+          taxAmount={exclusiveTax}
           onClose={(completed) => {
             setShowCheckout(false);
             if (completed) clearCart();

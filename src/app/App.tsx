@@ -1,5 +1,5 @@
 import { useState, useEffect, type ElementType } from 'react';
-import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu, Monitor, Users } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu, Monitor, Users, Receipt } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { POSView } from './components/POSView';
 import { Dashboard } from './components/Dashboard';
@@ -10,16 +10,17 @@ import { MobileOwnerView } from './components/MobileOwnerView';
 import { AuthView } from './components/AuthView';
 import { DailySalesView } from './components/DailySalesView';
 import { CustomersView } from './components/CustomersView';
-import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings } from './components/mockData';
-import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, TAX_RATE, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS } from './components/mockData';
+import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings, TaxRule, TerminalViewMode } from './components/mockData';
+import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS, INITIAL_TAX_RULES } from './components/mockData';
 
 const MOBILE_NAV: { id: ViewType; label: string; icon: ElementType }[] = [
-  { id: 'pos',       label: 'POS',        icon: Monitor         },
-  { id: 'dashboard', label: 'Dashboard',  icon: LayoutDashboard },
-  { id: 'inventory', label: 'Inventory',  icon: Package         },
-  { id: 'reports',   label: 'Reports',    icon: BarChart2       },
-  { id: 'customers', label: 'Customers',  icon: Users           },
-  { id: 'settings',  label: 'Settings',   icon: Settings        },
+  { id: 'pos',         label: 'POS',          icon: Monitor         },
+  { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
+  { id: 'inventory',   label: 'Inventory',    icon: Package         },
+  { id: 'reports',     label: 'Reports',      icon: BarChart2       },
+  { id: 'daily-sales', label: 'Daily Sales',  icon: Receipt         },
+  { id: 'customers',   label: 'Customers',    icon: Users           },
+  { id: 'settings',    label: 'Settings',     icon: Settings        },
 ];
 
 let orderCounter = 1242;
@@ -31,6 +32,7 @@ export default function App() {
   const [view, setView]               = useState<ViewType>('pos');
   const [businessType, setBusinessType] = useState<BusinessType>('fnb');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [terminalViewMode, setTerminalViewMode] = useState<TerminalViewMode>('grid');
 
   // ─── Theme ────────────────────────────────────────────────────────────────
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -61,9 +63,13 @@ export default function App() {
   const [categories, setCategories] = useState<Category[]>([...CATEGORIES]);
   const [products, setProducts] = useState<Product[]>([...PRODUCTS]);
   const [orders,   setOrders]   = useState<RecentOrder[]>([...RECENT_ORDERS]);
+  // ─── Taxes & Discounts ───────────────────────────────────────────────────
   const [discountSettings, setDiscountSettings] = useState<DiscountSettings>({
-    enabled: true, allowItemDiscount: true, promoCodes: [{ id: '1', code: 'PROMO10', type: 'percent', value: 10, active: true }]
+    enabled: true,
+    allowItemDiscount: true,
+    promoCodes: [{ id: '1', code: 'PROMO10', type: 'percent', value: 10, active: true }]
   });
+  const [taxRules, setTaxRules] = useState<TaxRule[]>(INITIAL_TAX_RULES);
   const [refundSettings, setRefundSettings] = useState<RefundSettings>({
     managerPinRequired: true
   });
@@ -219,7 +225,16 @@ export default function App() {
   };
 
   return (
-    <div className={`h-screen flex overflow-hidden ${darkMode ? 'dark bg-slate-900' : 'bg-slate-100'}`}>
+    <div className={`h-screen flex overflow-hidden relative ${darkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+      {/* Dynamic Background Decoration */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className={`absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[120px] opacity-30 ${darkMode ? 'bg-blue-600' : 'bg-blue-300'}`} />
+        <div className={`absolute top-[40%] -right-[10%] w-[40%] h-[60%] rounded-full blur-[120px] opacity-20 ${darkMode ? 'bg-purple-600' : 'bg-purple-300'}`} />
+        <div className={`absolute -bottom-[20%] left-[20%] w-[60%] h-[40%] rounded-full blur-[120px] opacity-20 ${darkMode ? 'bg-emerald-600' : 'bg-emerald-300'}`} />
+      </div>
+
+      {/* Main Content Area (z-10 to sit above background) */}
+      <div className="z-10 flex w-full h-full">
       <Sidebar
         currentView={view}
         onViewChange={setView}
@@ -235,8 +250,8 @@ export default function App() {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile top bar */}
-        <header className={`md:hidden flex items-center justify-between px-4 h-14 border-b shrink-0 ${
-          darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+        <header className={`md:hidden flex items-center justify-between px-4 h-14 border-b shrink-0 backdrop-blur-md ${
+          darkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white/60 border-slate-200'
         }`}>
           <button
             onClick={() => setSidebarOpen(true)}
@@ -256,9 +271,11 @@ export default function App() {
             {view === 'pos' && (
               <POSView
                 businessType={businessType}
+                terminalViewMode={terminalViewMode}
                 products={products}
                 categories={categories}
                 discountSettings={discountSettings}
+                taxRules={taxRules}
                 currentUser={currentUser}
                 bizName={bizName}
                 darkMode={darkMode}
@@ -291,6 +308,10 @@ export default function App() {
                 setCategories={setCategories}
                 discountSettings={discountSettings}
                 setDiscountSettings={setDiscountSettings}
+                taxRules={taxRules}
+                setTaxRules={setTaxRules}
+                terminalViewMode={terminalViewMode}
+                setTerminalViewMode={setTerminalViewMode}
                 refundSettings={refundSettings}
                 setRefundSettings={setRefundSettings}
                 darkMode={darkMode}
@@ -308,9 +329,11 @@ export default function App() {
             {view === 'pos' && (
               <POSView
                 businessType={businessType}
+                terminalViewMode={terminalViewMode}
                 products={products}
                 categories={categories}
                 discountSettings={discountSettings}
+                taxRules={taxRules}
                 currentUser={currentUser}
                 bizName={bizName}
                 darkMode={darkMode}
@@ -350,6 +373,10 @@ export default function App() {
                 setCategories={setCategories}
                 discountSettings={discountSettings}
                 setDiscountSettings={setDiscountSettings}
+                taxRules={taxRules}
+                setTaxRules={setTaxRules}
+                terminalViewMode={terminalViewMode}
+                setTerminalViewMode={setTerminalViewMode}
                 refundSettings={refundSettings}
                 setRefundSettings={setRefundSettings}
                 loyaltySettings={loyaltySettings}
@@ -366,7 +393,7 @@ export default function App() {
         </main>
 
         {/* Mobile bottom nav */}
-        <nav className={`md:hidden flex border-t shrink-0 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+        <nav className={`md:hidden flex border-t shrink-0 backdrop-blur-md ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
           {MOBILE_NAV.filter(item => allowedViews.includes(item.id)).map(({ id, label, icon: Icon }) => {
             const active = view === id;
             return (
@@ -386,6 +413,7 @@ export default function App() {
             );
           })}
         </nav>
+      </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, type ElementType } from 'react';
 import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Award } from 'lucide-react';
-import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings } from './mockData';
+import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface SettingsViewProps {
@@ -20,6 +20,10 @@ interface SettingsViewProps {
   setLoyaltySettings: React.Dispatch<React.SetStateAction<LoyaltySettings>>;
   darkMode: boolean;
   onToggleDark: () => void;
+  taxRules?: TaxRule[];
+  setTaxRules?: React.Dispatch<React.SetStateAction<TaxRule[]>>;
+  terminalViewMode?: TerminalViewMode;
+  setTerminalViewMode?: React.Dispatch<React.SetStateAction<TerminalViewMode>>;
   bizName: string;    setBizName: (v: string) => void;
   bizPhone: string;   setBizPhone: (v: string) => void;
   bizAddress: string; setBizAddress: (v: string) => void;
@@ -63,12 +67,13 @@ export function SettingsView({
   discountSettings, setDiscountSettings,
   refundSettings, setRefundSettings,
   loyaltySettings, setLoyaltySettings,
+  taxRules = [], setTaxRules,
+  terminalViewMode = 'grid', setTerminalViewMode,
   darkMode, onToggleDark,
   bizName, setBizName, bizPhone, setBizPhone, bizAddress, setBizAddress, bizEmail, setBizEmail,
 }: SettingsViewProps) {
   const [tab,      setTab]      = useState<SettingsTab>('business');
   const [payments, setPayments] = useState<PaymentMethodEntry[]>(INITIAL_PAYMENTS);
-  const [taxes,    setTaxes]    = useState<TaxRate[]>(INITIAL_TAXES);
   const [saved,    setSaved]    = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
 
@@ -115,10 +120,17 @@ export function SettingsView({
 
   const addTax = () => {
     if (!newTaxName || !newTaxRate) return;
-    setTaxes([...taxes, { id: Date.now().toString(), name: newTaxName, rate: Number(newTaxRate), inclusive: newTaxInclusive, isDefault: taxes.length === 0 }]);
+    if (setTaxRules) {
+      setTaxRules(prev => [...prev, {
+        id: Date.now().toString(),
+        name: newTaxName,
+        rate: Number(newTaxRate),
+        isInclusive: newTaxInclusive,
+        order: prev.length + 1
+      }]);
+    }
     setTaxModal(false); setNewTaxName(''); setNewTaxRate(''); setNewTaxInclusive(false);
   };
-  const deleteTax = (id: string) => setTaxes(taxes.filter(t => t.id !== id));
 
   const addPromo = () => {
     if (!newPromoCode || !newPromoValue) return;
@@ -229,8 +241,22 @@ export function SettingsView({
                       </button>
                     ))}
                   </div>
+                  </div>
                   <p className={`text-xs mt-1 ${t2}`}>
                     {businessType === 'fnb' ? 'F&B mode enables order types and table notes.' : 'Retail mode hides F&B-specific options.'}
+                  </p>
+                </div>
+                <div>
+                  <label className={`text-sm block mb-1 ${t2}`}>Terminal View Mode</label>
+                  <div className={`flex border rounded-xl overflow-hidden w-fit ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                    {(['grid', 'scanner'] as TerminalViewMode[]).map(mode => (
+                      <button key={mode} onClick={() => setTerminalViewMode?.(mode)} className={`px-5 py-2.5 text-sm font-medium capitalize transition-colors ${terminalViewMode === mode ? 'bg-blue-600 text-white' : dm ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                        {mode === 'grid' ? 'Grid (F&B)' : 'Scanner (Retail)'}
+                      </button>
+                    ))}
+                  </div>
+                  <p className={`text-xs mt-1 ${t2}`}>
+                    Scanner mode hides the visual product grid for faster barcode checkout.
                   </p>
                 </div>
                 <Field label="Business Name"  value={bizName}    onChange={setBizName}    darkMode={dm} />
@@ -273,17 +299,18 @@ export function SettingsView({
                       <Plus size={14} /> Add Rate
                     </button>
                   </div>
-                  {taxes.length === 0
-                    ? <p className={`text-sm text-center py-4 ${t2}`}>No tax rates yet.</p>
-                    : taxes.map(rate => (
+                  {taxRules.length === 0
+                    ? <p className={`text-sm text-center py-4 ${t2}`}>No tax rules yet.</p>
+                    : taxRules.sort((a, b) => a.order - b.order).map(rate => (
                       <div key={rate.id} className={`border rounded-xl p-4 flex items-center justify-between gap-3 ${dm ? 'border-slate-700' : 'border-slate-200'} mb-2`}>
                         <div>
                           <p className={`text-sm font-semibold ${t1}`}>{rate.name}</p>
-                          <p className={`text-xs mt-0.5 ${t2}`}>{rate.rate}% · {rate.inclusive ? 'Inclusive' : 'Exclusive'}{rate.isDefault ? ' · Default' : ''}</p>
+                          <p className={`text-xs mt-0.5 ${t2}`}>{rate.rate}% · {rate.isInclusive ? 'Inclusive' : 'Exclusive'} · Stack Order: {rate.order}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {rate.isDefault && <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-xs font-semibold">Default</span>}
-                          <button onClick={() => deleteTax(rate.id)} className={`transition-colors ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-400'}`}><Trash2 size={15} /></button>
+                          <button onClick={() => {
+                            if (setTaxRules) setTaxRules(prev => prev.filter(t => t.id !== rate.id));
+                          }} className={`transition-colors ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-400'}`}><Trash2 size={15} /></button>
                         </div>
                       </div>
                     ))

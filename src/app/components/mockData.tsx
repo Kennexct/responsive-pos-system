@@ -184,7 +184,19 @@ export const formatIDR = (amount: number): string =>
     maximumFractionDigits: 0,
   }).format(amount);
 
-export const TAX_RATE = 0.11;
+export interface TaxRule {
+  id: string;
+  name: string;
+  rate: number;
+  isInclusive: boolean;
+  order: number;
+}
+
+export type TerminalViewMode = 'grid' | 'scanner';
+
+export const INITIAL_TAX_RULES: TaxRule[] = [
+  { id: 'tax-pb1', name: 'PB1 / PPN', rate: 11, isInclusive: false, order: 2 }
+];
 
 export const PRODUCTS: Product[] = [
   { id: '1',  name: 'Americano',         price: 28000, costPrice: 8000,  category: 'Coffee',  stock: 50,  emoji: '☕', lowStockThreshold: 10, trackInventory: true, allowDiscount: true, sku: 'COF-AME-01', variants: [{id: 'v1', name: 'Large', priceModifier: 5000, sku: 'COF-AME-01-L'}] },

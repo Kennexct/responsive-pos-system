@@ -35,9 +35,9 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
     onClose();
   };
 
-  const bgSide   = 'bg-[#0F1117]';
-  const divider  = 'border-[#1E2330]';
-  const navHover = 'hover:bg-[#1E2330] hover:text-white';
+  const divider  = darkMode ? 'border-slate-800/50' : 'border-slate-200/50';
+  const navHover = darkMode ? 'hover:bg-slate-800/50 hover:text-slate-200' : 'hover:bg-slate-100/50 hover:text-slate-800';
+  const textInact = darkMode ? 'text-slate-400' : 'text-slate-600';
 
   return (
     <>
@@ -46,13 +46,9 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
       )}
 
       <aside
-        className={[
-          `fixed top-0 left-0 z-50 h-full flex flex-col ${bgSide} text-white transition-all duration-300`,
-          'md:relative md:translate-x-0',
-          isOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64',
-          'md:flex',
-          collapsed ? 'md:w-16' : 'md:w-60',
-        ].join(' ')}
+        className={`fixed md:static inset-y-0 left-0 z-50 h-full flex flex-col shrink-0 transition-all duration-300 backdrop-blur-xl ${
+          darkMode ? 'bg-slate-900/60 text-slate-300 border-slate-800/50' : 'bg-white/60 text-slate-600 border-slate-200/50'
+        } ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 ${collapsed ? 'w-20' : 'w-64'} border-r`}
       >
         {/* Header */}
         <div className={`flex items-center gap-3 px-4 h-16 border-b ${divider} shrink-0`}>
@@ -64,7 +60,7 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <div className="truncate text-sm font-semibold text-white">POS Pro</div>
+              <div className={`truncate text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>POS Pro</div>
               <div className="text-xs text-slate-500 truncate">
                 {businessType === 'fnb' ? 'F&B Mode' : 'Retail Mode'}
               </div>
@@ -88,7 +84,7 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left relative',
                   active
                     ? 'bg-blue-600/15 text-blue-400 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-0.5 before:rounded-full before:bg-blue-400'
-                    : `text-slate-400 ${navHover}`,
+                    : `${textInact} ${navHover}`,
                   collapsed ? 'justify-center' : '',
                 ].join(' ')}
               >
@@ -109,7 +105,7 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
                 'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left relative',
                 currentView === 'settings'
                   ? 'bg-blue-600/15 text-blue-400 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-0.5 before:rounded-full before:bg-blue-400'
-                  : `text-slate-400 ${navHover}`,
+                  : `${textInact} ${navHover}`,
                 collapsed ? 'justify-center' : '',
               ].join(' ')}
             >
@@ -122,7 +118,7 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
           <button
             onClick={onToggleDark}
             title={collapsed ? (darkMode ? 'Light Mode' : 'Dark Mode') : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-slate-400 ${navHover} ${collapsed ? 'justify-center' : ''}`}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${textInact} ${navHover} ${collapsed ? 'justify-center' : ''}`}
           >
             {darkMode ? <Sun size={18} className="shrink-0" /> : <Moon size={18} className="shrink-0" />}
             {!collapsed && <span className="text-sm font-medium">{darkMode ? 'Light Mode' : 'Dark Mode'}</span>}
@@ -136,8 +132,8 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
             {!collapsed && (
               <>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-white truncate">{currentUser.name}</div>
-                  <div className="text-xs text-slate-500 capitalize">{currentUser.role}</div>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>{currentUser.name}</p>
+                  <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'} capitalize`}>{currentUser.role}</p>
                 </div>
                 <button onClick={onLogout} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Logout">
                   <LogOut size={15} />
