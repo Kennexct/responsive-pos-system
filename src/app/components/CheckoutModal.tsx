@@ -279,23 +279,31 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
             )}
           </div>
 
-          {QUICK_AMOUNTS.length > 0 && (
-            <div className="flex gap-2 flex-wrap mb-3">
-              {QUICK_AMOUNTS.slice(0, 4).map(amt => (
-                <button
-                  key={amt}
-                  onClick={() => setCashInput(String(amt))}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors tabular-nums ${
-                    cashInput === String(amt)
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {formatIDR(amt)}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex gap-2 flex-wrap mb-3">
+            <button
+              onClick={() => setCashInput(String(total))}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors tabular-nums ${
+                cashInput === String(total)
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              Exact: {formatIDR(total)}
+            </button>
+            {QUICK_AMOUNTS.slice(0, 4).map(amt => (
+              <button
+                key={amt}
+                onClick={() => setCashInput(String(amt))}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors tabular-nums ${
+                  cashInput === String(amt)
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {formatIDR(amt)}
+              </button>
+            ))}
+          </div>
 
           <div className="grid grid-cols-3 gap-2 md:hidden">
             {NUMPAD.map(key => (
