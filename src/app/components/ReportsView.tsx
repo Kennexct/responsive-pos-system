@@ -34,6 +34,7 @@ interface Props {
 
 export function ReportsView({ orders, categories, darkMode }: Props) {
   const [period, setPeriod] = useState<Period>('week');
+  const [reportTab, setReportTab] = useState<'sales'|'inventory'|'crm'|'staff'>('sales');
 
   const dm = darkMode;
 
@@ -131,7 +132,21 @@ export function ReportsView({ orders, categories, darkMode }: Props) {
           </div>
         </div>
 
-        {/* Summary cards */}
+        <div className={`flex gap-2 overflow-x-auto pb-2 border-b ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+          {(['sales', 'inventory', 'crm', 'staff'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setReportTab(tab)}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors capitalize ${reportTab === tab ? (dm ? 'bg-slate-800 text-blue-400 border-b-2 border-blue-500' : 'bg-white text-blue-600 border-b-2 border-blue-600') : (dm ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+            >
+              {tab} Analytics
+            </button>
+          ))}
+        </div>
+
+        {reportTab === 'sales' && (
+          <>
+            {/* Summary cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {SUMMARY.map(card => (
             <div key={card.label} className={`rounded-2xl p-4 shadow-sm border border-l-4 ${surface} ${card.accent}`}>
@@ -278,6 +293,58 @@ export function ReportsView({ orders, categories, darkMode }: Props) {
                 </tbody>
               </table>
             </div>
+          </div>
+          </>
+        )}
+
+        {reportTab === 'inventory' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className={`rounded-2xl p-5 shadow-sm border ${surface}`}>
+              <h3 className={`mb-4 ${t1}`}>Best Sellers by Margin</h3>
+              <div className="space-y-4">
+                {[
+                  { name: 'Americano', margin: '75%', revenue: 2436000 },
+                  { name: 'Mineral Water', margin: '80%', revenue: 500000 },
+                  { name: 'Nasi Goreng', margin: '45%', revenue: 2052000 },
+                ].map((p, i) => (
+                  <div key={p.name} className="flex justify-between items-center">
+                    <div>
+                      <p className={`text-sm font-medium ${t1}`}>{p.name}</p>
+                      <p className={`text-xs ${t3}`}>Margin: {p.margin}</p>
+                    </div>
+                    <span className={`text-sm font-semibold text-emerald-500`}>{formatIDR(p.revenue)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className={`rounded-2xl p-5 shadow-sm border ${surface}`}>
+              <h3 className={`mb-4 ${t1}`}>Low Stock Alerts</h3>
+              <p className={`text-sm ${t2}`}>All items are well stocked.</p>
+            </div>
+          </div>
+        )}
+
+        {reportTab === 'crm' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className={`rounded-2xl p-4 shadow-sm border border-l-4 ${surface} border-l-purple-500`}>
+                <p className={`text-xs mb-2 ${t2}`}>Points Liability</p>
+                <p className={`font-bold ${t1}`}>{formatIDR(150000)}</p>
+                <p className={`text-xs mt-1 ${t3}`}>Unredeemed Value</p>
+              </div>
+              <div className={`rounded-2xl p-4 shadow-sm border border-l-4 ${surface} border-l-blue-500`}>
+                <p className={`text-xs mb-2 ${t2}`}>New Signups</p>
+                <p className={`font-bold ${t1}`}>24</p>
+                <p className={`text-xs mt-1 ${t3}`}>This week</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {reportTab === 'staff' && (
+          <div className={`rounded-2xl p-5 shadow-sm border ${surface}`}>
+            <h3 className={`mb-4 ${t1}`}>Staff Performance</h3>
+            <p className={`text-sm ${t2}`}>Detailed staff reports are coming soon.</p>
           </div>
         )}
       </div>

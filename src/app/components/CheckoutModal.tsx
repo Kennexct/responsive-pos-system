@@ -158,7 +158,11 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
 
   // ── Print receipt ─────────────────────────────────────────────────────
   const getReceiptHtml = () => {
-    const paymentLabel = PAYMENT_OPTIONS.find(p => p.id === method)?.label ?? method;
+    let paymentLabel = PAYMENT_OPTIONS.find(p => p.id === method)?.label ?? method;
+    if (pointsRedeemed > 0) {
+      if (total === 0) paymentLabel = 'Points';
+      else paymentLabel += ' + Points';
+    }
     const orderTypeLabel = { 'dine-in': 'Dine-in', 'takeaway': 'Takeaway', 'delivery': 'Delivery' }[orderType];
     const now = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
 

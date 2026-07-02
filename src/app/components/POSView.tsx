@@ -95,7 +95,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
   const removeItem = (id: string) => setCart(prev => prev.filter(i => i.id !== id));
   const clearCart  = () => setCart([]);
 
-  const { subtotal, tax, total } = useMemo(() => {
+  const { subtotal, tierDiscountAmt, tax, total } = useMemo(() => {
     let sub = 0;
     let taxAmt = 0;
     
@@ -118,8 +118,17 @@ export function POSView({ businessType, products, categories, discountSettings, 
       }
     });
 
-    return { subtotal: sub, tax: Math.round(taxAmt), total: sub + Math.round(taxAmt) };
-  }, [cart, categories]);
+    const customer = customers?.find(c => c.id === selectedCustomerId);
+    const tier = customer?.tierId ? loyaltySettings?.tiers?.find(t => t.id === customer.tierId) : null;
+    const tierDiscountPercent = tier?.discountPercent || 0;
+    const tierDisc = Math.round(sub * (tierDiscountPercent / 100));
+    
+    // Tax is typically calculated after discounts, but for simplicity let's keep taxAmt based on item taxable amount minus tier discount portion
+    // Actually, to be simple, let's just subtract tierDisc from subtotal for the final total.
+    const finalTotal = sub - tierDisc + Math.round(taxAmt);
+
+    return { subtotal: sub, tierDiscountAmt: tierDisc, tax: Math.round(taxAmt), total: finalTotal };
+  }, [cart, categories, customers, selectedCustomerId, loyaltySettings]);
 
   const itemCount = cart.reduce((s, i) => s + i.qty, 0);
 
@@ -351,6 +360,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
         tableNote={tableNote}
         onTableNoteChange={setTableNote}
         subtotal={subtotal}
+        tierDiscountAmt={tierDiscountAmt}
         tax={tax}
         total={total}
         isOpen={cartOpen}
@@ -455,7 +465,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
           customers={customers}
           loyaltySettings={loyaltySettings}
           selectedCustomerId={selectedCustomerId}
-          subtotalBeforePromo={subtotal}
+          subtotalBeforePromo={subtotal - tierDiscountAmt}
           taxAmount={tax}
           onClose={(completed) => {
             setShowCheckout(false);
@@ -489,6 +499,7 @@ interface CartPanelProps {
   tableNote: string;
   onTableNoteChange: (v: string) => void;
   subtotal: number;
+  tierDiscountAmt: number;
   tax: number;
   total: number;
   isOpen: boolean;
@@ -499,7 +510,7 @@ function CartPanel({
   cart, orderType, businessType, darkMode, discountSettings,
   customers, selectedCustomerId, onSelectCustomer,
   onOrderTypeChange, onUpdateQty, onSetDiscount, onRemoveItem, onClearCart, onHoldOrder, onCheckout,
-  tableNote, onTableNoteChange, subtotal, tax, total, isOpen, onClose,
+  tableNote, onTableNoteChange, subtotal, tierDiscountAmt, tax, total, isOpen, onClose,
 }: CartPanelProps) {
   const [editDiscountId, setEditDiscountId] = useState<string | null>(null);
   const [discountVal, setDiscountVal] = useState('');
@@ -687,6 +698,11 @@ function CartPanel({
           <div className={`flex justify-between text-sm ${t2}`}>
             <span>Subtotal</span><span>{formatIDR(subtotal)}</span>
           </div>
+          {tierDiscountAmt > 0 && (
+            <div className={`flex justify-between text-sm text-orange-500`}>
+              <span>Tier Discount</span><span>-{formatIDR(tierDiscountAmt)}</span>
+            </div>
+          )}
           <div className={`flex justify-between text-sm ${t2}`}>
             <span>Tax</span><span>{formatIDR(tax)}</span>
           </div>

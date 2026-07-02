@@ -34,18 +34,27 @@ export interface Customer {
   pointsBalance: number;
   totalSpend: number;
   registrationDate: string;
+  tierId?: string;
 }
 
 export const INITIAL_CUSTOMERS: Customer[] = [
-  { id: 'c1', name: 'Andi Pratama', phone: '081234567890', pointsBalance: 1500, totalSpend: 250000, registrationDate: '2023-11-10T10:00:00Z' },
-  { id: 'c2', name: 'Rina Wijaya', phone: '081987654321', pointsBalance: 0, totalSpend: 45000, registrationDate: '2024-01-15T14:30:00Z' },
+  { id: 'c1', name: 'Andi Pratama', phone: '081234567890', pointsBalance: 1500, totalSpend: 250000, registrationDate: '2023-11-10T10:00:00Z', tierId: 'silver' },
+  { id: 'c2', name: 'Rina Wijaya', phone: '081987654321', pointsBalance: 0, totalSpend: 45000, registrationDate: '2024-01-15T14:30:00Z', tierId: 'bronze' },
 ];
+
+export interface LoyaltyTier {
+  id: string;
+  name: string;
+  minSpend: number;
+  discountPercent: number;
+}
 
 export interface LoyaltySettings {
   enabled: boolean;
   earnRateSpend: number; // e.g. 10000 spend = 1 point
   earnRatePoints: number; // e.g. 1 point
   redemptionValue: number; // e.g. 1 point = 100 rupiah
+  tiers: LoyaltyTier[];
 }
 
 export const INITIAL_LOYALTY_SETTINGS: LoyaltySettings = {
@@ -53,6 +62,11 @@ export const INITIAL_LOYALTY_SETTINGS: LoyaltySettings = {
   earnRateSpend: 10000,
   earnRatePoints: 1,
   redemptionValue: 100,
+  tiers: [
+    { id: 'bronze', name: 'Bronze', minSpend: 0, discountPercent: 0 },
+    { id: 'silver', name: 'Silver', minSpend: 1000000, discountPercent: 5 },
+    { id: 'gold', name: 'Gold', minSpend: 5000000, discountPercent: 10 },
+  ],
 };
 
 export interface Category {

@@ -11,10 +11,11 @@ interface CustomersViewProps {
 
 export function CustomersView({ customers, loyaltySettings, darkMode }: CustomersViewProps) {
   const [search, setSearch] = useState('');
+  const [filterTier, setFilterTier] = useState<string>('all');
 
   const filtered = customers.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
-    c.phone.includes(search)
+    (c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)) &&
+    (filterTier === 'all' || c.tierId === filterTier)
   );
 
   const dm = darkMode;
@@ -31,7 +32,7 @@ export function CustomersView({ customers, loyaltySettings, darkMode }: Customer
           <p className={`text-sm mt-1 ${t2}`}>Manage customer profiles and points</p>
         </div>
         
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border flex-1 sm:w-64 focus-within:ring-2 focus-within:ring-blue-500 transition-shadow ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
             <Search size={16} className={t2} />
             <input
@@ -42,6 +43,22 @@ export function CustomersView({ customers, loyaltySettings, darkMode }: Customer
               className={`bg-transparent outline-none w-full text-sm ${t1} placeholder:text-slate-400`}
             />
           </div>
+          <select 
+            value={filterTier} 
+            onChange={e => setFilterTier(e.target.value)}
+            className={`px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${dm ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}
+          >
+            <option value="all">All Tiers</option>
+            {loyaltySettings.tiers?.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+          <button 
+            onClick={() => alert(`Campaign sent to ${filtered.length} customers in segment!`)} 
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shrink-0"
+          >
+            <Mail size={16} /> Campaign
+          </button>
         </div>
       </div>
 
@@ -52,6 +69,7 @@ export function CustomersView({ customers, loyaltySettings, darkMode }: Customer
               <thead>
                 <tr className={`border-b text-left ${dm ? 'border-slate-700 bg-slate-800/50' : 'border-slate-100 bg-slate-50'}`}>
                   <th className={`px-4 py-3 font-semibold ${t2}`}>Customer</th>
+                  <th className={`px-4 py-3 font-semibold ${t2}`}>Tier</th>
                   <th className={`px-4 py-3 font-semibold ${t2}`}>Contact</th>
                   <th className={`px-4 py-3 font-semibold ${t2}`}>Points Balance</th>
                   <th className={`px-4 py-3 font-semibold ${t2}`}>Total Spend</th>
@@ -68,6 +86,15 @@ export function CustomersView({ customers, loyaltySettings, darkMode }: Customer
                         </div>
                         <span className={`font-semibold ${t1}`}>{c.name}</span>
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {c.tierId ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 capitalize">
+                          {loyaltySettings.tiers?.find(t => t.id === c.tierId)?.name || c.tierId}
+                        </span>
+                      ) : (
+                        <span className={`text-xs ${t2}`}>-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className={`flex flex-col gap-1 ${t2}`}>

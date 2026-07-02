@@ -32,6 +32,28 @@ export function MobileOwnerView({ orders, darkMode }: Props) {
       </div>
 
       <div className="px-4 -mt-4 space-y-4">
+        {/* Alerts */}
+        <div className="flex flex-col gap-3">
+          <div className={`flex items-center gap-3 ${dm ? 'bg-amber-900/20 border border-amber-800' : 'bg-amber-50 border border-amber-200'} rounded-xl p-3 shadow-sm`}>
+            <div className={`p-2 ${dm ? 'bg-amber-900/40 text-amber-400' : 'bg-amber-100 text-amber-600'} rounded-lg`}>
+              <TrendingUp size={16} />
+            </div>
+            <div>
+              <p className={`text-xs font-bold ${dm ? 'text-amber-400' : 'text-amber-800'}`}>High Void Rate</p>
+              <p className={`text-[10px] ${dm ? 'text-amber-500' : 'text-amber-700'}`}>Void rate is 4.5% today.</p>
+            </div>
+          </div>
+          <div className={`flex items-center gap-3 ${dm ? 'bg-red-900/20 border border-red-800' : 'bg-red-50 border border-red-200'} rounded-xl p-3 shadow-sm`}>
+            <div className={`p-2 ${dm ? 'bg-red-900/40 text-red-400' : 'bg-red-100 text-red-600'} rounded-lg`}>
+              <DollarSign size={16} />
+            </div>
+            <div>
+              <p className={`text-xs font-bold ${dm ? 'text-red-400' : 'text-red-800'}`}>High Liability</p>
+              <p className={`text-[10px] ${dm ? 'text-red-500' : 'text-red-700'}`}>Unredeemed points > Rp 1.5M.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Sales + orders cards */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">

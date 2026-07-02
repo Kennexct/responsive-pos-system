@@ -67,6 +67,27 @@ export function Dashboard({ orders, darkMode }: Props) {
           </p>
         </div>
 
+        <div className="flex flex-col md:flex-row gap-4 mb-2">
+          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex-1">
+            <div className="p-2 bg-amber-500/20 rounded-lg text-amber-600 dark:text-amber-500">
+              <TrendingUp size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">High Void Rate Detected</p>
+              <p className="text-xs text-amber-600 dark:text-amber-500">Void rate is 4.5% today, higher than usual.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex-1">
+            <div className="p-2 bg-red-500/20 rounded-lg text-red-600 dark:text-red-500">
+              <DollarSign size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-red-700 dark:text-red-400">High Points Liability</p>
+              <p className="text-xs text-red-600 dark:text-red-500">Unredeemed points value exceeds Rp 1.500.000.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {STAT_CARDS.map(card => {

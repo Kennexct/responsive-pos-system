@@ -115,7 +115,7 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
   <div class="row"><span>Tax</span><span>${formatIDR(order.tax)}</span></div>
   <div class="div"></div>
   <div class="row total"><span>TOTAL</span><span>${formatIDR(order.total)}</span></div>
-  <div class="row" style="margin-top:4px"><span class="capitalize">Payment: ${order.paymentMethod}</span></div>
+  <div class="row" style="margin-top:4px"><span class="capitalize">Payment: ${order.paymentMethod}${order.pointsRedeemed && order.pointsRedeemed > 0 ? (order.total === 0 ? ' (Points)' : ' + Points') : ''}</span></div>
   ${order.status !== 'completed' ? `<div class="div"></div><div class="center bold" style="font-size:16px;margin-top:8px;text-transform:uppercase;">** ${order.status} **</div><div class="center" style="margin-top:4px;">Reason: ${order.refundReason || ''}</div>` : ''}
   <div class="div"></div>
   <div class="center" style="margin-top:8px"><strong>** Thank you! **</strong></div>
