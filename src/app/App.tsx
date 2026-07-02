@@ -8,8 +8,9 @@ import { ReportsView } from './components/ReportsView';
 import { SettingsView } from './components/SettingsView';
 import { MobileOwnerView } from './components/MobileOwnerView';
 import { AuthView } from './components/AuthView';
-import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions } from './components/mockData';
-import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS } from './components/mockData';
+import { DailySalesView } from './components/DailySalesView';
+import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings } from './components/mockData';
+import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES } from './components/mockData';
 
 const MOBILE_NAV: { id: ViewType; label: string; icon: ElementType }[] = [
   { id: 'pos',       label: 'POS',        icon: Monitor         },
@@ -36,6 +37,11 @@ export default function App() {
 
   useEffect(() => {
     try { localStorage.setItem('pos-dark', String(darkMode)); } catch { /* ignore */ }
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [darkMode]);
 
   // ─── Business Settings ─────────────────────────────────────────────────────
@@ -50,46 +56,121 @@ export default function App() {
   const [permissions, setPermissions] = useState<RolePermissions>(DEFAULT_PERMISSIONS);
 
   // ─── Shared Data ───────────────────────────────────────────────────────────
+  const [categories, setCategories] = useState<Category[]>([...CATEGORIES]);
   const [products, setProducts] = useState<Product[]>([...PRODUCTS]);
   const [orders,   setOrders]   = useState<RecentOrder[]>([...RECENT_ORDERS]);
+  const [discountSettings, setDiscountSettings] = useState<DiscountSettings>({
+    enabled: true, allowItemDiscount: true, promoCodes: [{ id: '1', code: 'PROMO10', type: 'percent', value: 10, active: true }]
+  });
+  const [refundSettings, setRefundSettings] = useState<RefundSettings>({
+    managerPinRequired: true
+  });
+
+  const handleRefund = (orderId: string, reason: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'refunded', refundReason: reason } : o));
+    
+    // Restock items
+    const orderToRefund = orders.find(o => o.id === orderId);
+    if (orderToRefund && orderToRefund.items) {
+      setProducts(prev => prev.map(p => {
+        const inOrder = orderToRefund.items!.filter(i => i.product.id === p.id).reduce((s, i) => s + i.qty, 0);
+        if (inOrder > 0 && p.trackInventory) {
+          return { ...p, stock: p.stock + inOrder };
+        }
+        return p;
+      }));
+    }
+  };
+
+  const handleVoid = (orderId: string, reason: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'voided', refundReason: reason } : o));
+    // No restock for voids
+  };
 
   const handleOrderComplete = (
     cart: CartItem[],
     orderType: OrderType,
     paymentMethod: PaymentMethod,
     amountPaid: number,
+    promoCode?: string
   ) => {
-    const subtotal = cart.reduce((sum, item) => {
-      const line = item.product.price * item.qty;
-      return sum + line - line * (item.discount / 100);
-    }, 0);
-    const tax   = Math.round(subtotal * 0.11);
-    const total = subtotal + tax;
+    let subtotalBeforeDiscount = 0;
+    let itemDiscountTotal = 0;
+    let taxAmt = 0;
+    
+    cart.forEach(item => {
+      const basePrice = item.product.price + (item.variant?.priceModifier || 0);
+      const linePrice = basePrice * item.qty;
+      subtotalBeforeDiscount += linePrice;
+      
+      let itemTotal = linePrice;
+      if (item.itemDiscountNominal) {
+        itemDiscountTotal += (item.itemDiscountNominal * item.qty);
+        itemTotal -= (item.itemDiscountNominal * item.qty);
+      } else if (item.discount) {
+        const d = linePrice * (item.discount / 100);
+        itemDiscountTotal += d;
+        itemTotal -= d;
+      }
+      
+      const cat = categories.find(c => c.name === item.product.category);
+      if (cat?.isTaxable) {
+        taxAmt += itemTotal * TAX_RATE; // Approximation before promo code
+      }
+    });
+
+    const subtotal = subtotalBeforeDiscount - itemDiscountTotal;
+    let promoDiscountAmt = 0;
+    
+    if (promoCode) {
+      const promo = discountSettings.promoCodes.find(p => p.code === promoCode);
+      if (promo) {
+        if (promo.type === 'percent') {
+          promoDiscountAmt = subtotal * (promo.value / 100);
+        } else {
+          promoDiscountAmt = promo.value;
+        }
+      }
+    }
+
+    const finalSubtotal = Math.max(0, subtotal - promoDiscountAmt);
+    const effectiveRatio = subtotal > 0 ? (finalSubtotal / subtotal) : 1;
+    const finalTax = Math.round(taxAmt * effectiveRatio);
+    const total = finalSubtotal + finalTax;
+    
+    const discountTotal = itemDiscountTotal + promoDiscountAmt;
     const totalCost = cart.reduce((sum, item) => sum + (item.product.costPrice * item.qty), 0);
 
     const newOrder: RecentOrder = {
       id:            String(Date.now()),
       orderNumber:   nextOrderNumber(),
       itemCount:     cart.reduce((s, i) => s + i.qty, 0),
-      subtotal,
-      tax,
+      subtotalBeforeDiscount,
+      discountTotal,
+      promoCode,
+      subtotal:      finalSubtotal,
+      tax:           finalTax,
       total,
       totalCost,
       paymentMethod,
       orderType,
       status:        'completed',
-      createdAt:     new Date().toISOString(),
-      cashier:       currentUser?.name ?? 'Staff',
+      createdAt:     new Date().toISOString().slice(0, 19),
+      cashier:       currentUser?.name || 'Cashier',
+      items:         [...cart]
     };
+
     setOrders(prev => [newOrder, ...prev]);
 
-    setProducts(prev =>
-      prev.map(p => {
-        const cartItem = cart.find(c => c.product.id === p.id);
-        if (!cartItem) return p;
-        return { ...p, stock: Math.max(0, p.stock - cartItem.qty) };
-      })
-    );
+    // Decrease stock
+    const updatedProducts = products.map(p => {
+      const inCart = cart.filter(i => i.product.id === p.id).reduce((s, i) => s + i.qty, 0);
+      if (inCart > 0 && p.trackInventory) {
+        return { ...p, stock: Math.max(0, p.stock - inCart) };
+      }
+      return p;
+    });
+    setProducts(updatedProducts);
   };
 
   if (!currentUser) {
@@ -151,15 +232,26 @@ export default function App() {
               <POSView
                 businessType={businessType}
                 products={products}
+                categories={categories}
+                discountSettings={discountSettings}
                 currentUser={currentUser}
                 bizName={bizName}
                 darkMode={darkMode}
-                onOrderComplete={(c, o, p, a) => handleOrderComplete(c, o, p, a)}
+                onOrderComplete={(c, o, p, a, pc) => handleOrderComplete(c, o, p, a, pc)}
               />
             )}
             {view === 'dashboard'  && <MobileOwnerView orders={orders} darkMode={darkMode} />}
-            {view === 'inventory'  && <InventoryView products={products} onProductsChange={setProducts} darkMode={darkMode} />}
-            {view === 'reports'    && <ReportsView orders={orders} darkMode={darkMode} />}
+            {view === 'inventory'  && <InventoryView products={products} onProductsChange={setProducts} categories={categories} darkMode={darkMode} />}
+            {view === 'reports'    && <ReportsView orders={orders} categories={categories} darkMode={darkMode} />}
+            {view === 'daily-sales'&& (
+              <DailySalesView 
+                orders={orders} 
+                darkMode={darkMode} 
+                refundSettings={refundSettings} 
+                onRefund={handleRefund} 
+                onVoid={handleVoid} 
+              />
+            )}
             {view === 'settings'   && (
               <SettingsView
                 businessType={businessType}
@@ -168,6 +260,12 @@ export default function App() {
                 setUsers={setUsers}
                 permissions={permissions}
                 setPermissions={setPermissions}
+                categories={categories}
+                setCategories={setCategories}
+                discountSettings={discountSettings}
+                setDiscountSettings={setDiscountSettings}
+                refundSettings={refundSettings}
+                setRefundSettings={setRefundSettings}
                 darkMode={darkMode}
                 onToggleDark={() => setDarkMode(d => !d)}
                 bizName={bizName}   setBizName={setBizName}
@@ -184,15 +282,26 @@ export default function App() {
               <POSView
                 businessType={businessType}
                 products={products}
+                categories={categories}
+                discountSettings={discountSettings}
                 currentUser={currentUser}
                 bizName={bizName}
                 darkMode={darkMode}
-                onOrderComplete={handleOrderComplete}
+                onOrderComplete={(c, o, p, a, pc) => handleOrderComplete(c, o, p, a, pc)}
               />
             )}
             {view === 'dashboard' && <Dashboard orders={orders} darkMode={darkMode} />}
-            {view === 'inventory' && <InventoryView products={products} onProductsChange={setProducts} darkMode={darkMode} />}
-            {view === 'reports'   && <ReportsView orders={orders} darkMode={darkMode} />}
+            {view === 'inventory' && <InventoryView products={products} onProductsChange={setProducts} categories={categories} darkMode={darkMode} />}
+            {view === 'reports'   && <ReportsView orders={orders} categories={categories} darkMode={darkMode} />}
+            {view === 'daily-sales'&& (
+              <DailySalesView 
+                orders={orders} 
+                darkMode={darkMode} 
+                refundSettings={refundSettings} 
+                onRefund={handleRefund} 
+                onVoid={handleVoid} 
+              />
+            )}
             {view === 'settings'  && (
               <SettingsView
                 businessType={businessType}
@@ -201,6 +310,12 @@ export default function App() {
                 setUsers={setUsers}
                 permissions={permissions}
                 setPermissions={setPermissions}
+                categories={categories}
+                setCategories={setCategories}
+                discountSettings={discountSettings}
+                setDiscountSettings={setDiscountSettings}
+                refundSettings={refundSettings}
+                setRefundSettings={setRefundSettings}
                 darkMode={darkMode}
                 onToggleDark={() => setDarkMode(d => !d)}
                 bizName={bizName}   setBizName={setBizName}

@@ -1,8 +1,8 @@
 import { useState, type ElementType } from 'react';
-import { X, Banknote, Smartphone, CreditCard, Building2, Printer, Delete, CheckCircle } from 'lucide-react';
+import { X, Banknote, Smartphone, CreditCard, Building2, Printer, Delete, CheckCircle, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { CartItem, OrderType, PaymentMethod } from './mockData';
-import { formatIDR, TAX_RATE } from './mockData';
+import type { CartItem, OrderType, PaymentMethod, DiscountSettings, PromoCode } from './mockData';
+import { formatIDR } from './mockData';
 
 interface CheckoutModalProps {
   cart: CartItem[];
@@ -10,8 +10,11 @@ interface CheckoutModalProps {
   cashierName: string;
   bizName: string;
   darkMode: boolean;
+  discountSettings: DiscountSettings;
+  subtotalBeforePromo: number;
+  taxAmount: number;
   onClose: () => void;
-  onConfirm: (method: PaymentMethod, amountPaid: number) => void;
+  onConfirm: (method: PaymentMethod, amountPaid: number, promoCode?: string) => void;
 }
 
 const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[] = [
@@ -21,18 +24,48 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[]
   { id: 'bank-transfer', label: 'Bank Transfer',  icon: Building2  },
 ];
 
-export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, onClose, onConfirm }: CheckoutModalProps) {
+export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, subtotalBeforePromo, taxAmount, onClose, onConfirm }: CheckoutModalProps) {
   const [orderNumber] = useState(() => `INV-${Date.now().toString().slice(-6)}`);
   const [step,       setStep]      = useState<'payment' | 'success'>('payment');
   const [method,     setMethod]    = useState<PaymentMethod>('cash');
   const [cashInput,  setCashInput] = useState('');
+  
+  // Promo Code State
+  const [promoInput, setPromoInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<PromoCode | null>(null);
+  const [promoError, setPromoError] = useState('');
 
-  const subtotal = cart.reduce((sum, item) => {
-    const line = item.product.price * item.qty;
-    return sum + line - line * (item.discount / 100);
-  }, 0);
-  const tax    = Math.round(subtotal * TAX_RATE);
-  const total  = subtotal + tax;
+  const applyPromo = () => {
+    setPromoError('');
+    if (!promoInput.trim()) return;
+    
+    const promo = discountSettings.promoCodes.find(p => p.code.toUpperCase() === promoInput.toUpperCase());
+    if (promo && promo.active) {
+      setAppliedPromo(promo);
+    } else {
+      setPromoError('Invalid or inactive promo code');
+    }
+  };
+
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromoInput('');
+  };
+
+  // Recalculate totals
+  let promoDiscountAmt = 0;
+  if (appliedPromo) {
+    if (appliedPromo.type === 'percent') {
+      promoDiscountAmt = subtotalBeforePromo * (appliedPromo.value / 100);
+    } else {
+      promoDiscountAmt = appliedPromo.value;
+    }
+  }
+
+  const finalSubtotal = Math.max(0, subtotalBeforePromo - promoDiscountAmt);
+  const effectiveRatio = subtotalBeforePromo > 0 ? (finalSubtotal / subtotalBeforePromo) : 1;
+  const finalTax = Math.round(taxAmount * effectiveRatio);
+  const total = finalSubtotal + finalTax;
 
   const cashPaid   = parseInt(cashInput.replace(/\D/g, ''), 10) || 0;
   const change     = cashPaid - total;
@@ -41,7 +74,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const QUICK_AMOUNTS = [50000, 100000, 150000, 200000, 250000, 500000].filter(a => a >= total);
 
   const handleConfirm = () => {
-    onConfirm(method, method === 'cash' ? cashPaid : total);
+    onConfirm(method, method === 'cash' ? cashPaid : total, appliedPromo?.code);
     setStep('success');
   };
 
@@ -53,7 +86,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
       setCashInput('');
     } else {
       setCashInput(prev => {
-        const next = (prev + key).replace(/^0+(?!$)/, ''); // strip leading zeros
+        const next = (prev + key).replace(/^0+(?!$)/, '');
         return next;
       });
     }
@@ -92,14 +125,19 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   <div class="row"><span>Order type:</span><span>${orderTypeLabel}</span></div>
   <div class="div"></div>
   ${cart.map(item => {
-    const linePrice = item.product.price * item.qty;
-    const after     = linePrice - linePrice * (item.discount / 100);
-    return `<div class="row"><span class="bold">${item.product.name}</span></div>
-      <div class="row indent"><span>${item.qty} x ${formatIDR(item.product.price)}${item.discount > 0 ? ` (-${item.discount}%)` : ''}</span><span>${formatIDR(after)}</span></div>`;
+    const basePrice = item.product.price + (item.variant?.priceModifier || 0);
+    const linePrice = basePrice * item.qty;
+    let after = linePrice;
+    if (item.itemDiscountNominal) after -= (item.itemDiscountNominal * item.qty);
+    else if (item.discount) after -= linePrice * (item.discount / 100);
+    
+    return `<div class="row"><span class="bold">${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}</span></div>
+      <div class="row indent"><span>${item.qty} x ${formatIDR(basePrice)}${item.discount > 0 ? ` (-${item.discount}%)` : item.itemDiscountNominal ? ` (-Rp${item.itemDiscountNominal})` : ''}</span><span>${formatIDR(after)}</span></div>`;
   }).join('')}
   <div class="div"></div>
-  <div class="row"><span>Subtotal</span><span>${formatIDR(subtotal)}</span></div>
-  <div class="row"><span>PPN 11%</span><span>${formatIDR(tax)}</span></div>
+  <div class="row"><span>Subtotal</span><span>${formatIDR(subtotalBeforePromo)}</span></div>
+  ${appliedPromo ? `<div class="row"><span>Promo (${appliedPromo.code})</span><span>-${formatIDR(promoDiscountAmt)}</span></div>` : ''}
+  <div class="row"><span>Tax</span><span>${formatIDR(finalTax)}</span></div>
   <div class="div"></div>
   <div class="row total"><span>TOTAL</span><span>${formatIDR(total)}</span></div>
   <div class="row" style="margin-top:4px"><span>Payment: ${paymentLabel}</span>${method === 'cash' && cashPaid >= total ? `<span>Change: ${formatIDR(change)}</span>` : ''}</div>
@@ -118,83 +156,24 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const t1      = dm ? 'text-slate-100' : 'text-slate-800';
   const t2      = dm ? 'text-slate-400' : 'text-slate-500';
   const card    = dm ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200';
-  const inputCls = dm ? 'bg-slate-800 border-slate-700 text-slate-100' : 'border-slate-200 text-slate-800';
+  const inputCls = dm ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-500 focus:border-blue-400' : 'bg-white border-slate-200 text-slate-700 focus:border-blue-400';
 
   if (step === 'success') {
     return (
       <ModalShell onClose={onClose} darkMode={dm}>
         <div className="flex flex-col items-center">
-          {/* Success icon */}
           <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
             <CheckCircle size={32} className="text-emerald-600" />
           </div>
           <h2 className={`text-xl font-bold mb-1 ${t1}`}>Payment Received</h2>
           <p className={`text-sm mb-6 ${t2}`}>{orderNumber}</p>
 
-          {/* Thermal Receipt Preview */}
-          <div className={`w-full max-w-[280px] border rounded-lg font-mono text-xs mb-6 overflow-hidden ${dm ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}
-            style={{ boxShadow: dm ? '0 0 0 1px rgba(255,255,255,0.05)' : '0 2px 8px rgba(0,0,0,0.08)' }}>
-
-            {/* Perforated top */}
-            <div className="flex">
-              {Array.from({length: 20}).map((_, i) => (
-                <div key={i} className={`flex-1 h-2 ${dm ? 'bg-slate-900' : 'bg-slate-50'}`} style={{ clipPath: 'ellipse(40% 100% at 50% 0%)' }} />
-              ))}
-            </div>
-
-            <div className="p-4">
-              <div className="text-center mb-3">
-                <p className="font-bold text-sm">{bizName.toUpperCase()}</p>
-                <p className={`text-[10px] mt-0.5 ${t2}`}>{cashierName}</p>
-              </div>
-              <div className="border-t border-dashed mb-3 mt-3" style={{ borderColor: dm ? '#334155' : '#E2E8F0' }} />
-              <div className="flex justify-between mb-1"><span>{orderNumber}</span><span>{new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
-              <div className="flex justify-between mb-3"><span>Type:</span><span className="capitalize">{orderType.replace('-', ' ')}</span></div>
-              <div className="border-t border-dashed mb-3" style={{ borderColor: dm ? '#334155' : '#E2E8F0' }} />
-              <div className="space-y-2">
-                {cart.map(item => {
-                  const linePrice = item.product.price * item.qty;
-                  const after = linePrice - linePrice * (item.discount / 100);
-                  return (
-                    <div key={item.product.id}>
-                      <p className="font-semibold">{item.product.name}</p>
-                      <div className={`flex justify-between pl-2 ${t2}`}>
-                        <span>{item.qty} × {formatIDR(item.product.price)}{item.discount > 0 ? ` (-${item.discount}%)` : ''}</span>
-                        <span>{formatIDR(after)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="border-t border-dashed my-3" style={{ borderColor: dm ? '#334155' : '#E2E8F0' }} />
-              <div className={`flex justify-between mb-1 ${t2}`}><span>Subtotal</span><span>{formatIDR(subtotal)}</span></div>
-              <div className={`flex justify-between mb-2 ${t2}`}><span>PPN 11%</span><span>{formatIDR(tax)}</span></div>
-              <div className="border-t border-dashed mb-2" style={{ borderColor: dm ? '#334155' : '#E2E8F0' }} />
-              <div className={`flex justify-between font-bold text-sm mb-2 ${t1}`}><span>TOTAL</span><span>{formatIDR(total)}</span></div>
-              {method === 'cash' && cashPaid >= total && (
-                <div className="flex justify-between text-emerald-600">
-                  <span>Change</span><span>{formatIDR(change)}</span>
-                </div>
-              )}
-              <div className="border-t border-dashed mt-3 mb-3" style={{ borderColor: dm ? '#334155' : '#E2E8F0' }} />
-              <p className="text-center font-bold">** Thank you! **</p>
-              <p className={`text-center text-[10px] mt-1 ${t2}`}>Powered by POS Pro</p>
-            </div>
-
-            {/* Perforated bottom */}
-            <div className="flex">
-              {Array.from({length: 20}).map((_, i) => (
-                <div key={i} className={`flex-1 h-2 ${dm ? 'bg-slate-900' : 'bg-slate-50'}`} style={{ clipPath: 'ellipse(40% 100% at 50% 100%)' }} />
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-3 w-full">
+          <div className="flex gap-3 w-full mt-4">
             <button
               onClick={printReceipt}
               className={`flex-1 flex items-center justify-center gap-2 border rounded-xl py-3 text-sm font-medium transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
             >
-              <Printer size={16} /> Print
+              <Printer size={16} /> Print Receipt
             </button>
             <button
               onClick={onClose}
@@ -214,20 +193,46 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
 
       {/* Order summary */}
       <div className={`rounded-xl p-3 space-y-1.5 mb-4 border ${card}`}>
-        {cart.map(item => (
-          <div key={item.product.id} className="flex justify-between text-sm">
-            <span className={t2}>
-              {item.product.name} × <span className="tabular-nums">{item.qty}</span>
-              {item.discount > 0 && <span className="ml-1 text-xs text-orange-500 tabular-nums">-{item.discount}%</span>}
-            </span>
-            <span className={`tabular-nums ${t1}`}>{formatIDR(item.product.price * item.qty * (1 - item.discount / 100))}</span>
+        <div className={`border-b pb-1.5 mb-1.5 space-y-1 tabular-nums ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+          <div className={`flex justify-between text-sm ${t2}`}><span>Subtotal</span><span>{formatIDR(subtotalBeforePromo)}</span></div>
+          {appliedPromo && (
+            <div className={`flex justify-between text-sm text-emerald-500 font-medium`}>
+              <span>Promo ({appliedPromo.code})</span><span>-{formatIDR(promoDiscountAmt)}</span>
+            </div>
+          )}
+          <div className={`flex justify-between text-sm ${t2}`}><span>Tax</span><span>{formatIDR(finalTax)}</span></div>
+          <div className={`flex justify-between text-sm font-bold ${t1} pt-1 mt-1 border-t ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+            <span>Total</span><span className="text-blue-500">{formatIDR(total)}</span>
           </div>
-        ))}
-        <div className={`border-t pt-1.5 mt-1.5 space-y-1 tabular-nums ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-          <div className={`flex justify-between text-sm ${t2}`}><span>Subtotal</span><span>{formatIDR(subtotal)}</span></div>
-          <div className={`flex justify-between text-sm ${t2}`}><span>Tax (PPN 11%)</span><span>{formatIDR(tax)}</span></div>
-          <div className={`flex justify-between text-sm font-bold ${t1}`}><span>Total</span><span className="text-blue-500">{formatIDR(total)}</span></div>
         </div>
+
+        {/* Promo Code Input */}
+        {discountSettings.enabled && (
+          <div className="mt-2">
+            {!appliedPromo ? (
+              <div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Ticket size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${t2}`} />
+                    <input 
+                      type="text" placeholder="Promo code" value={promoInput} onChange={e => setPromoInput(e.target.value.toUpperCase())}
+                      className={`w-full pl-8 pr-3 py-2 text-sm border rounded-lg focus:outline-none uppercase ${inputCls}`}
+                    />
+                  </div>
+                  <button onClick={applyPromo} disabled={!promoInput.trim()} className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50">Apply</button>
+                </div>
+                {promoError && <p className="text-xs text-red-500 mt-1 pl-1">{promoError}</p>}
+              </div>
+            ) : (
+              <div className={`flex items-center justify-between p-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10`}>
+                <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium">
+                  <Ticket size={14} /> Code {appliedPromo.code} applied!
+                </div>
+                <button onClick={removePromo} className="text-emerald-700 hover:text-emerald-900"><X size={14} /></button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Payment method */}
@@ -253,7 +258,6 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
       {/* Cash: numpad */}
       {method === 'cash' && (
         <div className="mb-4">
-          {/* Amount display */}
           <div className={`rounded-xl px-4 py-3 mb-3 border ${dm ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
             <p className={`text-xs font-semibold mb-1 ${t2}`}>AMOUNT RECEIVED</p>
             <div className="flex items-baseline gap-1">
@@ -270,7 +274,6 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
             )}
           </div>
 
-          {/* Quick denominations */}
           {QUICK_AMOUNTS.length > 0 && (
             <div className="flex gap-2 flex-wrap mb-3">
               {QUICK_AMOUNTS.slice(0, 4).map(amt => (
@@ -289,7 +292,6 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
             </div>
           )}
 
-          {/* Numpad grid */}
           <div className="grid grid-cols-3 gap-2">
             {NUMPAD.map(key => (
               <button

@@ -19,10 +19,11 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS: { id: ViewType; label: string; icon: ElementType }[] = [
-  { id: 'pos',       label: 'POS Terminal', icon: ShoppingCart    },
-  { id: 'dashboard', label: 'Dashboard',    icon: LayoutDashboard },
-  { id: 'inventory', label: 'Inventory',    icon: Package         },
-  { id: 'reports',   label: 'Reports',      icon: BarChart2       },
+  { id: 'pos',         label: 'POS Terminal', icon: ShoppingCart    },
+  { id: 'daily-sales', label: 'Daily Sales',  icon: BarChart2       },
+  { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
+  { id: 'inventory',   label: 'Inventory',    icon: Package         },
+  { id: 'reports',     label: 'Reports',      icon: BarChart2       },
 ];
 
 export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClose, currentUser, onLogout, allowedViews, darkMode, onToggleDark }: SidebarProps) {
