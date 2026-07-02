@@ -29,14 +29,14 @@ interface SettingsViewProps {
 type SettingsTab = 'business' | 'currency' | 'tax' | 'discounts' | 'loyalty' | 'refunds' | 'payments' | 'users';
 
 const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
-  { id: 'business',  label: 'Business',  icon: Store      },
-  { id: 'currency',  label: 'Currency',  icon: DollarSign },
-  { id: 'tax',       label: 'Tax',       icon: Receipt    },
-  { id: 'discounts', label: 'Discounts', icon: Percent    },
-  { id: 'loyalty',   label: 'Loyalty',   icon: Award      },
-  { id: 'refunds',   label: 'Refunds',   icon: RefreshCcw },
-  { id: 'payments',  label: 'Payments',  icon: CreditCard },
-  { id: 'users',     label: 'Users',     icon: Users      },
+  { id: 'business',  label: 'Business Profile', icon: Store      },
+  { id: 'users',     label: 'Staff & Roles',    icon: Users      },
+  { id: 'payments',  label: 'Payment Methods',  icon: CreditCard },
+  { id: 'tax',       label: 'Taxes',            icon: Receipt    },
+  { id: 'currency',  label: 'Currency',         icon: DollarSign },
+  { id: 'discounts', label: 'Promos & Discounts', icon: Percent    },
+  { id: 'loyalty',   label: 'Loyalty Program',  icon: Award      },
+  { id: 'refunds',   label: 'Refunds & Voids',  icon: RefreshCcw },
 ];
 
 interface PaymentMethodEntry { id: string; label: string; enabled: boolean; }
@@ -205,7 +205,7 @@ export function SettingsView({
               
               <button
                 onClick={onToggleDark}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap sm:w-full transition-colors text-left font-medium mt-2 border-t sm:pt-3 ${dm ? 'border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200' : 'border-slate-100 text-slate-500 hover:bg-white hover:text-slate-700'}`}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap sm:w-full transition-colors text-left font-medium ml-2 pl-3 border-l sm:ml-0 sm:pl-3 sm:border-l-0 sm:border-t sm:mt-2 sm:pt-3 ${dm ? 'border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200' : 'border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700'}`}
               >
                 {dm ? <Sun size={16} className="shrink-0" /> : <Moon size={16} className="shrink-0" />}
                 {dm ? 'Light Mode' : 'Dark Mode'}
