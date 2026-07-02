@@ -166,29 +166,29 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
             <iframe srcDoc={getReceiptHtml(selectedOrder)} className="w-full h-full border-0" title="Receipt Preview" />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 max-w-sm mx-auto w-full">
+          <div className="flex flex-col gap-3 max-w-sm mx-auto w-full">
             <button
               onClick={() => printReceipt(selectedOrder)}
-              className={`flex-1 flex items-center justify-center gap-2 border rounded-xl py-3 font-medium transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+              className={`w-full flex items-center justify-center gap-2 border rounded-xl py-3.5 font-semibold transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
             >
-              <Printer size={16} /> Reprint Receipt
+              <Printer size={18} /> Reprint Receipt
             </button>
             
             {selectedOrder.status === 'completed' && (
-              <>
+              <div className="flex gap-3 w-full">
                 <button
                   onClick={() => { setModalOrder(selectedOrder); setRefundModal(true); }}
-                  className="flex-1 flex items-center justify-center gap-2 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-xl py-3 font-medium hover:bg-amber-500/20 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-xl py-3 font-semibold hover:bg-amber-500/20 transition-colors"
                 >
-                  <RefreshCcw size={16} /> Refund Order
+                  <RefreshCcw size={16} /> Refund
                 </button>
                 <button
                   onClick={() => { setModalOrder(selectedOrder); setVoidModal(true); }}
-                  className="flex-1 flex items-center justify-center gap-2 bg-red-500/10 text-red-600 border border-red-500/20 rounded-xl py-3 font-medium hover:bg-red-500/20 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 bg-red-500/10 text-red-600 border border-red-500/20 rounded-xl py-3 font-semibold hover:bg-red-500/20 transition-colors"
                 >
-                  <XCircle size={16} /> Void Order
+                  <XCircle size={16} /> Void
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
