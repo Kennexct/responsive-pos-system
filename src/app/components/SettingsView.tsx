@@ -90,7 +90,7 @@ export function SettingsView({
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [newUser, setNewUser] = useState<Partial<User>>({});
 
-  const ROLES: Role[] = ['admin', 'manager', 'cashier'];
+  const ROLES: Role[] = ['owner', 'manager', 'cashier'];
   const VIEWS: { id: ViewType; label: string }[] = [
     { id: 'pos',         label: 'POS' },
     { id: 'dashboard',   label: 'Dashboard' },
@@ -161,7 +161,7 @@ export function SettingsView({
   };
 
   const togglePermission = (role: Role, view: ViewType) => {
-    if (role === 'admin') return; // Admin always has all
+    if (role === 'owner') return; // Owner always has all
     setPermissions(prev => {
       const perms = prev[role];
       return { ...prev, [role]: perms.includes(view) ? perms.filter(v => v !== view) : [...perms, view] };
@@ -423,7 +423,7 @@ export function SettingsView({
                         </div>
                         <div className="flex items-center gap-2">
                           <button onClick={() => openUserModal(u)} className={`text-xs px-3 py-1.5 border rounded-lg font-medium transition-colors ${dm ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>Edit</button>
-                          {u.role !== 'admin' && (
+                          {u.role !== 'owner' && (
                             <button onClick={() => deleteUser(u.id)} className={`transition-colors p-1.5 ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-400'}`}><Trash2 size={15} /></button>
                           )}
                         </div>
@@ -448,7 +448,7 @@ export function SettingsView({
                             <td className={`py-3 capitalize font-medium ${t1}`}>{role}</td>
                             {VIEWS.map(v => {
                               const has = permissions[role].includes(v.id);
-                              const disabled = role === 'admin';
+                              const disabled = role === 'owner';
                               return (
                                 <td key={v.id} className="py-3 text-center">
                                   <button
@@ -466,7 +466,7 @@ export function SettingsView({
                       </tbody>
                     </table>
                   </div>
-                  <p className={`text-xs mt-3 flex items-center gap-1.5 ${t2}`}><Shield size={12} /> Admin has full access by default.</p>
+                  <p className={`text-xs mt-3 flex items-center gap-1.5 ${t2}`}><Shield size={12} /> Owner has full access by default.</p>
                 </div>
               </div>
             )}
@@ -555,7 +555,7 @@ export function SettingsView({
               onChange={e => setNewUser({ ...newUser, role: e.target.value as Role })}
               className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}
             >
-              <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
               <option value="manager">Manager</option>
               <option value="cashier">Cashier</option>
             </select>
