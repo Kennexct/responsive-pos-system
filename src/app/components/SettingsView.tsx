@@ -179,13 +179,13 @@ export function SettingsView({
   const t2      = dm ? 'text-slate-400' : 'text-slate-500';
 
   return (
-    <div className={`flex-1 overflow-y-auto ${bg}`}>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-        <h1 className={`mb-6 ${t1}`}>Settings</h1>
+    <div className={`flex-1 overflow-y-auto w-full ${bg}`}>
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <h1 className={`mb-6 text-xl sm:text-2xl font-bold ${t1}`}>Settings</h1>
 
-        <div className="flex flex-col sm:flex-row gap-6 items-start">
+        <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start">
           {/* Sidebar navigation */}
-          <nav className="w-full sm:w-56 shrink-0 flex flex-col gap-4">
+          <nav className="w-full sm:w-64 shrink-0 flex flex-col gap-4">
             <div className={`flex sm:flex-col gap-1 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0 scrollbar-none`}>
               {TABS.map(t => (
                 <button

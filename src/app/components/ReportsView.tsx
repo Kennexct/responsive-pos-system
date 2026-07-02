@@ -98,13 +98,13 @@ export function ReportsView({ orders, categories, darkMode }: Props) {
   ];
 
   return (
-    <div className={`flex-1 overflow-y-auto ${bg}`}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className={`flex-1 overflow-y-auto w-full ${bg}`}>
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className={t1}>Reports</h1>
+            <h1 className={`text-xl sm:text-2xl font-bold ${t1}`}>Reports</h1>
             <p className={`text-sm mt-0.5 ${t2}`}>Sales & tax collected · {totalOrders} orders</p>
           </div>
           <div className="flex gap-3">

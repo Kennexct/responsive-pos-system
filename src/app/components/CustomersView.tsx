@@ -25,44 +25,45 @@ export function CustomersView({ customers, loyaltySettings, darkMode }: Customer
   const t2 = dm ? 'text-slate-400' : 'text-slate-500';
 
   return (
-    <div className={`flex flex-col h-full ${bg}`}>
-      <div className="p-4 sm:p-6 pb-4 shrink-0 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h1 className={`text-xl sm:text-2xl font-bold ${t1}`}>CRM & Loyalty</h1>
-          <p className={`text-sm mt-1 ${t2}`}>Manage customer profiles and points</p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border flex-1 sm:w-64 focus-within:ring-2 focus-within:ring-blue-500 transition-shadow ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-            <Search size={16} className={t2} />
-            <input
-              type="text"
-              placeholder="Search name or phone..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className={`bg-transparent outline-none w-full text-sm ${t1} placeholder:text-slate-400`}
-            />
+    <div className={`flex flex-col h-full w-full ${bg}`}>
+      <div className="w-full max-w-7xl mx-auto flex flex-col h-full">
+        <div className="p-4 sm:p-6 pb-4 shrink-0 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div>
+            <h1 className={`text-xl sm:text-2xl font-bold ${t1}`}>CRM & Loyalty</h1>
+            <p className={`text-sm mt-1 ${t2}`}>Manage customer profiles and points</p>
           </div>
-          <select 
-            value={filterTier} 
-            onChange={e => setFilterTier(e.target.value)}
-            className={`px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${dm ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}
-          >
-            <option value="all">All Tiers</option>
-            {loyaltySettings.tiers?.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-          <button 
-            onClick={() => alert(`Campaign sent to ${filtered.length} customers in segment!`)} 
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shrink-0"
-          >
-            <Mail size={16} /> Campaign
-          </button>
+          
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border flex-1 sm:w-64 focus-within:ring-2 focus-within:ring-blue-500 transition-shadow ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+              <Search size={16} className={t2} />
+              <input
+                type="text"
+                placeholder="Search name or phone..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className={`bg-transparent outline-none w-full text-sm ${t1} placeholder:text-slate-400`}
+              />
+            </div>
+            <select 
+              value={filterTier} 
+              onChange={e => setFilterTier(e.target.value)}
+              className={`px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${dm ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}
+            >
+              <option value="all">All Tiers</option>
+              {loyaltySettings.tiers?.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <button 
+              onClick={() => alert(`Campaign sent to ${filtered.length} customers in segment!`)} 
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shrink-0"
+            >
+              <Mail size={16} /> Campaign
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
         <div className={`rounded-2xl border shadow-sm overflow-hidden ${surface}`}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm whitespace-nowrap">
@@ -140,6 +141,7 @@ export function CustomersView({ customers, loyaltySettings, darkMode }: Customer
             </table>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

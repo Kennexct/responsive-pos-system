@@ -186,11 +186,11 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
   const inputCls = dm ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-500 focus:border-blue-400' : 'bg-white border-slate-200 text-slate-700 focus:border-blue-400';
 
   return (
-    <div className={`flex-1 overflow-y-auto ${bg}`}>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className={`flex-1 overflow-y-auto w-full ${bg}`}>
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className={t1}>Inventory</h1>
+            <h1 className={`text-xl sm:text-2xl font-bold ${t1}`}>Inventory</h1>
             <p className={`text-sm mt-0.5 ${t2}`}>{products.length} products · {lowStockItems.length} low stock</p>
           </div>
           <button
