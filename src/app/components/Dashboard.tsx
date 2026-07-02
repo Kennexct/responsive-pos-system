@@ -26,6 +26,8 @@ interface Props {
 }
 
 export function Dashboard({ orders, darkMode }: Props) {
+  const dm = darkMode;
+
   const sessionSales  = orders.filter(o => o.status === 'completed').reduce((s, o) => s + o.total, 0);
   const sessionOrders = orders.filter(o => o.status === 'completed').length;
 
@@ -33,21 +35,20 @@ export function Dashboard({ orders, darkMode }: Props) {
   const todayOrders   = 38 + sessionOrders;
   const avgOrderValue = Math.round(todaySales / (todayOrders || 1));
 
+  const bg        = dm ? 'bg-slate-900' : 'bg-slate-50';
+  const surface   = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
+  const t1        = dm ? 'text-slate-100' : 'text-slate-800';
+  const t2        = dm ? 'text-slate-400' : 'text-slate-500';
+  const gridLine  = dm ? '#1E2330' : '#F1F5F9';
+  const tickColor = dm ? '#64748B' : '#94A3B8';
+  const tooltipStyle = { borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', fontSize: 12, background: dm ? '#1E2330' : '#fff', color: dm ? '#F1F5F9' : '#1E293B' };
+
   const STAT_CARDS = [
     { label: "Today's Revenue",  value: formatIDR(todaySales),    change: '+12.5%', up: true,  icon: DollarSign,  iconBg: dm ? 'bg-blue-900/40'    : 'bg-blue-50',    iconColor: 'text-blue-500',    accent: 'border-l-blue-500'    },
     { label: 'Orders Today',     value: String(todayOrders),      change: '+8.3%',  up: true,  icon: ShoppingBag, iconBg: dm ? 'bg-emerald-900/40' : 'bg-emerald-50', iconColor: 'text-emerald-500', accent: 'border-l-emerald-500' },
     { label: 'Avg Order Value',  value: formatIDR(avgOrderValue), change: '+3.8%',  up: true,  icon: TrendingUp,  iconBg: dm ? 'bg-violet-900/40'  : 'bg-violet-50',  iconColor: 'text-violet-500',  accent: 'border-l-violet-500'  },
     { label: 'Customers',        value: '34',                     change: '-2.1%',  up: false, icon: Users,       iconBg: dm ? 'bg-orange-900/40'  : 'bg-orange-50',  iconColor: 'text-orange-500',  accent: 'border-l-orange-500'  },
   ];
-
-  const dm = darkMode;
-  const bg      = dm ? 'bg-slate-900' : 'bg-slate-50';
-  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
-  const t1      = dm ? 'text-slate-100' : 'text-slate-800';
-  const t2      = dm ? 'text-slate-400' : 'text-slate-500';
-  const gridLine = dm ? '#1E2330' : '#F1F5F9';
-  const tickColor = dm ? '#64748B' : '#94A3B8';
-  const tooltipStyle = { borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', fontSize: 12, background: dm ? '#1E2330' : '#fff', color: dm ? '#F1F5F9' : '#1E293B' };
 
   const displayOrders = orders.slice(0, 8);
 
