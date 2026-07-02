@@ -1,7 +1,7 @@
 import { useState, type ElementType } from 'react';
 import {
   ShoppingCart, LayoutDashboard, Package, BarChart2, Settings,
-  ChevronLeft, ChevronRight, X, Coffee, ShoppingBag, LogOut, Moon, Sun,
+  ChevronLeft, ChevronRight, X, Coffee, ShoppingBag, LogOut, Moon, Sun, Users
 } from 'lucide-react';
 import type { BusinessType, ViewType, User } from './mockData';
 
@@ -24,6 +24,7 @@ const NAV_ITEMS: { id: ViewType; label: string; icon: ElementType }[] = [
   { id: 'daily-sales', label: 'Daily Sales',  icon: BarChart2       },
   { id: 'inventory',   label: 'Inventory',    icon: Package         },
   { id: 'reports',     label: 'Reports',      icon: BarChart2       },
+  { id: 'customers',   label: 'Customers',    icon: Users           },
 ];
 
 export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClose, currentUser, onLogout, allowedViews, darkMode, onToggleDark }: SidebarProps) {

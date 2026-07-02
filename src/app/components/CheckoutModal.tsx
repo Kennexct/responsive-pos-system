@@ -1,7 +1,7 @@
 import { useState, type ElementType } from 'react';
 import { X, Banknote, Smartphone, CreditCard, Building2, Printer, Delete, CheckCircle, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { CartItem, OrderType, PaymentMethod, DiscountSettings, PromoCode } from './mockData';
+import type { CartItem, OrderType, PaymentMethod, DiscountSettings, PromoCode, Customer, LoyaltySettings } from './mockData';
 import { formatIDR } from './mockData';
 
 interface CheckoutModalProps {
@@ -14,8 +14,11 @@ interface CheckoutModalProps {
   categories: { id: string; name: string }[];
   subtotalBeforePromo: number;
   taxAmount: number;
+  customers?: Customer[];
+  loyaltySettings?: LoyaltySettings;
+  selectedCustomerId?: string | null;
   onClose: (completed?: boolean) => void;
-  onConfirm: (method: PaymentMethod, amountPaid: number, promoCode?: string) => void;
+  onConfirm: (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number) => void;
 }
 
 const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[] = [
@@ -25,7 +28,7 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[]
   { id: 'bank-transfer', label: 'Bank Transfer',  icon: Building2  },
 ];
 
-export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, categories, subtotalBeforePromo, taxAmount, onClose, onConfirm }: CheckoutModalProps) {
+export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, categories, subtotalBeforePromo, taxAmount, customers, loyaltySettings, selectedCustomerId, onClose, onConfirm }: CheckoutModalProps) {
   const [orderNumber] = useState(() => `INV-${Date.now().toString().slice(-6)}`);
   const [step,       setStep]      = useState<'payment' | 'success'>('payment');
   const [method,     setMethod]    = useState<PaymentMethod>('cash');
@@ -35,6 +38,9 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const [promoInput, setPromoInput] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<PromoCode | null>(null);
   const [promoError, setPromoError] = useState('');
+  
+  // Points state
+  const [usePoints, setUsePoints] = useState(false);
 
   const applyPromo = () => {
     setPromoError('');
@@ -106,7 +112,19 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
     }
   }
 
-  const finalSubtotal = Math.max(0, subtotalBeforePromo - promoDiscountAmt);
+  const finalSubtotalAfterPromo = Math.max(0, subtotalBeforePromo - promoDiscountAmt);
+  
+  let pointsDiscountAmt = 0;
+  let pointsRedeemed = 0;
+  const customer = customers?.find(c => c.id === selectedCustomerId);
+
+  if (usePoints && customer && loyaltySettings?.enabled) {
+    const maxPointsValue = customer.pointsBalance * loyaltySettings.redemptionValue;
+    pointsDiscountAmt = Math.min(finalSubtotalAfterPromo, maxPointsValue);
+    pointsRedeemed = Math.ceil(pointsDiscountAmt / loyaltySettings.redemptionValue);
+  }
+
+  const finalSubtotal = Math.max(0, finalSubtotalAfterPromo - pointsDiscountAmt);
   const effectiveRatio = subtotalBeforePromo > 0 ? (finalSubtotal / subtotalBeforePromo) : 1;
   const finalTax = Math.round(taxAmount * effectiveRatio);
   const total = finalSubtotal + finalTax;
@@ -118,7 +136,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const QUICK_AMOUNTS = [50000, 100000, 150000, 200000, 250000, 500000].filter(a => a >= total);
 
   const handleConfirm = () => {
-    onConfirm(method, method === 'cash' ? cashPaid : total, appliedPromo?.code);
+    onConfirm(method, method === 'cash' ? cashPaid : total, appliedPromo?.code, pointsRedeemed, pointsDiscountAmt);
     setStep('success');
   };
 
@@ -181,6 +199,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   <div class="div"></div>
   <div class="row"><span>Subtotal</span><span>${formatIDR(subtotalBeforePromo)}</span></div>
   ${appliedPromo ? `<div class="row"><span>Promo (${appliedPromo.code})</span><span>-${formatIDR(promoDiscountAmt)}</span></div>` : ''}
+  ${pointsDiscountAmt > 0 ? `<div class="row"><span>Points Redeemed (${pointsRedeemed})</span><span>-${formatIDR(pointsDiscountAmt)}</span></div>` : ''}
   <div class="row"><span>Tax</span><span>${formatIDR(finalTax)}</span></div>
   <div class="div"></div>
   <div class="row total"><span>TOTAL</span><span>${formatIDR(total)}</span></div>
@@ -251,11 +270,35 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
               <span>Promo ({appliedPromo.code})</span><span>-{formatIDR(promoDiscountAmt)}</span>
             </div>
           )}
+          {pointsDiscountAmt > 0 && (
+            <div className={`flex justify-between text-sm text-amber-500 font-medium`}>
+              <span>Points Redeemed ({pointsRedeemed})</span><span>-{formatIDR(pointsDiscountAmt)}</span>
+            </div>
+          )}
           <div className={`flex justify-between text-sm ${t2}`}><span>Tax</span><span>{formatIDR(finalTax)}</span></div>
           <div className={`flex justify-between text-sm font-bold ${t1} pt-1 mt-1 border-t ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
             <span>Total</span><span className="text-blue-500">{formatIDR(total)}</span>
           </div>
         </div>
+
+        {/* Points Input */}
+        {customer && loyaltySettings?.enabled && customer.pointsBalance > 0 && (
+          <div className="mt-2 mb-3">
+            <label className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors ${usePoints ? 'border-amber-500 bg-amber-500/10' : dm ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={usePoints} onChange={e => setUsePoints(e.target.checked)} className="w-4 h-4 text-amber-500" />
+                <div>
+                  <div className={`text-sm font-medium ${usePoints ? 'text-amber-600 dark:text-amber-500' : t1}`}>
+                    Redeem Points
+                  </div>
+                  <div className={`text-xs ${t2}`}>
+                    {customer.pointsBalance} pts available (max {formatIDR(customer.pointsBalance * loyaltySettings.redemptionValue)})
+                  </div>
+                </div>
+              </div>
+            </label>
+          </div>
+        )}
 
         {/* Promo Code Input */}
         {discountSettings.enabled && (

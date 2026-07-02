@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import {
   Search, Plus, Minus, Trash2, ShoppingCart, Pause, ChevronDown,
-  AlertTriangle, PlayCircle, X, Package, Percent
+  AlertTriangle, PlayCircle, X, Package, Percent, UserPlus, Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { BusinessType, CartItem, HeldOrder, OrderType, PaymentMethod, Product, User, Category, DiscountSettings, ProductVariant } from './mockData';
+import type { BusinessType, CartItem, HeldOrder, OrderType, PaymentMethod, Product, User, Category, DiscountSettings, ProductVariant, Customer, LoyaltySettings } from './mockData';
 import { formatIDR, TAX_RATE } from './mockData';
 import { CheckoutModal } from './CheckoutModal';
 
@@ -16,7 +16,9 @@ interface POSViewProps {
   currentUser: User;
   bizName: string;
   darkMode: boolean;
-  onOrderComplete: (cart: CartItem[], orderType: OrderType, paymentMethod: PaymentMethod, amountPaid: number) => void;
+  customers: Customer[];
+  loyaltySettings: LoyaltySettings;
+  onOrderComplete: (cart: CartItem[], orderType: OrderType, paymentMethod: PaymentMethod, amountPaid: number, promoCode?: string, customerId?: string, pointsEarned?: number, pointsRedeemed?: number, pointsDiscountAmt?: number) => void;
 }
 
 const ORDER_TYPES: { id: OrderType; label: string }[] = [
@@ -25,7 +27,7 @@ const ORDER_TYPES: { id: OrderType; label: string }[] = [
   { id: 'delivery', label: 'Delivery' },
 ];
 
-export function POSView({ businessType, products, categories, discountSettings, currentUser, bizName, darkMode, onOrderComplete }: POSViewProps) {
+export function POSView({ businessType, products, categories, discountSettings, currentUser, bizName, darkMode, customers, loyaltySettings, onOrderComplete }: POSViewProps) {
   const [category, setCategory]       = useState('All');
   const [search, setSearch]           = useState('');
   const [cart, setCart]               = useState<CartItem[]>([]);
@@ -36,6 +38,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
   const [showHeld, setShowHeld]       = useState(false);
   const [tableNote, setTableNote]     = useState('');
   const [popId, setPopId]             = useState<string | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   
   // Variant Selection State
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
@@ -134,9 +137,11 @@ export function POSView({ businessType, products, categories, discountSettings, 
     setShowHeld(false);
   };
 
-  const handleCheckoutDone = (method: PaymentMethod, amountPaid: number, promoCode?: string) => {
-    onOrderComplete(cart, orderType, method, amountPaid, promoCode);
+  const handleCheckoutDone = (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number) => {
+    // Points earned is calculated in App.tsx or here? App.tsx handles saving the order. Let's pass what App needs.
+    onOrderComplete(cart, orderType, method, amountPaid, promoCode, selectedCustomerId || undefined, undefined, pointsRedeemed, pointsDiscountAmt);
     setTableNote('');
+    setSelectedCustomerId(null);
   };
 
   const handleCheckoutClose = () => {
@@ -333,6 +338,9 @@ export function POSView({ businessType, products, categories, discountSettings, 
         businessType={businessType}
         darkMode={darkMode}
         discountSettings={discountSettings}
+        customers={customers}
+        selectedCustomerId={selectedCustomerId}
+        onSelectCustomer={setSelectedCustomerId}
         onOrderTypeChange={setOrderType}
         onUpdateQty={updateQty}
         onSetDiscount={setDiscount}
@@ -444,6 +452,9 @@ export function POSView({ businessType, products, categories, discountSettings, 
           darkMode={darkMode}
           discountSettings={discountSettings}
           categories={categories}
+          customers={customers}
+          loyaltySettings={loyaltySettings}
+          selectedCustomerId={selectedCustomerId}
           subtotalBeforePromo={subtotal}
           taxAmount={tax}
           onClose={(completed) => {
@@ -465,6 +476,9 @@ interface CartPanelProps {
   businessType: BusinessType;
   darkMode: boolean;
   discountSettings: DiscountSettings;
+  customers: Customer[];
+  selectedCustomerId: string | null;
+  onSelectCustomer: (id: string | null) => void;
   onOrderTypeChange: (t: OrderType) => void;
   onUpdateQty: (id: string, delta: number) => void;
   onSetDiscount: (id: string, pct: number, nominal?: number) => void;
@@ -483,12 +497,14 @@ interface CartPanelProps {
 
 function CartPanel({
   cart, orderType, businessType, darkMode, discountSettings,
+  customers, selectedCustomerId, onSelectCustomer,
   onOrderTypeChange, onUpdateQty, onSetDiscount, onRemoveItem, onClearCart, onHoldOrder, onCheckout,
   tableNote, onTableNoteChange, subtotal, tax, total, isOpen, onClose,
 }: CartPanelProps) {
   const [editDiscountId, setEditDiscountId] = useState<string | null>(null);
   const [discountVal, setDiscountVal] = useState('');
   const [discountType, setDiscountType] = useState<'percent'|'nominal'>('percent');
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
   
   const itemCount = cart.reduce((s, i) => s + i.qty, 0);
 
@@ -527,6 +543,28 @@ function CartPanel({
           )}
           <button onClick={onClose} className={`lg:hidden p-1 ${t2}`}><X size={18} /></button>
         </div>
+      </div>
+
+      {/* Customer Attach */}
+      <div className={`px-4 py-3 border-b shrink-0 flex items-center justify-between ${border}`}>
+        {selectedCustomerId ? (
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${dm ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                <Users size={14} />
+              </div>
+              <div>
+                <p className={`text-xs font-semibold ${t1}`}>{customers.find(c => c.id === selectedCustomerId)?.name}</p>
+                <p className={`text-[10px] ${t2}`}>{customers.find(c => c.id === selectedCustomerId)?.pointsBalance} pts</p>
+              </div>
+            </div>
+            <button onClick={() => onSelectCustomer(null)} className={`text-xs ${t2} hover:text-red-500`}>Remove</button>
+          </div>
+        ) : (
+          <button onClick={() => setShowCustomerModal(true)} className={`w-full flex items-center justify-center gap-2 py-2 border border-dashed rounded-xl transition-colors text-sm font-medium ${dm ? 'border-slate-600 text-slate-400 hover:text-slate-200 hover:border-slate-400 hover:bg-slate-700/50' : 'border-slate-300 text-slate-500 hover:text-slate-700 hover:border-slate-400 hover:bg-slate-50'}`}>
+            <UserPlus size={16} /> Attach Customer
+          </button>
+        )}
       </div>
 
       {/* Order type */}
@@ -695,6 +733,34 @@ function CartPanel({
           </div>
         )}
       </AnimatePresence>
+
+      {showCustomerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className={`w-full max-w-sm rounded-2xl p-5 shadow-2xl ${dm ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`font-semibold ${t1}`}>Select Customer</h3>
+              <button onClick={() => setShowCustomerModal(false)} className={t2}><X size={18} /></button>
+            </div>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {customers.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => { onSelectCustomer(c.id); setShowCustomerModal(false); }}
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-colors ${dm ? 'border-slate-700 hover:bg-slate-700' : 'border-slate-100 hover:bg-slate-50'}`}
+                >
+                  <div>
+                    <p className={`text-sm font-semibold ${t1}`}>{c.name}</p>
+                    <p className={`text-xs ${t2}`}>{c.phone}</p>
+                  </div>
+                  <div className={`text-xs font-medium px-2 py-1 rounded-lg ${dm ? 'bg-slate-900 text-amber-400' : 'bg-amber-100 text-amber-700'}`}>
+                    {c.pointsBalance} pts
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

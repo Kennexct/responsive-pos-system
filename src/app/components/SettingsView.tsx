@@ -1,6 +1,6 @@
 import { useState, type ElementType } from 'react';
-import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw } from 'lucide-react';
-import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode } from './mockData';
+import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Award } from 'lucide-react';
+import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface SettingsViewProps {
@@ -16,6 +16,8 @@ interface SettingsViewProps {
   setDiscountSettings: React.Dispatch<React.SetStateAction<DiscountSettings>>;
   refundSettings: RefundSettings;
   setRefundSettings: React.Dispatch<React.SetStateAction<RefundSettings>>;
+  loyaltySettings: LoyaltySettings;
+  setLoyaltySettings: React.Dispatch<React.SetStateAction<LoyaltySettings>>;
   darkMode: boolean;
   onToggleDark: () => void;
   bizName: string;    setBizName: (v: string) => void;
@@ -24,13 +26,14 @@ interface SettingsViewProps {
   bizEmail: string;   setBizEmail: (v: string) => void;
 }
 
-type SettingsTab = 'business' | 'currency' | 'tax' | 'discounts' | 'refunds' | 'payments' | 'users';
+type SettingsTab = 'business' | 'currency' | 'tax' | 'discounts' | 'loyalty' | 'refunds' | 'payments' | 'users';
 
 const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
   { id: 'business',  label: 'Business',  icon: Store      },
   { id: 'currency',  label: 'Currency',  icon: DollarSign },
   { id: 'tax',       label: 'Tax',       icon: Receipt    },
   { id: 'discounts', label: 'Discounts', icon: Percent    },
+  { id: 'loyalty',   label: 'Loyalty',   icon: Award      },
   { id: 'refunds',   label: 'Refunds',   icon: RefreshCcw },
   { id: 'payments',  label: 'Payments',  icon: CreditCard },
   { id: 'users',     label: 'Users',     icon: Users      },
@@ -59,6 +62,7 @@ export function SettingsView({
   categories, setCategories,
   discountSettings, setDiscountSettings,
   refundSettings, setRefundSettings,
+  loyaltySettings, setLoyaltySettings,
   darkMode, onToggleDark,
   bizName, setBizName, bizPhone, setBizPhone, bizAddress, setBizAddress, bizEmail, setBizEmail,
 }: SettingsViewProps) {
@@ -357,6 +361,48 @@ export function SettingsView({
                       </div>
                     ))
                   }
+                </div>
+                <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
+              </div>
+            )}
+
+            {/* ── Loyalty ── */}
+            {tab === 'loyalty' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className={t1}>Loyalty Program</h3>
+                  <p className={`text-sm mb-4 ${t2}`}>Configure points earning and redemption rules.</p>
+                  
+                  <div className={`flex items-center justify-between border rounded-xl px-4 py-3 mb-4 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                    <div>
+                      <span className={`text-sm font-medium block ${t1}`}>Enable Loyalty Program</span>
+                      <span className={`text-xs ${t2}`}>Allow customers to earn and redeem points.</span>
+                    </div>
+                    <Toggle checked={loyaltySettings.enabled} onChange={() => setLoyaltySettings(prev => ({...prev, enabled: !prev.enabled}))} />
+                  </div>
+
+                  {loyaltySettings.enabled && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className={`text-sm block mb-1 font-medium ${t1}`}>Earn Rate</label>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-sm ${t2}`}>Spend Rp</span>
+                          <input type="number" value={loyaltySettings.earnRateSpend} onChange={e => setLoyaltySettings(prev => ({...prev, earnRateSpend: Number(e.target.value)}))} className={`w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`} />
+                          <span className={`text-sm ${t2}`}>=</span>
+                          <input type="number" value={loyaltySettings.earnRatePoints} onChange={e => setLoyaltySettings(prev => ({...prev, earnRatePoints: Number(e.target.value)}))} className={`w-20 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`} />
+                          <span className={`text-sm ${t2}`}>Points</span>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className={`text-sm block mb-1 font-medium ${t1}`}>Redemption Value</label>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-sm ${t2}`}>1 Point = Rp</span>
+                          <input type="number" value={loyaltySettings.redemptionValue} onChange={e => setLoyaltySettings(prev => ({...prev, redemptionValue: Number(e.target.value)}))} className={`w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
               </div>

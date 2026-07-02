@@ -1,5 +1,5 @@
 export type BusinessType = 'retail' | 'fnb';
-export type ViewType = 'pos' | 'dashboard' | 'inventory' | 'reports' | 'settings' | 'daily-sales';
+export type ViewType = 'pos' | 'dashboard' | 'daily-sales' | 'inventory' | 'reports' | 'customers' | 'settings';
 export type OrderType = 'dine-in' | 'takeaway' | 'delivery';
 export type PaymentMethod = 'cash' | 'qris' | 'card' | 'bank-transfer';
 export type OrderStatus = 'completed' | 'held' | 'cancelled' | 'refunded' | 'voided';
@@ -15,9 +15,9 @@ export interface User {
 export type RolePermissions = Record<Role, ViewType[]>;
 
 export const DEFAULT_PERMISSIONS: RolePermissions = {
-  owner: ['pos', 'dashboard', 'inventory', 'reports', 'settings', 'daily-sales'],
-  manager: ['pos', 'dashboard', 'inventory', 'reports', 'daily-sales'],
-  cashier: ['pos', 'daily-sales'],
+  owner: ['pos', 'dashboard', 'daily-sales', 'inventory', 'reports', 'customers', 'settings'],
+  manager: ['pos', 'dashboard', 'daily-sales', 'inventory', 'reports', 'customers'],
+  cashier: ['pos', 'daily-sales', 'customers'],
 };
 
 export const INITIAL_USERS: User[] = [
@@ -25,6 +25,35 @@ export const INITIAL_USERS: User[] = [
   { id: '2', name: 'Ani Wijaya',   email: 'ani@warkop.id',   role: 'cashier' },
   { id: '3', name: 'Citra Dewi',   email: 'citra@warkop.id', role: 'cashier' },
 ];
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  pointsBalance: number;
+  totalSpend: number;
+  registrationDate: string;
+}
+
+export const INITIAL_CUSTOMERS: Customer[] = [
+  { id: 'c1', name: 'Andi Pratama', phone: '081234567890', pointsBalance: 1500, totalSpend: 250000, registrationDate: '2023-11-10T10:00:00Z' },
+  { id: 'c2', name: 'Rina Wijaya', phone: '081987654321', pointsBalance: 0, totalSpend: 45000, registrationDate: '2024-01-15T14:30:00Z' },
+];
+
+export interface LoyaltySettings {
+  enabled: boolean;
+  earnRateSpend: number; // e.g. 10000 spend = 1 point
+  earnRatePoints: number; // e.g. 1 point
+  redemptionValue: number; // e.g. 1 point = 100 rupiah
+}
+
+export const INITIAL_LOYALTY_SETTINGS: LoyaltySettings = {
+  enabled: true,
+  earnRateSpend: 10000,
+  earnRatePoints: 1,
+  redemptionValue: 100,
+};
 
 export interface Category {
   id: string;
@@ -104,6 +133,10 @@ export interface RecentOrder {
   cashier: string;
   refundReason?: string;
   items?: CartItem[];
+  customerId?: string;
+  pointsEarned?: number;
+  pointsRedeemed?: number;
+  pointsDiscountAmt?: number;
 }
 
 export interface PromoCode {

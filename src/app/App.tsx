@@ -1,5 +1,5 @@
 import { useState, useEffect, type ElementType } from 'react';
-import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu, Monitor } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu, Monitor, Users } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { POSView } from './components/POSView';
 import { Dashboard } from './components/Dashboard';
@@ -9,14 +9,16 @@ import { SettingsView } from './components/SettingsView';
 import { MobileOwnerView } from './components/MobileOwnerView';
 import { AuthView } from './components/AuthView';
 import { DailySalesView } from './components/DailySalesView';
-import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings } from './components/mockData';
-import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, TAX_RATE } from './components/mockData';
+import { CustomersView } from './components/CustomersView';
+import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings } from './components/mockData';
+import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, TAX_RATE, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS } from './components/mockData';
 
 const MOBILE_NAV: { id: ViewType; label: string; icon: ElementType }[] = [
   { id: 'pos',       label: 'POS',        icon: Monitor         },
   { id: 'dashboard', label: 'Dashboard',  icon: LayoutDashboard },
   { id: 'inventory', label: 'Inventory',  icon: Package         },
   { id: 'reports',   label: 'Reports',    icon: BarChart2       },
+  { id: 'customers', label: 'Customers',  icon: Users           },
   { id: 'settings',  label: 'Settings',   icon: Settings        },
 ];
 
@@ -65,6 +67,8 @@ export default function App() {
   const [refundSettings, setRefundSettings] = useState<RefundSettings>({
     managerPinRequired: true
   });
+  const [customers, setCustomers] = useState<Customer[]>([...INITIAL_CUSTOMERS]);
+  const [loyaltySettings, setLoyaltySettings] = useState<LoyaltySettings>({ ...INITIAL_LOYALTY_SETTINGS });
 
   const handleRefund = (orderId: string, reason: string) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'refunded', refundReason: reason } : o));
@@ -92,7 +96,11 @@ export default function App() {
     orderType: OrderType,
     paymentMethod: PaymentMethod,
     amountPaid: number,
-    promoCode?: string
+    promoCode?: string,
+    customerId?: string,
+    pointsEarnedInput?: number,
+    pointsRedeemed?: number,
+    pointsDiscountAmt?: number
   ) => {
     let subtotalBeforeDiscount = 0;
     let itemDiscountTotal = 0;
@@ -133,12 +141,17 @@ export default function App() {
       }
     }
 
-    const finalSubtotal = Math.max(0, subtotal - promoDiscountAmt);
+    const finalSubtotal = Math.max(0, subtotal - promoDiscountAmt - (pointsDiscountAmt || 0));
     const effectiveRatio = subtotal > 0 ? (finalSubtotal / subtotal) : 1;
     const finalTax = Math.round(taxAmt * effectiveRatio);
     const total = finalSubtotal + finalTax;
     
-    const discountTotal = itemDiscountTotal + promoDiscountAmt;
+    let pointsEarned = 0;
+    if (customerId && loyaltySettings.enabled && loyaltySettings.earnRateSpend > 0) {
+      pointsEarned = Math.floor(total / loyaltySettings.earnRateSpend) * loyaltySettings.earnRatePoints;
+    }
+    
+    const discountTotal = itemDiscountTotal + promoDiscountAmt + (pointsDiscountAmt || 0);
     const totalCost = cart.reduce((sum, item) => sum + (item.product.costPrice * item.qty), 0);
 
     const newOrder: RecentOrder = {
@@ -157,10 +170,22 @@ export default function App() {
       status:        'completed',
       createdAt:     new Date().toISOString().slice(0, 19),
       cashier:       currentUser?.name || 'Cashier',
-      items:         [...cart]
+      items:         [...cart],
+      customerId,
+      pointsEarned,
+      pointsRedeemed,
+      pointsDiscountAmt
     };
 
     setOrders(prev => [newOrder, ...prev]);
+
+    if (customerId) {
+      setCustomers(prev => prev.map(c => c.id === customerId ? {
+        ...c,
+        totalSpend: c.totalSpend + total,
+        pointsBalance: c.pointsBalance - (pointsRedeemed || 0) + pointsEarned
+      } : c));
+    }
 
     // Decrease stock
     const updatedProducts = products.map(p => {
@@ -302,6 +327,13 @@ export default function App() {
                 onVoid={handleVoid} 
               />
             )}
+            {view === 'customers' && (
+              <CustomersView
+                customers={customers}
+                loyaltySettings={loyaltySettings}
+                darkMode={darkMode}
+              />
+            )}
             {view === 'settings'  && (
               <SettingsView
                 businessType={businessType}
@@ -316,6 +348,8 @@ export default function App() {
                 setDiscountSettings={setDiscountSettings}
                 refundSettings={refundSettings}
                 setRefundSettings={setRefundSettings}
+                loyaltySettings={loyaltySettings}
+                setLoyaltySettings={setLoyaltySettings}
                 darkMode={darkMode}
                 onToggleDark={() => setDarkMode(d => !d)}
                 bizName={bizName}   setBizName={setBizName}
