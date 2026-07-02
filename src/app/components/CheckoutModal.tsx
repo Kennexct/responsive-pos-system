@@ -260,11 +260,16 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
         <div className="mb-4">
           <div className={`rounded-xl px-4 py-3 mb-3 border ${dm ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
             <p className={`text-xs font-semibold mb-1 ${t2}`}>AMOUNT RECEIVED</p>
-            <div className="flex items-baseline gap-1">
-              <span className={`text-sm ${t2}`}>Rp</span>
-              <span className={`text-2xl font-bold tabular-nums ${cashInput ? (cashPaid >= total ? 'text-emerald-600' : 'text-red-500') : t1}`}>
-                {cashInput ? Number(cashInput).toLocaleString('id-ID') : '0'}
-              </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm ${t2} pb-1`}>Rp</span>
+              <input
+                type="text"
+                autoFocus
+                placeholder="0"
+                value={cashInput ? Number(cashInput).toLocaleString('id-ID') : ''}
+                onChange={e => setCashInput(e.target.value.replace(/\D/g, ''))}
+                className={`w-full bg-transparent text-2xl font-bold tabular-nums focus:outline-none ${cashInput ? (cashPaid >= total ? 'text-emerald-600' : 'text-red-500') : t1}`}
+              />
             </div>
             {cashInput && cashPaid >= total && (
               <p className="text-emerald-600 text-sm font-semibold mt-1">Change: {formatIDR(change)}</p>
@@ -292,7 +297,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 md:hidden">
             {NUMPAD.map(key => (
               <button
                 key={key}

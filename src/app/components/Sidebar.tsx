@@ -20,8 +20,8 @@ interface SidebarProps {
 
 const NAV_ITEMS: { id: ViewType; label: string; icon: ElementType }[] = [
   { id: 'pos',         label: 'POS Terminal', icon: ShoppingCart    },
-  { id: 'daily-sales', label: 'Daily Sales',  icon: BarChart2       },
   { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
+  { id: 'daily-sales', label: 'Daily Sales',  icon: BarChart2       },
   { id: 'inventory',   label: 'Inventory',    icon: Package         },
   { id: 'reports',     label: 'Reports',      icon: BarChart2       },
 ];

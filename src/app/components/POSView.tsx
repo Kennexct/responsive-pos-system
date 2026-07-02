@@ -134,11 +134,20 @@ export function POSView({ businessType, products, categories, discountSettings, 
     setShowHeld(false);
   };
 
-  const handleCheckoutDone = (method: PaymentMethod, amountPaid: number) => {
-    onOrderComplete(cart, orderType, method, amountPaid);
-    clearCart();
-    setShowCheckout(false);
+  const handleCheckoutDone = (method: PaymentMethod, amountPaid: number, promoCode?: string) => {
+    onOrderComplete(cart, orderType, method, amountPaid, promoCode);
     setTableNote('');
+  };
+
+  const handleCheckoutClose = () => {
+    setShowCheckout(false);
+    if (cart.length > 0 && heldOrders.length === 0) {
+      // If the order was completed, handleCheckoutDone was called. We should clear the cart now.
+      // But we need a way to know if it was completed or just closed.
+      // Actually, if we just clear cart when onOrderComplete is called, it unmounts the modal.
+      // So instead, let's just clear the cart inside handleCheckoutClose if the modal was in success state.
+      // Since POSView doesn't know the state, we can pass a boolean to onClose.
+    }
   };
 
   const dm = darkMode;
@@ -426,7 +435,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
         )}
       </AnimatePresence>
 
-      {showCheckout && cart.length > 0 && (
+      {showCheckout && (
         <CheckoutModal
           cart={cart}
           orderType={orderType}
@@ -436,7 +445,10 @@ export function POSView({ businessType, products, categories, discountSettings, 
           discountSettings={discountSettings}
           subtotalBeforePromo={subtotal}
           taxAmount={tax}
-          onClose={() => setShowCheckout(false)}
+          onClose={(completed) => {
+            setShowCheckout(false);
+            if (completed) clearCart();
+          }}
           onConfirm={handleCheckoutDone}
         />
       )}

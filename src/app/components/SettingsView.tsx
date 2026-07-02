@@ -87,11 +87,12 @@ export function SettingsView({
 
   const ROLES: Role[] = ['admin', 'manager', 'cashier'];
   const VIEWS: { id: ViewType; label: string }[] = [
-    { id: 'pos',       label: 'POS' },
-    { id: 'orders',    label: 'Orders' },
-    { id: 'inventory', label: 'Inventory' },
-    { id: 'reports',   label: 'Reports' },
-    { id: 'settings',  label: 'Settings' }
+    { id: 'pos',         label: 'POS' },
+    { id: 'dashboard',   label: 'Dashboard' },
+    { id: 'daily-sales', label: 'Daily Sales' },
+    { id: 'inventory',   label: 'Inventory' },
+    { id: 'reports',     label: 'Reports' },
+    { id: 'settings',    label: 'Settings' }
   ];
 
   const handleSave = () => {
