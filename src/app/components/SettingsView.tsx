@@ -241,7 +241,6 @@ export function SettingsView({
                       </button>
                     ))}
                   </div>
-                  </div>
                   <p className={`text-xs mt-1 ${t2}`}>
                     {businessType === 'fnb' ? 'F&B mode enables order types and table notes.' : 'Retail mode hides F&B-specific options.'}
                   </p>
