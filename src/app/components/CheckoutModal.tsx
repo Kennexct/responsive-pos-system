@@ -11,6 +11,7 @@ interface CheckoutModalProps {
   bizName: string;
   darkMode: boolean;
   discountSettings: DiscountSettings;
+  categories: { id: string; name: string }[];
   subtotalBeforePromo: number;
   taxAmount: number;
   onClose: (completed?: boolean) => void;
@@ -24,7 +25,7 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[]
   { id: 'bank-transfer', label: 'Bank Transfer',  icon: Building2  },
 ];
 
-export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, subtotalBeforePromo, taxAmount, onClose, onConfirm }: CheckoutModalProps) {
+export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, categories, subtotalBeforePromo, taxAmount, onClose, onConfirm }: CheckoutModalProps) {
   const [orderNumber] = useState(() => `INV-${Date.now().toString().slice(-6)}`);
   const [step,       setStep]      = useState<'payment' | 'success'>('payment');
   const [method,     setMethod]    = useState<PaymentMethod>('cash');
@@ -40,11 +41,33 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
     if (!promoInput.trim()) return;
     
     const promo = discountSettings.promoCodes.find(p => p.code.toUpperCase() === promoInput.toUpperCase());
-    if (promo && promo.active) {
-      setAppliedPromo(promo);
-    } else {
+    if (!promo || !promo.active) {
       setPromoError('Invalid or inactive promo code');
+      return;
     }
+
+    const today = new Date().toISOString().split('T')[0];
+    if (promo.activeDate && today < promo.activeDate) {
+      setPromoError('Promo code is not yet active');
+      return;
+    }
+    if (promo.expiryDate && today > promo.expiryDate) {
+      setPromoError('Promo code has expired');
+      return;
+    }
+    if (promo.minSpend && subtotalBeforePromo < promo.minSpend) {
+      setPromoError(`Minimum spend of Rp ${promo.minSpend.toLocaleString('id-ID')} required`);
+      return;
+    }
+    if (promo.cannotCombine) {
+      const hasItemDiscount = cart.some(item => (item.discount || 0) > 0 || (item.itemDiscountNominal || 0) > 0);
+      if (hasItemDiscount) {
+        setPromoError('Cannot be combined with item discounts');
+        return;
+      }
+    }
+
+    setAppliedPromo(promo);
   };
 
   const removePromo = () => {
@@ -55,10 +78,31 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   // Recalculate totals
   let promoDiscountAmt = 0;
   if (appliedPromo) {
-    if (appliedPromo.type === 'percent') {
-      promoDiscountAmt = subtotalBeforePromo * (appliedPromo.value / 100);
-    } else {
-      promoDiscountAmt = appliedPromo.value;
+    let applicableSubtotal = subtotalBeforePromo;
+    
+    if (appliedPromo.categories && appliedPromo.categories.length > 0) {
+      const allowedCategoryNames = categories
+        .filter(c => appliedPromo.categories!.includes(c.id))
+        .map(c => c.name);
+        
+      applicableSubtotal = cart
+        .filter(item => allowedCategoryNames.includes(item.product.category))
+        .reduce((sum, item) => {
+          const basePrice = item.product.price + (item.variant?.priceModifier || 0);
+          const linePrice = basePrice * item.qty;
+          let after = linePrice;
+          if (item.itemDiscountNominal) after -= (item.itemDiscountNominal * item.qty);
+          else if (item.discount) after -= linePrice * (item.discount / 100);
+          return sum + after;
+        }, 0);
+    }
+
+    if (applicableSubtotal > 0) {
+      if (appliedPromo.type === 'percent') {
+        promoDiscountAmt = applicableSubtotal * (appliedPromo.value / 100);
+      } else {
+        promoDiscountAmt = Math.min(appliedPromo.value, applicableSubtotal);
+      }
     }
   }
 

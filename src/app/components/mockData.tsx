@@ -112,6 +112,11 @@ export interface PromoCode {
   type: 'nominal' | 'percent';
   value: number;
   active: boolean;
+  activeDate?: string;
+  expiryDate?: string;
+  minSpend?: number;
+  categories?: string[];
+  cannotCombine?: boolean;
 }
 
 export interface DiscountSettings {

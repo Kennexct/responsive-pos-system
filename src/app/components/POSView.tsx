@@ -443,6 +443,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
           bizName={bizName}
           darkMode={darkMode}
           discountSettings={discountSettings}
+          categories={categories}
           subtotalBeforePromo={subtotal}
           taxAmount={tax}
           onClose={(completed) => {

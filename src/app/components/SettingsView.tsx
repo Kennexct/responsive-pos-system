@@ -73,6 +73,11 @@ export function SettingsView({
   const [newPromoCode, setNewPromoCode] = useState('');
   const [newPromoType, setNewPromoType] = useState<'percent'|'nominal'>('percent');
   const [newPromoValue, setNewPromoValue] = useState('');
+  const [newPromoActiveDate, setNewPromoActiveDate] = useState('');
+  const [newPromoExpiryDate, setNewPromoExpiryDate] = useState('');
+  const [newPromoMinSpend, setNewPromoMinSpend] = useState('');
+  const [newPromoCategories, setNewPromoCategories] = useState<string[]>([]);
+  const [newPromoCannotCombine, setNewPromoCannotCombine] = useState(false);
 
   // Tax modal
   const [taxModal, setTaxModal] = useState(false);
@@ -118,10 +123,18 @@ export function SettingsView({
       code: newPromoCode.toUpperCase(),
       type: newPromoType,
       value: Number(newPromoValue),
-      active: true
+      active: true,
+      activeDate: newPromoActiveDate || undefined,
+      expiryDate: newPromoExpiryDate || undefined,
+      minSpend: newPromoMinSpend ? Number(newPromoMinSpend) : undefined,
+      categories: newPromoCategories.length > 0 ? newPromoCategories : undefined,
+      cannotCombine: newPromoCannotCombine
     };
     setDiscountSettings(prev => ({ ...prev, promoCodes: [...prev.promoCodes, newPromo] }));
-    setPromoModal(false); setNewPromoCode(''); setNewPromoValue('');
+    setPromoModal(false); 
+    setNewPromoCode(''); setNewPromoValue('');
+    setNewPromoActiveDate(''); setNewPromoExpiryDate('');
+    setNewPromoMinSpend(''); setNewPromoCategories([]); setNewPromoCannotCombine(false);
   };
   const deletePromo = (id: string) => setDiscountSettings(prev => ({ ...prev, promoCodes: prev.promoCodes.filter(p => p.id !== id) }));
   const togglePromo = (id: string) => setDiscountSettings(prev => ({ ...prev, promoCodes: prev.promoCodes.map(p => p.id === id ? { ...p, active: !p.active } : p) }));
@@ -329,6 +342,13 @@ export function SettingsView({
                           <p className={`text-xs mt-0.5 ${t2}`}>
                             {promo.type === 'percent' ? `${promo.value}% Off Total` : `Rp ${promo.value.toLocaleString('id-ID')} Off Total`}
                           </p>
+                          {(promo.activeDate || promo.expiryDate || promo.minSpend) && (
+                            <div className={`mt-2 flex flex-wrap gap-2 text-[10px] ${t2}`}>
+                              {promo.activeDate && <span className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">From: {promo.activeDate}</span>}
+                              {promo.expiryDate && <span className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">Until: {promo.expiryDate}</span>}
+                              {promo.minSpend && <span className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">Min Spend: {promo.minSpend.toLocaleString('id-ID')}</span>}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-3">
                           <Toggle checked={promo.active} onChange={() => togglePromo(promo.id)} />
@@ -493,6 +513,34 @@ export function SettingsView({
             </div>
           </div>
           <Field label="Value" value={newPromoValue} onChange={setNewPromoValue} placeholder={newPromoType === 'percent' ? "e.g. 10" : "e.g. 15000"} type="number" darkMode={dm} />
+          
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <Field label="Active Date (opt)" value={newPromoActiveDate} onChange={setNewPromoActiveDate} type="date" darkMode={dm} />
+            <Field label="Expiry Date (opt)" value={newPromoExpiryDate} onChange={setNewPromoExpiryDate} type="date" darkMode={dm} />
+          </div>
+
+          <Field label="Min Spend (opt)" value={newPromoMinSpend} onChange={setNewPromoMinSpend} type="number" placeholder="e.g. 100000" darkMode={dm} />
+          
+          <div className="mb-4">
+            <label className={`text-sm block mb-1 ${t2}`}>Applicable Categories (Empty = All)</label>
+            <div className={`flex flex-wrap gap-2 border rounded-xl p-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+              {categories.filter(c => c.id !== 'cat-all').map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setNewPromoCategories(prev => prev.includes(cat.id) ? prev.filter(id => id !== cat.id) : [...prev, cat.id])}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${newPromoCategories.includes(cat.id) ? 'bg-blue-600 text-white' : dm ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'}`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-6">
+            <Toggle checked={newPromoCannotCombine} onChange={() => setNewPromoCannotCombine(!newPromoCannotCombine)} />
+            <span className={`text-sm ${t2}`}>Cannot combine with item discounts</span>
+          </div>
+
           <button onClick={addPromo} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700 mt-2">Add Promo</button>
         </Modal>
       )}
