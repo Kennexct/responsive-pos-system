@@ -294,7 +294,8 @@ export function ReportsView({ orders, categories, darkMode }: Props) {
               </table>
             </div>
           </div>
-          </div>
+        )}
+        </div>
         )}
 
         {reportTab === 'inventory' && (
