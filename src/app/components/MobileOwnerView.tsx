@@ -49,7 +49,7 @@ export function MobileOwnerView({ orders, darkMode }: Props) {
             </div>
             <div>
               <p className={`text-xs font-bold ${dm ? 'text-red-400' : 'text-red-800'}`}>High Liability</p>
-              <p className={`text-[10px] ${dm ? 'text-red-500' : 'text-red-700'}`}>Unredeemed points > Rp 1.5M.</p>
+              <p className={`text-[10px] ${dm ? 'text-red-500' : 'text-red-700'}`}>Unredeemed points &gt; Rp 1.5M.</p>
             </div>
           </div>
         </div>
