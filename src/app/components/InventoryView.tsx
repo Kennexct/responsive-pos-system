@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Search, Plus, AlertTriangle, TrendingDown, TrendingUp, X, Trash2 } from 'lucide-react';
 import { CATEGORIES, formatIDR } from './mockData';
 import type { Product } from './mockData';
+import { ConfirmationModal } from './ConfirmationModal';
 
 const STOCK_LOG_INITIAL = [
   { id: '1', product: 'Americano',    type: 'in',  qty: 50, note: 'Restocked beans',   date: '2026-07-01 08:00' },
@@ -49,6 +50,8 @@ export function InventoryView({ products, onProductsChange }: Props) {
   const [newStock, setNewStock]   = useState('');
   const [newThreshold, setNewThreshold] = useState('10');
   const [newEmoji, setNewEmoji]   = useState('☕');
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const lowStockItems = products.filter(p => p.stock <= p.lowStockThreshold);
 
@@ -119,7 +122,14 @@ export function InventoryView({ products, onProductsChange }: Props) {
   };
 
   const deleteProduct = (id: string) => {
-    onProductsChange(products.filter(p => p.id !== id));
+    setConfirmDeleteId(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (confirmDeleteId) {
+      onProductsChange(products.filter(p => p.id !== confirmDeleteId));
+      setConfirmDeleteId(null);
+    }
   };
 
   return (
@@ -447,6 +457,16 @@ export function InventoryView({ products, onProductsChange }: Props) {
           </button>
         </Modal>
       )}
+
+      <ConfirmationModal
+        isOpen={confirmDeleteId !== null}
+        title="Delete Product"
+        message="Are you sure you want to delete this product? This action cannot be undone."
+        confirmText="Delete"
+        isDestructive={true}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

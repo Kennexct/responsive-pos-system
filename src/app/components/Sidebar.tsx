@@ -1,9 +1,9 @@
 import { useState, type ElementType } from 'react';
 import {
   ShoppingCart, LayoutDashboard, Package, BarChart2, Settings,
-  Store, ChevronLeft, ChevronRight, X, Coffee, ShoppingBag,
+  Store, ChevronLeft, ChevronRight, X, Coffee, ShoppingBag, LogOut,
 } from 'lucide-react';
-import type { BusinessType, ViewType } from './mockData';
+import type { BusinessType, ViewType, User } from './mockData';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -11,6 +11,9 @@ interface SidebarProps {
   businessType: BusinessType;
   isOpen: boolean;
   onClose: () => void;
+  currentUser: User;
+  onLogout: () => void;
+  allowedViews: ViewType[];
 }
 
 const NAV_ITEMS: { id: ViewType; label: string; icon: ElementType }[] = [
@@ -20,7 +23,7 @@ const NAV_ITEMS: { id: ViewType; label: string; icon: ElementType }[] = [
   { id: 'reports',   label: 'Reports',      icon: BarChart2       },
 ];
 
-export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClose }: SidebarProps) {
+export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClose, currentUser, onLogout, allowedViews }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   const handleNav = (id: ViewType) => {
@@ -80,7 +83,7 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
 
         {/* Nav items */}
         <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
-          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+          {NAV_ITEMS.filter(item => allowedViews.includes(item.id)).map(({ id, label, icon: Icon }) => {
             const active = currentView === id;
             return (
               <button
@@ -104,31 +107,35 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
 
         {/* Bottom section */}
         <div className="border-t border-slate-700 p-2 space-y-1">
-          <button
-            onClick={() => handleNav('settings')}
-            title={collapsed ? 'Settings' : undefined}
-            className={[
-              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left',
-              currentView === 'settings'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white',
-              collapsed ? 'justify-center' : '',
-            ].join(' ')}
-          >
-            <Settings size={20} className="shrink-0" />
-            {!collapsed && <span className="text-sm">Settings</span>}
-          </button>
+          {allowedViews.includes('settings') && (
+            <button
+              onClick={() => handleNav('settings')}
+              title={collapsed ? 'Settings' : undefined}
+              className={[
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left',
+                currentView === 'settings'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white',
+                collapsed ? 'justify-center' : '',
+              ].join(' ')}
+            >
+              <Settings size={20} className="shrink-0" />
+              {!collapsed && <span className="text-sm">Settings</span>}
+            </button>
+          )}
 
           {!collapsed && (
-            <div className="flex items-center gap-3 px-3 py-2">
-              <div className="w-7 h-7 rounded-full bg-slate-600 flex items-center justify-center text-xs shrink-0">
-                B
+            <div className="flex items-center gap-3 px-3 py-2 mt-2 border-t border-slate-700 pt-3">
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs shrink-0 font-bold">
+                {currentUser.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm text-white truncate">Budi Santoso</div>
-                <div className="text-xs text-slate-400">Cashier</div>
+                <div className="text-sm text-white truncate">{currentUser.name}</div>
+                <div className="text-xs text-slate-400 capitalize">{currentUser.role}</div>
               </div>
-              <Store size={14} className="text-slate-400 shrink-0" />
+              <button onClick={onLogout} className="text-slate-400 hover:text-red-400">
+                <LogOut size={16} />
+              </button>
             </div>
           )}
         </div>

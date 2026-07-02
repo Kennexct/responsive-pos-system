@@ -3,6 +3,28 @@ export type ViewType = 'pos' | 'dashboard' | 'inventory' | 'reports' | 'settings
 export type OrderType = 'dine-in' | 'takeaway' | 'delivery';
 export type PaymentMethod = 'cash' | 'qris' | 'card' | 'bank-transfer';
 export type OrderStatus = 'completed' | 'held' | 'cancelled';
+export type Role = 'owner' | 'manager' | 'cashier';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+}
+
+export type RolePermissions = Record<Role, ViewType[]>;
+
+export const DEFAULT_PERMISSIONS: RolePermissions = {
+  owner: ['pos', 'dashboard', 'inventory', 'reports', 'settings'],
+  manager: ['pos', 'dashboard', 'inventory', 'reports'],
+  cashier: ['pos'],
+};
+
+export const INITIAL_USERS: User[] = [
+  { id: '1', name: 'Budi Santoso', email: 'budi@warkop.id',  role: 'owner'   },
+  { id: '2', name: 'Ani Wijaya',   email: 'ani@warkop.id',   role: 'cashier' },
+  { id: '3', name: 'Citra Dewi',   email: 'citra@warkop.id', role: 'cashier' },
+];
 
 export interface Product {
   id: string;

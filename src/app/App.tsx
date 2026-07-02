@@ -1,5 +1,5 @@
 import { useState, type ElementType } from 'react';
-import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu, Monitor } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { POSView } from './components/POSView';
 import { Dashboard } from './components/Dashboard';
@@ -7,11 +7,13 @@ import { InventoryView } from './components/InventoryView';
 import { ReportsView } from './components/ReportsView';
 import { SettingsView } from './components/SettingsView';
 import { MobileOwnerView } from './components/MobileOwnerView';
-import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod } from './components/mockData';
-import { PRODUCTS, RECENT_ORDERS } from './components/mockData';
+import { AuthView } from './components/AuthView';
+import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions } from './components/mockData';
+import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS } from './components/mockData';
 
 const MOBILE_NAV: { id: ViewType; label: string; icon: ElementType }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'pos',       label: 'POS',        icon: Monitor         },
+  { id: 'dashboard', label: 'Dashboard',  icon: LayoutDashboard },
   { id: 'inventory', label: 'Inventory',  icon: Package         },
   { id: 'reports',   label: 'Reports',    icon: BarChart2       },
   { id: 'settings',  label: 'Settings',   icon: Settings        },
@@ -27,6 +29,11 @@ export default function App() {
   const [view, setView]               = useState<ViewType>('pos');
   const [businessType, setBusinessType] = useState<BusinessType>('fnb');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers]             = useState<User[]>([...INITIAL_USERS]);
+  const [permissions, setPermissions] = useState<RolePermissions>(DEFAULT_PERMISSIONS);
 
   // Shared mutable state
   const [products, setProducts]   = useState<Product[]>([...PRODUCTS]);
@@ -70,7 +77,17 @@ export default function App() {
     );
   };
 
-  const mobileView = view === 'pos' ? 'dashboard' : view;
+  if (!currentUser) {
+    return (
+      <AuthView
+        users={users}
+        onLogin={setCurrentUser}
+        onSignup={(u) => { setUsers(prev => [...prev, u]); setCurrentUser(u); }}
+      />
+    );
+  }
+
+  const allowedViews = permissions[currentUser.role];
 
   return (
     <div className="h-screen flex overflow-hidden bg-slate-100">
@@ -80,6 +97,9 @@ export default function App() {
         businessType={businessType}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        currentUser={currentUser}
+        onLogout={() => { setCurrentUser(null); setView('pos'); }}
+        allowedViews={allowedViews}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -102,11 +122,25 @@ export default function App() {
         <main className="flex-1 overflow-hidden flex">
           {/* Mobile */}
           <div className="flex md:hidden flex-1 overflow-hidden flex-col">
-            {mobileView === 'dashboard'  && <MobileOwnerView orders={orders} />}
-            {mobileView === 'inventory'  && <InventoryView products={products} onProductsChange={setProducts} />}
-            {mobileView === 'reports'    && <ReportsView orders={orders} />}
-            {mobileView === 'settings'   && (
-              <SettingsView businessType={businessType} onBusinessTypeChange={setBusinessType} />
+            {view === 'pos'       && (
+              <POSView
+                businessType={businessType}
+                products={products}
+                onOrderComplete={(c, o, p, a) => handleOrderComplete(c, o, p, a)}
+              />
+            )}
+            {view === 'dashboard'  && <MobileOwnerView orders={orders} />}
+            {view === 'inventory'  && <InventoryView products={products} onProductsChange={setProducts} />}
+            {view === 'reports'    && <ReportsView orders={orders} />}
+            {view === 'settings'   && (
+              <SettingsView 
+                businessType={businessType} 
+                onBusinessTypeChange={setBusinessType}
+                users={users}
+                setUsers={setUsers}
+                permissions={permissions}
+                setPermissions={setPermissions}
+              />
             )}
           </div>
 
@@ -123,21 +157,28 @@ export default function App() {
             {view === 'inventory' && <InventoryView products={products} onProductsChange={setProducts} />}
             {view === 'reports'   && <ReportsView orders={orders} />}
             {view === 'settings'  && (
-              <SettingsView businessType={businessType} onBusinessTypeChange={setBusinessType} />
+              <SettingsView 
+                businessType={businessType} 
+                onBusinessTypeChange={setBusinessType} 
+                users={users}
+                setUsers={setUsers}
+                permissions={permissions}
+                setPermissions={setPermissions}
+              />
             )}
           </div>
         </main>
 
         {/* Mobile bottom nav */}
         <nav className="md:hidden flex border-t border-slate-200 bg-white shrink-0">
-          {MOBILE_NAV.map(({ id, label, icon: Icon }) => {
-            const active = mobileView === id;
+          {MOBILE_NAV.filter(item => allowedViews.includes(item.id)).map(({ id, label, icon: Icon }) => {
+            const active = view === id;
             return (
               <button
                 key={id}
                 onClick={() => setView(id)}
                 className={[
-                  'flex-1 flex flex-col items-center justify-center py-2 gap-1 transition-colors',
+                  'flex-1 flex flex-col items-center justify-center py-2 gap-1 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none',
                   active ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600',
                 ].join(' ')}
               >

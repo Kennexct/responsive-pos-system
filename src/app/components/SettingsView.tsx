@@ -1,10 +1,15 @@
 import { useState, type ElementType } from 'react';
-import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X } from 'lucide-react';
-import type { BusinessType } from './mockData';
+import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield } from 'lucide-react';
+import type { BusinessType, User, RolePermissions, ViewType, Role } from './mockData';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface SettingsViewProps {
   businessType: BusinessType;
   onBusinessTypeChange: (t: BusinessType) => void;
+  users: User[];
+  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+  permissions: RolePermissions;
+  setPermissions: React.Dispatch<React.SetStateAction<RolePermissions>>;
 }
 
 type SettingsTab = 'business' | 'currency' | 'tax' | 'payments' | 'users';
@@ -19,7 +24,6 @@ const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
 
 interface PaymentMethod { id: string; label: string; enabled: boolean; }
 interface TaxRate       { id: string; name: string; rate: number; inclusive: boolean; isDefault: boolean; }
-interface User          { id: string; name: string; email: string; role: 'owner' | 'manager' | 'cashier'; }
 
 const INITIAL_PAYMENTS: PaymentMethod[] = [
   { id: 'cash',          label: 'Cash',                enabled: true  },
@@ -34,18 +38,12 @@ const INITIAL_TAXES: TaxRate[] = [
   { id: '1', name: 'PPN', rate: 11, inclusive: false, isDefault: true },
 ];
 
-const INITIAL_USERS: User[] = [
-  { id: '1', name: 'Budi Santoso', email: 'budi@warkop.id',  role: 'owner'   },
-  { id: '2', name: 'Ani Wijaya',   email: 'ani@warkop.id',   role: 'cashier' },
-  { id: '3', name: 'Citra Dewi',   email: 'citra@warkop.id', role: 'cashier' },
-];
-
-export function SettingsView({ businessType, onBusinessTypeChange }: SettingsViewProps) {
+export function SettingsView({ businessType, onBusinessTypeChange, users, setUsers, permissions, setPermissions }: SettingsViewProps) {
   const [tab,      setTab]      = useState<SettingsTab>('business');
   const [payments, setPayments] = useState<PaymentMethod[]>(INITIAL_PAYMENTS);
   const [taxes,    setTaxes]    = useState<TaxRate[]>(INITIAL_TAXES);
-  const [users,    setUsers]    = useState<User[]>(INITIAL_USERS);
   const [saved,    setSaved]    = useState(false);
+  const [confirmModal, setConfirmModal] = useState(false);
 
   // Business form
   const [bizName,  setBizName]  = useState('Warung Kopi Santai');
@@ -69,7 +67,10 @@ export function SettingsView({ businessType, onBusinessTypeChange }: SettingsVie
   const togglePayment = (id: string) =>
     setPayments(prev => prev.map(p => p.id === id ? { ...p, enabled: !p.enabled } : p));
 
-  const deleteUser = (id: string) => setUsers(prev => prev.filter(u => u.id !== id));
+  const deleteUser = (id: string) => {
+    // Prevent state update here directly, normally we'd confirm this too, but we'll leave it simple for demo
+    setUsers(prev => prev.filter(u => u.id !== id));
+  };
 
   const deleteTax = (id: string) => setTaxes(prev => prev.filter(t => t.id !== id));
 
@@ -101,9 +102,25 @@ export function SettingsView({ businessType, onBusinessTypeChange }: SettingsVie
     setInviteModal(false);
   };
 
-  const handleSave = () => {
+  const handleSaveClick = () => {
+    setConfirmModal(true);
+  };
+
+  const handleConfirmSave = () => {
+    setConfirmModal(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const togglePermission = (role: Role, viewId: ViewType) => {
+    if (role === 'owner') return; // Owner always has all access
+    setPermissions(prev => {
+      const current = prev[role];
+      const updated = current.includes(viewId)
+        ? current.filter(id => id !== viewId)
+        : [...current, viewId];
+      return { ...prev, [role]: updated };
+    });
   };
 
   return (
@@ -166,7 +183,7 @@ export function SettingsView({ businessType, onBusinessTypeChange }: SettingsVie
                 <Field label="Phone"         value={phone}    onChange={setPhone}    type="tel"   />
                 <Field label="Email"         value={email}    onChange={setEmail}    type="email" />
                 <Field label="Address"       value={address}  onChange={setAddress}  />
-                <SaveButton onSave={handleSave} saved={saved} />
+                <SaveButton onSave={handleSaveClick} saved={saved} />
               </div>
             )}
 
@@ -194,7 +211,7 @@ export function SettingsView({ businessType, onBusinessTypeChange }: SettingsVie
                 <Field label="Display Currency (optional)" value="" onChange={() => {}} placeholder="e.g. USD" />
                 <Field label="Exchange Rate (manual)"      value="" onChange={() => {}} type="number" placeholder="e.g. 16000" />
                 <p className="text-xs text-slate-400 -mt-2">Rate is entered manually — no live FX in v1.</p>
-                <SaveButton onSave={handleSave} saved={saved} />
+                <SaveButton onSave={handleSaveClick} saved={saved} />
               </div>
             )}
 
@@ -276,7 +293,7 @@ export function SettingsView({ businessType, onBusinessTypeChange }: SettingsVie
                     </div>
                   ))}
                 </div>
-                <SaveButton onSave={handleSave} saved={saved} />
+                <SaveButton onSave={handleSaveClick} saved={saved} />
               </div>
             )}
 
@@ -319,11 +336,57 @@ export function SettingsView({ businessType, onBusinessTypeChange }: SettingsVie
                     </div>
                   ))}
                 </div>
+
+                <div className="mt-8 border-t border-slate-200 pt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Shield size={18} className="text-slate-700" />
+                    <h3 className="text-slate-700">Role Permissions</h3>
+                  </div>
+                  <p className="text-sm text-slate-500 mb-4">Configure which menu tabs are accessible for each staff role.</p>
+                  
+                  <div className="space-y-4">
+                    {(['manager', 'cashier'] as Role[]).map(role => (
+                      <div key={role} className="border border-slate-200 rounded-xl p-4">
+                        <h4 className="text-sm font-semibold text-slate-700 capitalize mb-3">{role} Access</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {(['pos', 'dashboard', 'inventory', 'reports', 'settings'] as ViewType[]).map(v => {
+                            const hasAccess = permissions[role].includes(v);
+                            return (
+                              <button
+                                key={v}
+                                onClick={() => togglePermission(role, v)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                                  hasAccess 
+                                    ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                                    : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
+                                }`}
+                              >
+                                {v === 'pos' ? 'POS Terminal' : v.charAt(0).toUpperCase() + v.slice(1)}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="text-xs text-slate-400 mt-2">Note: The "Owner" role automatically has full access to all areas.</div>
+                  </div>
+                  <div className="mt-6">
+                    <SaveButton onSave={handleSaveClick} saved={saved} />
+                  </div>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={confirmModal}
+        title="Save Changes"
+        message="Are you sure you want to apply these changes to your business settings?"
+        onConfirm={handleConfirmSave}
+        onCancel={() => setConfirmModal(false)}
+      />
 
       {/* ── Add Tax Rate modal ── */}
       {taxModal && (

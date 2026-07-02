@@ -113,29 +113,102 @@ export function CheckoutModal({ cart, orderType, onClose, onConfirm }: CheckoutM
   if (step === 'success') {
     return (
       <ModalShell onClose={onClose}>
-        <div className="flex flex-col items-center py-6 gap-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
-            <CheckCircle size={36} className="text-emerald-600" />
+        <div className="flex flex-col items-center py-2">
+          {/* Thermal Receipt Preview */}
+          <div className="w-full bg-white border border-slate-200 shadow-md p-6 font-mono text-xs text-slate-800 relative overflow-hidden mb-6" style={{ maxWidth: '300px' }}>
+            {/* Jagged top edge effect */}
+            <div className="absolute top-0 left-0 right-0 h-2 flex gap-1">
+              {Array.from({ length: 30 }).map((_, i) => (
+                <div key={i} className="w-2 h-2 bg-slate-50 rotate-45 -mt-1" />
+              ))}
+            </div>
+
+            <div className="text-center mt-2 mb-4">
+              <h2 className="text-sm font-bold">WARUNG KOPI SANTAI</h2>
+              <p className="text-[10px] text-slate-500">Jl. Sudirman No. 123, Jakarta</p>
+              <p className="text-[10px] text-slate-500">Tel: +62 812 3456 7890</p>
+            </div>
+            
+            <div className="border-t border-dashed border-slate-300 my-3" />
+            
+            <div className="flex justify-between mb-1">
+              <span>{orderNumber}</span>
+              <span>{new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</span>
+            </div>
+            <div className="flex justify-between mb-1">
+              <span>Order type:</span>
+              <span className="capitalize">{orderType.replace('-', ' ')}</span>
+            </div>
+            <div className="flex justify-between mb-3">
+              <span>Cashier:</span>
+              <span>Budi Santoso</span>
+            </div>
+            
+            <div className="border-t border-dashed border-slate-300 my-3" />
+            
+            <div className="space-y-3">
+              {cart.map(item => {
+                const linePrice = item.product.price * item.qty;
+                const after = linePrice - linePrice * (item.discount / 100);
+                return (
+                  <div key={item.product.id}>
+                    <div className="font-bold">{item.product.name}</div>
+                    <div className="flex justify-between pl-2 text-slate-600">
+                      <span>{item.qty} x {formatIDR(item.product.price)}{item.discount > 0 ? ` (-${item.discount}%)` : ''}</span>
+                      <span>{formatIDR(after)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="border-t border-dashed border-slate-300 my-3" />
+            
+            <div className="flex justify-between mb-1">
+              <span>Subtotal</span>
+              <span>{formatIDR(subtotal)}</span>
+            </div>
+            <div className="flex justify-between mb-3">
+              <span>PPN 11%</span>
+              <span>{formatIDR(tax)}</span>
+            </div>
+            
+            <div className="border-t border-dashed border-slate-300 my-3" />
+            
+            <div className="flex justify-between font-bold text-sm mb-3">
+              <span>TOTAL</span>
+              <span>{formatIDR(total)}</span>
+            </div>
+            
+            <div className="flex justify-between mb-1">
+              <span>Payment: {PAYMENT_OPTIONS.find(p => p.id === method)?.label}</span>
+              {method === 'cash' && cashPaid >= total && (
+                <span>Change: {formatIDR(change)}</span>
+              )}
+            </div>
+            
+            <div className="border-t border-dashed border-slate-300 my-3" />
+            
+            <div className="text-center mt-4 mb-2 text-[10px]">
+              <p className="font-bold">** Thank you for your visit! **</p>
+              <p className="text-slate-400 mt-2">Powered by WebPOS</p>
+            </div>
+            
+            {/* Jagged bottom edge effect */}
+            <div className="absolute bottom-0 left-0 right-0 h-2 flex gap-1">
+              {Array.from({ length: 30 }).map((_, i) => (
+                <div key={i} className="w-2 h-2 bg-slate-50 rotate-45 -mb-1" />
+              ))}
+            </div>
           </div>
-          <div className="text-center">
-            <h2 className="text-slate-800">Payment Successful</h2>
-            <p className="text-slate-500 text-sm mt-1">{orderNumber}</p>
-          </div>
-          <div className="w-full bg-slate-50 rounded-xl p-4 space-y-2">
-            <Row label="Order type"      value={orderType}                                         capitalize />
-            <Row label="Payment method"  value={PAYMENT_OPTIONS.find(p => p.id === method)?.label ?? ''} />
-            <Row label="Total"           value={formatIDR(total)}                                  bold />
-            {method === 'cash' && change >= 0 && (
-              <Row label="Change" value={formatIDR(change)} green />
-            )}
-          </div>
-          <div className="flex gap-3 w-full mt-2">
+
+          <div className="flex gap-3 w-full">
             <button
               onClick={printReceipt}
               className="flex-1 flex items-center justify-center gap-2 border border-slate-200 rounded-xl py-3 text-slate-600 hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none"
             >
               <Printer size={16} />
-              Print Receipt
+              Print
             </button>
             <button
               onClick={onClose}
