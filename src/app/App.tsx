@@ -262,7 +262,9 @@ export default function App() {
                 currentUser={currentUser}
                 bizName={bizName}
                 darkMode={darkMode}
-                onOrderComplete={(c, o, p, a, pc) => handleOrderComplete(c, o, p, a, pc)}
+                customers={customers}
+                loyaltySettings={loyaltySettings}
+                onOrderComplete={(c, o, p, a, pc, cid, pe, pr, pda) => handleOrderComplete(c, o, p, a, pc, cid, pe, pr, pda)}
               />
             )}
             {view === 'dashboard'  && <MobileOwnerView orders={orders} darkMode={darkMode} />}
@@ -312,7 +314,9 @@ export default function App() {
                 currentUser={currentUser}
                 bizName={bizName}
                 darkMode={darkMode}
-                onOrderComplete={(c, o, p, a, pc) => handleOrderComplete(c, o, p, a, pc)}
+                customers={customers}
+                loyaltySettings={loyaltySettings}
+                onOrderComplete={(c, o, p, a, pc, cid, pe, pr, pda) => handleOrderComplete(c, o, p, a, pc, cid, pe, pr, pda)}
               />
             )}
             {view === 'dashboard' && <Dashboard orders={orders} darkMode={darkMode} />}
