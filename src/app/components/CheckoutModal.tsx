@@ -13,7 +13,7 @@ interface CheckoutModalProps {
   discountSettings: DiscountSettings;
   subtotalBeforePromo: number;
   taxAmount: number;
-  onClose: () => void;
+  onClose: (completed?: boolean) => void;
   onConfirm: (method: PaymentMethod, amountPaid: number, promoCode?: string) => void;
 }
 
@@ -160,7 +160,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
 
   if (step === 'success') {
     return (
-      <ModalShell onClose={onClose} darkMode={dm}>
+      <ModalShell onClose={() => onClose(true)} darkMode={dm}>
         <div className="flex flex-col items-center">
           <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
             <CheckCircle size={32} className="text-emerald-600" />
@@ -176,7 +176,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
               <Printer size={16} /> Print Receipt
             </button>
             <button
-              onClick={onClose}
+              onClick={() => onClose(true)}
               className="flex-1 bg-blue-600 text-white rounded-xl py-3 hover:bg-blue-700 transition-colors text-sm font-semibold"
             >
               New Order
