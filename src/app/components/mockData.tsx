@@ -34,6 +34,7 @@ export interface Product {
   category: string;
   stock: number;
   emoji: string;
+  image?: string;        // base64 WebP — set via image upload
   lowStockThreshold: number;
 }
 

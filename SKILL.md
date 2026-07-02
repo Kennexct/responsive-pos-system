@@ -344,5 +344,506 @@ When building any UI component:
 1. Research existing code first (ECC Step 0)
 2. Plan the change (ECC Step 1)
 3. Implement with KISS/DRY (ECC Step 2)
-4. Self-review (ECC Step 5)
-5. Verify build (ECC Step 6)
+  4. Self-review (ECC Step 5)
+  5. Verify build (ECC Step 6)
+
+---
+
+## SKILL 10: Frontend Design
+
+This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
+
+The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints.
+
+### Design Thinking
+
+Before coding, understand the context and commit to a BOLD aesthetic direction:
+- **Purpose**: What problem does this interface solve? Who uses it?
+- **Tone**: Pick an extreme: brutally minimal, maximalist chaos, retro-futuristic, organic/natural, luxury/refined, playful/toy-like, editorial/magazine, brutalist/raw, art deco/geometric, soft/pastel, industrial/utilitarian, etc. There are so many flavors to choose from. Use these for inspiration but design one that is true to the aesthetic direction.
+- **Constraints**: Technical requirements (framework, performance, accessibility).
+- **Differentiation**: What makes this UNFORGETTABLE? What's the one thing someone will remember?
+
+**CRITICAL**: Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work - the key is intentionality, not intensity.
+
+Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
+- Production-grade and functional
+- Visually striking and memorable
+- Cohesive with a clear aesthetic point-of-view
+- Meticulously refined in every detail
+
+### Frontend Aesthetics Guidelines
+
+Focus on:
+- **Typography**: Choose fonts that are beautiful, unique, and interesting. Avoid generic fonts like Arial and Inter; 
+
+---
+
+## SKILL 11: Senior Architect (Expanded)
+
+Complete toolkit for senior architect with modern tools and best practices.
+
+### Quick Start
+
+#### Main Capabilities
+
+This skill provides three core capabilities through automated scripts:
+
+```bash
+# Script 1: Architecture Diagram Generator
+python scripts/architecture_diagram_generator.py [options]
+
+# Script 2: Project Architect
+python scripts/project_architect.py [options]
+
+# Script 3: Dependency Analyzer
+python scripts/dependency_analyzer.py [options]
+```
+
+### Core Capabilities
+
+#### 1. Architecture Diagram Generator
+
+Automated tool for architecture diagram generator tasks.
+
+**Features:**
+- Automated scaffolding
+- Best practices built-in
+- Configurable templates
+- Quality checks
+
+**Usage:**
+```bash
+python scripts/architecture_diagram_generator.py <project-path> [options]
+```
+
+#### 2. Project Architect
+
+Comprehensive analysis and optimization tool.
+
+**Features:**
+- Deep analysis
+- Performance metrics
+- Recommendations
+- Automated fixes
+
+**Usage:**
+```bash
+python scripts/project_architect.py <target-path> [--verbose]
+```
+
+#### 3. Dependency Analyzer
+
+Advanced tooling for specialized tasks.
+
+**Features:**
+- Expert-level automation
+- Custom configurations
+- Integration ready
+- Production-grade output
+
+**Usage:**
+```bash
+python scripts/dependency_analyzer.py [arguments] [options]
+```
+
+---
+
+## SKILL 12: Senior Backend (Expanded)
+
+Complete toolkit for senior backend with modern tools and best practices.
+
+### Quick Start
+
+#### Main Capabilities
+
+This skill provides three core capabilities through automated scripts:
+
+```bash
+# Script 1: Api Scaffolder
+python scripts/api_scaffolder.py [options]
+
+# Script 2: Database Migration Tool
+python scripts/database_migration_tool.py [options]
+
+# Script 3: Api Load Tester
+python scripts/api_load_tester.py [options]
+```
+
+### Core Capabilities
+
+#### 1. Api Scaffolder
+
+Automated tool for api scaffolder tasks.
+
+**Features:**
+- Automated scaffolding
+- Best practices built-in
+- Configurable templates
+- Quality checks
+
+**Usage:**
+```bash
+python scripts/api_scaffolder.py <project-path> [options]
+```
+
+#### 2. Database Migration Tool
+
+Comprehensive analysis and optimization tool.
+
+**Features:**
+- Deep analysis
+- Performance metrics
+- Recommendations
+- Automated fixes
+
+**Usage:**
+```bash
+python scripts/database_migration_tool.py <target-path> [--verbose]
+```
+
+#### 3. Api Load Tester
+
+Advanced tooling for specialized tasks.
+
+**Features:**
+- Expert-level automation
+- Custom configurations
+- Integration ready
+- Production-grade output
+
+**Usage:**
+```bash
+python scripts/api_load_tester.py [arguments] [options]
+```
+
+---
+
+## SKILL 13: Senior Frontend (Expanded)
+
+Complete toolkit for senior frontend with modern tools and best practices.
+
+### Quick Start
+
+#### Main Capabilities
+
+This skill provides three core capabilities through automated scripts:
+
+```bash
+# Script 1: Component Generator
+python scripts/component_generator.py [options]
+
+# Script 2: Bundle Analyzer
+python scripts/bundle_analyzer.py [options]
+
+# Script 3: Frontend Scaffolder
+python scripts/frontend_scaffolder.py [options]
+```
+
+### Core Capabilities
+
+#### 1. Component Generator
+
+Automated tool for component generator tasks.
+
+**Features:**
+- Automated scaffolding
+- Best practices built-in
+- Configurable templates
+- Quality checks
+
+**Usage:**
+```bash
+python scripts/component_generator.py <project-path> [options]
+```
+
+#### 2. Bundle Analyzer
+
+Comprehensive analysis and optimization tool.
+
+**Features:**
+- Deep analysis
+- Performance metrics
+- Recommendations
+- Automated fixes
+
+**Usage:**
+```bash
+python scripts/bundle_analyzer.py <target-path> [--verbose]
+```
+
+#### 3. Frontend Scaffolder
+
+Advanced tooling for specialized tasks.
+
+**Features:**
+- Expert-level automation
+- Custom configurations
+- Integration ready
+- Production-grade output
+
+**Usage:**
+```bash
+python scripts/frontend_scaffolder.py [arguments] [options]
+```
+
+---
+
+## SKILL 14: SEO Optimizer
+
+Comprehensive guidance for search engine optimization across content, technical implementation, and strategic planning to improve organic search visibility and rankings.
+
+### When to Use This Skill
+
+Use this skill when:
+- Optimizing website content for search engines
+- Conducting keyword research and analysis
+- Implementing technical SEO improvements
+- Creating SEO-friendly meta tags and descriptions
+- Auditing websites for SEO issues
+- Improving Core Web Vitals and page speed
+- Implementing schema markup (structured data)
+- Planning content strategy for organic traffic
+
+### SEO Fundamentals
+
+#### 1. Keyword Research & Strategy
+
+**Primary Keyword Selection:**
+- Focus on search intent (informational, navigational, transactional, commercial)
+- Balance search volume with competition
+- Consider keyword difficulty and ranking potential
+- Target long-tail keywords for quick wins
+
+**Keyword Research Process:**
+```text
+1. Identify seed keywords from business objectives
+2. Use tools to expand keyword list (Google Keyword Planner, Ahrefs, SEMrush)
+3. Analyze search volume and difficulty
+4. Group keywords by topic clusters
+5. Map keywords to content types and pages
+6. Prioritize based on potential ROI
+```
+
+**Content Optimization Formula:**
+- Primary keyword: 1-2% density (natural placement)
+- Include in: Title tag, H1, first paragraph, URL, meta description
+- Use semantic variations and related terms
+- Maintain natural readability (don't keyword stuff)
+
+#### 2. On-Page SEO
+
+**Title Tag Optimization:**
+```html
+<!-- Good: Descriptive, includes keyword, under 60 characters -->
+<title>Ultimate Guide to React Hooks - Learn useEffect & useState</title>
+
+<!-- Bad: Too long, keyword stuffing, generic -->
+<title>React Hooks Guide React Hooks Tutorial React Hooks Examples Learn React</title>
+```
+
+**Best Practices:**
+- Keep under 60 characters (displayed in SERPs)
+- Place primary keyword near the beginning
+- Include brand name if space permits
+- Make compelling and click-worthy
+- Unique for every page
+
+**Meta Description:**
+```html
+<!-- Good: Compelling, includes keywords, call-to-action, 150-160 chars -->
+<meta name="description" content="Master React Hooks with our comprehensive guide. Learn useState, useEffect, and custom hooks with practical examples. Start building better React apps today.">
+
+<!-- Bad: Too short, no value proposition -->
+<meta name="description" content="React Hooks guide and tutorial">
+```
+
+**Header Structure:**
+```html
+<!-- Proper hierarchy -->
+<h1>Main Page Title (Primary Keyword)</h1>
+  <h2>Section Heading (Related Keywords)</h2>
+    <h3>Subsection</h3>
+    <h3>Subsection</h3>
+  <h2>Another Section</h2>
+    <h3>Subsection</h3>
+```
+
+**URL Structure:**
+```text
+✅ Good URLs:
+- /blog/react-hooks-guide
+- /products/running-shoes
+- /learn/javascript-async-await
+
+❌ Bad URLs:
+- /blog?p=12345
+- /products/cat-1/subcat-2/item-999
+- /page.php?id=abc&ref=xyz
+```
+
+**Image Optimization:**
+```html
+<!-- Optimized image -->
+<img
+  src="/images/react-hooks-diagram-800w.webp"
+  alt="React Hooks lifecycle diagram showing useState and useEffect"
+  width="800"
+  height="600"
+  loading="lazy"
+/>
+```
+
+**Best Practices:**
+- Use descriptive, keyword-rich alt text
+- Compress images (WebP format preferred)
+- Specify dimensions to prevent layout shift
+- Use lazy loading for below-fold images
+- Include captions when relevant
+
+#### 3. Content Quality
+
+**E-E-A-T Principles (Experience, Expertise, Authoritativeness, Trust):**
+- Demonstrate author expertise with credentials
+- Cite authoritative sources
+- Keep content accurate and up-to-date
+- Show real experience and original insights
+- Include author bios and bylines
+
+**Content Structure for SEO:**
+```markdown
+# Main Title (H1) - Primary Keyword
+
+Brief introduction with primary keyword in first 100 words.
+
+## What is [Topic]? (H2) - Answer core question
+
+Comprehensive explanation with examples.
+
+## Why [Topic] Matters (H2) - Value proposition
+
+Benefits and use cases.
+
+## How to [Action] (H2) - Practical guide
+
+Step-by-step instructions with visuals.
+
+## Best Practices (H2) - Advanced tips
+
+Expert recommendations.
+
+## Common Mistakes to Avoid (H2)
+
+Troubleshooting and pitfalls.
+
+## Conclusion
+
+Summary and call-to-action.
+```
+
+**Content Length Guidelines:**
+- Blog posts: 1,500-2,500 words (comprehensive topics)
+- Product pages: 300-500 words minimum
+- Category pages: 500-1,000 words
+- Homepage: 500+ words
+
+#### 4. Technical SEO
+
+**Schema Markup (Structured Data):**
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Complete Guide to React Hooks"
+}
+```
+
+---
+
+## SKILL 15: Senior Security (Expanded)
+
+Complete toolkit for senior security with modern tools and best practices.
+
+### Quick Start
+
+#### Main Capabilities
+
+This skill provides three core capabilities through automated scripts:
+
+```bash
+# Script 1: Threat Modeler
+python scripts/threat_modeler.py [options]
+
+# Script 2: Security Auditor
+python scripts/security_auditor.py [options]
+
+# Script 3: Pentest Automator
+python scripts/pentest_automator.py [options]
+```
+
+### Core Capabilities
+
+#### 1. Threat Modeler
+
+Automated tool for threat modeler tasks.
+
+**Features:**
+- Automated scaffolding
+- Best practices built-in
+- Configurable templates
+- Quality checks
+
+**Usage:**
+```bash
+python scripts/threat_modeler.py <project-path> [options]
+```
+
+#### 2. Security Auditor
+
+Comprehensive analysis and optimization tool.
+
+**Features:**
+- Deep analysis
+- Performance metrics
+- Recommendations
+- Automated fixes
+
+**Usage:**
+```bash
+python scripts/security_auditor.py <target-path> [--verbose]
+```
+
+#### 3. Pentest Automator
+
+Advanced tooling for specialized tasks.
+
+**Features:**
+- Expert-level automation
+- Custom configurations
+- Integration ready
+- Production-grade output
+
+**Usage:**
+```bash
+python scripts/pentest_automator.py [arguments] [options]
+```
+
+---
+
+## SKILL 16: Brainstorming Ideas Into Designs
+
+Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+
+Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design in small sections (200-300 words), checking after each section whether it looks right so far.
+
+### The Process
+
+**Understanding the idea:**
+- Check out the current project state first (files, docs, recent commits)
+- Ask questions one at a time to refine the idea
+- Prefer multiple choice questions when possible, but open-ended is fine too
+- Only one question per message - if a topic needs more exploration, break it into multiple questions
+- Focus on understanding: purpose, constraints, success criteria
+
+**Exploring approaches:**
+- Propose 2-3 different approaches with trade-offs
+- Present options conversationally with your recommendation and reasons

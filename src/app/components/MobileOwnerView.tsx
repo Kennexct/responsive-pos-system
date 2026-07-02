@@ -9,23 +9,26 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 interface Props {
   orders: RecentOrder[];
+  darkMode: boolean;
 }
 
-export function MobileOwnerView({ orders }: Props) {
+export function MobileOwnerView({ orders, darkMode }: Props) {
   const lowStockItems  = PRODUCTS.filter(p => p.stock <= p.lowStockThreshold);
   const sessionSales   = orders.reduce((s, o) => s + o.total, 0);
   const todaySales     = 2847500 + sessionSales;
   const todayOrders    = 38 + orders.length;
 
   const recentOrders = orders.length > 0 ? orders.slice(0, 6) : [];
+  const dynamicDate  = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const dm = darkMode;
 
   return (
-    <div className="min-h-full bg-slate-50 pb-24 overflow-y-auto">
+    <div className={`min-h-full pb-24 overflow-y-auto ${dm ? 'bg-slate-900' : 'bg-slate-50'}`}>
       {/* Header */}
       <div className="bg-slate-900 text-white px-4 pt-6 pb-8">
-        <p className="text-slate-400 text-xs mb-1">Tuesday, 1 July 2026</p>
-        <h1 className="text-white text-xl" style={{ fontWeight: 700 }}>Good Morning, Owner 👋</h1>
-        <p className="text-slate-400 text-sm mt-0.5">Warung Kopi Santai</p>
+        <p className="text-slate-400 text-xs mb-1">{dynamicDate}</p>
+        <h1 className="text-white text-xl font-bold">Good Morning, Owner 👋</h1>
+        <p className="text-slate-400 text-sm mt-0.5">POS Pro Dashboard</p>
       </div>
 
       <div className="px-4 -mt-4 space-y-4">

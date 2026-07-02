@@ -1,5 +1,5 @@
 import { useState, type ElementType } from 'react';
-import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield } from 'lucide-react';
+import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun } from 'lucide-react';
 import type { BusinessType, User, RolePermissions, ViewType, Role } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 
@@ -10,6 +10,12 @@ interface SettingsViewProps {
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   permissions: RolePermissions;
   setPermissions: React.Dispatch<React.SetStateAction<RolePermissions>>;
+  darkMode: boolean;
+  onToggleDark: () => void;
+  bizName: string;    setBizName: (v: string) => void;
+  bizPhone: string;   setBizPhone: (v: string) => void;
+  bizAddress: string; setBizAddress: (v: string) => void;
+  bizEmail: string;   setBizEmail: (v: string) => void;
 }
 
 type SettingsTab = 'business' | 'currency' | 'tax' | 'payments' | 'users';
@@ -22,14 +28,14 @@ const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
   { id: 'users',     label: 'Users',     icon: Users      },
 ];
 
-interface PaymentMethod { id: string; label: string; enabled: boolean; }
-interface TaxRate       { id: string; name: string; rate: number; inclusive: boolean; isDefault: boolean; }
+interface PaymentMethodEntry { id: string; label: string; enabled: boolean; }
+interface TaxRate            { id: string; name: string; rate: number; inclusive: boolean; isDefault: boolean; }
 
-const INITIAL_PAYMENTS: PaymentMethod[] = [
+const INITIAL_PAYMENTS: PaymentMethodEntry[] = [
   { id: 'cash',          label: 'Cash',                enabled: true  },
   { id: 'qris',          label: 'QRIS',                enabled: true  },
-  { id: 'card',          label: 'Debit / Credit Card',  enabled: true  },
-  { id: 'bank-transfer', label: 'Bank Transfer',         enabled: true  },
+  { id: 'card',          label: 'Debit / Credit Card', enabled: true  },
+  { id: 'bank-transfer', label: 'Bank Transfer',       enabled: true  },
   { id: 'gopay',         label: 'GoPay',               enabled: false },
   { id: 'ovo',           label: 'OVO',                 enabled: false },
 ];
@@ -38,18 +44,18 @@ const INITIAL_TAXES: TaxRate[] = [
   { id: '1', name: 'PPN', rate: 11, inclusive: false, isDefault: true },
 ];
 
-export function SettingsView({ businessType, onBusinessTypeChange, users, setUsers, permissions, setPermissions }: SettingsViewProps) {
+export function SettingsView({
+  businessType, onBusinessTypeChange,
+  users, setUsers,
+  permissions, setPermissions,
+  darkMode, onToggleDark,
+  bizName, setBizName, bizPhone, setBizPhone, bizAddress, setBizAddress, bizEmail, setBizEmail,
+}: SettingsViewProps) {
   const [tab,      setTab]      = useState<SettingsTab>('business');
-  const [payments, setPayments] = useState<PaymentMethod[]>(INITIAL_PAYMENTS);
+  const [payments, setPayments] = useState<PaymentMethodEntry[]>(INITIAL_PAYMENTS);
   const [taxes,    setTaxes]    = useState<TaxRate[]>(INITIAL_TAXES);
   const [saved,    setSaved]    = useState(false);
-  const [confirmModal, setConfirmModal] = useState(false);
-
-  // Business form
-  const [bizName,  setBizName]  = useState('Warung Kopi Santai');
-  const [phone,    setPhone]    = useState('+62 812 3456 7890');
-  const [address,  setAddress]  = useState('Jl. Sudirman No. 123, Jakarta');
-  const [email,    setEmail]    = useState('hello@warkop.id');
+  const [confirmSave, setConfirmSave] = useState(false);
 
   // Add Tax modal
   const [taxModal,    setTaxModal]    = useState(false);
@@ -64,25 +70,17 @@ export function SettingsView({ businessType, onBusinessTypeChange, users, setUse
   const [inviteEmail,  setInviteEmail]  = useState('');
   const [inviteRole,   setInviteRole]   = useState<User['role']>('cashier');
 
+  // Delete user confirm
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+
   const togglePayment = (id: string) =>
     setPayments(prev => prev.map(p => p.id === id ? { ...p, enabled: !p.enabled } : p));
-
-  const deleteUser = (id: string) => {
-    // Prevent state update here directly, normally we'd confirm this too, but we'll leave it simple for demo
-    setUsers(prev => prev.filter(u => u.id !== id));
-  };
 
   const deleteTax = (id: string) => setTaxes(prev => prev.filter(t => t.id !== id));
 
   const saveTax = () => {
     if (!newTaxName.trim() || !newTaxRate) return;
-    const newTax: TaxRate = {
-      id: Date.now().toString(),
-      name: newTaxName.trim(),
-      rate: Number(newTaxRate),
-      inclusive: newTaxIncl,
-      isDefault: newTaxDef,
-    };
+    const newTax: TaxRate = { id: Date.now().toString(), name: newTaxName.trim(), rate: Number(newTaxRate), inclusive: newTaxIncl, isDefault: newTaxDef };
     if (newTaxDef) setTaxes(prev => prev.map(t => ({ ...t, isDefault: false })));
     setTaxes(prev => [...prev, newTax]);
     setNewTaxName(''); setNewTaxRate(''); setNewTaxIncl(false); setNewTaxDef(false);
@@ -91,44 +89,46 @@ export function SettingsView({ businessType, onBusinessTypeChange, users, setUse
 
   const saveInvite = () => {
     if (!inviteName.trim() || !inviteEmail.trim()) return;
-    const newUser: User = {
-      id: Date.now().toString(),
-      name: inviteName.trim(),
-      email: inviteEmail.trim(),
-      role: inviteRole,
-    };
+    const newUser: User = { id: Date.now().toString(), name: inviteName.trim(), email: inviteEmail.trim(), role: inviteRole };
     setUsers(prev => [...prev, newUser]);
     setInviteName(''); setInviteEmail(''); setInviteRole('cashier');
     setInviteModal(false);
   };
 
-  const handleSaveClick = () => {
-    setConfirmModal(true);
-  };
-
   const handleConfirmSave = () => {
-    setConfirmModal(false);
+    setConfirmSave(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
+  const handleConfirmDelete = () => {
+    if (deleteUserId) { setUsers(prev => prev.filter(u => u.id !== deleteUserId)); setDeleteUserId(null); }
+  };
+
   const togglePermission = (role: Role, viewId: ViewType) => {
-    if (role === 'owner') return; // Owner always has all access
+    if (role === 'owner') return;
     setPermissions(prev => {
       const current = prev[role];
-      const updated = current.includes(viewId)
-        ? current.filter(id => id !== viewId)
-        : [...current, viewId];
+      const updated = current.includes(viewId) ? current.filter(id => id !== viewId) : [...current, viewId];
       return { ...prev, [role]: updated };
     });
   };
 
+  const dm = darkMode;
+  const bg      = dm ? 'bg-slate-900' : 'bg-slate-50';
+  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
+  const t1      = dm ? 'text-slate-100' : 'text-slate-800';
+  const t2      = dm ? 'text-slate-400' : 'text-slate-500';
+  const inputCls = dm ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-500 focus:border-blue-400' : 'border-slate-200 text-slate-700 focus:border-blue-400';
+  const tabActive = 'bg-blue-600 text-white';
+  const tabInact  = dm ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-200' : 'text-slate-500 hover:bg-white hover:text-slate-700';
+
   return (
-    <div className="flex-1 overflow-hidden flex flex-col bg-slate-50">
+    <div className={`flex-1 overflow-hidden flex flex-col ${bg}`}>
       <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 overflow-y-auto">
         <div className="mb-6">
-          <h1 className="text-slate-800">Settings</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Manage your business configuration</p>
+          <h1 className={t1}>Settings</h1>
+          <p className={`text-sm mt-0.5 ${t2}`}>Manage your business configuration</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-6">
@@ -139,79 +139,71 @@ export function SettingsView({ businessType, onBusinessTypeChange, users, setUse
                 <button
                   key={id}
                   onClick={() => setTab(id)}
-                  className={[
-                    'flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap sm:w-full transition-colors text-left',
-                    tab === id ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-white hover:text-slate-700',
-                  ].join(' ')}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap sm:w-full transition-colors text-left font-medium ${tab === id ? tabActive : tabInact}`}
                 >
                   <Icon size={16} className="shrink-0" />
                   {label}
                 </button>
               ))}
+
+              {/* Dark mode toggle in sidebar */}
+              <button
+                onClick={onToggleDark}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap sm:w-full transition-colors text-left font-medium mt-2 border-t sm:pt-3 ${dm ? 'border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200' : 'border-slate-100 text-slate-500 hover:bg-white hover:text-slate-700'}`}
+              >
+                {dm ? <Sun size={16} className="shrink-0" /> : <Moon size={16} className="shrink-0" />}
+                {dm ? 'Light Mode' : 'Dark Mode'}
+              </button>
             </div>
           </nav>
 
           {/* Content panel */}
-          <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <div className={`flex-1 rounded-2xl shadow-sm border p-5 ${surface}`}>
+
             {/* ── Business ── */}
             {tab === 'business' && (
               <div className="space-y-4">
-                <h3 className="text-slate-700">Business Profile</h3>
+                <h3 className={t1}>Business Profile</h3>
                 <div>
-                  <label className="text-sm text-slate-500 block mb-1">Business Type</label>
-                  <div className="flex border border-slate-200 rounded-xl overflow-hidden w-fit">
+                  <label className={`text-sm block mb-1 ${t2}`}>Business Type</label>
+                  <div className={`flex border rounded-xl overflow-hidden w-fit ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                     {(['retail', 'fnb'] as BusinessType[]).map(t => (
-                      <button
-                        key={t}
-                        onClick={() => onBusinessTypeChange(t)}
-                        className={[
-                          'px-5 py-2.5 text-sm capitalize transition-colors',
-                          businessType === t ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50',
-                        ].join(' ')}
-                      >
+                      <button key={t} onClick={() => onBusinessTypeChange(t)} className={`px-5 py-2.5 text-sm font-medium capitalize transition-colors ${businessType === t ? 'bg-blue-600 text-white' : dm ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-500 hover:bg-slate-50'}`}>
                         {t === 'fnb' ? 'F&B' : 'Retail'}
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {businessType === 'fnb'
-                      ? 'F&B mode enables order types (Dine-in / Takeaway / Delivery) and table notes.'
-                      : 'Retail mode hides F&B-specific options.'}
+                  <p className={`text-xs mt-1 ${t2}`}>
+                    {businessType === 'fnb' ? 'F&B mode enables order types and table notes.' : 'Retail mode hides F&B-specific options.'}
                   </p>
                 </div>
-                <Field label="Business Name" value={bizName}  onChange={setBizName}  />
-                <Field label="Phone"         value={phone}    onChange={setPhone}    type="tel"   />
-                <Field label="Email"         value={email}    onChange={setEmail}    type="email" />
-                <Field label="Address"       value={address}  onChange={setAddress}  />
-                <SaveButton onSave={handleSaveClick} saved={saved} />
+                <Field label="Business Name"  value={bizName}    onChange={setBizName}    darkMode={dm} />
+                <Field label="Phone"          value={bizPhone}   onChange={setBizPhone}   darkMode={dm} type="tel" />
+                <Field label="Email"          value={bizEmail}   onChange={setBizEmail}   darkMode={dm} type="email" />
+                <Field label="Address"        value={bizAddress} onChange={setBizAddress} darkMode={dm} />
+                <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
               </div>
             )}
 
             {/* ── Currency ── */}
             {tab === 'currency' && (
               <div className="space-y-4">
-                <h3 className="text-slate-700">Currency Settings</h3>
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
+                <h3 className={t1}>Currency Settings</h3>
+                <div className={`border rounded-xl p-3 text-sm ${dm ? 'bg-blue-900/20 border-blue-800/40 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
                   Base currency is set once at onboarding and cannot be changed later (v1).
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-slate-500 block mb-1">Base Currency</label>
-                    <div className="border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 text-slate-700 text-sm">
-                      IDR — Indonesian Rupiah
+                  {[['Base Currency', 'IDR — Indonesian Rupiah'], ['Symbol', 'Rp']].map(([l, v]) => (
+                    <div key={l}>
+                      <label className={`text-sm block mb-1 ${t2}`}>{l}</label>
+                      <div className={`border rounded-xl px-4 py-3 text-sm ${dm ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>{v}</div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-500 block mb-1">Symbol</label>
-                    <div className="border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 text-slate-700 text-sm">
-                      Rp
-                    </div>
-                  </div>
+                  ))}
                 </div>
-                <Field label="Display Currency (optional)" value="" onChange={() => {}} placeholder="e.g. USD" />
-                <Field label="Exchange Rate (manual)"      value="" onChange={() => {}} type="number" placeholder="e.g. 16000" />
-                <p className="text-xs text-slate-400 -mt-2">Rate is entered manually — no live FX in v1.</p>
-                <SaveButton onSave={handleSaveClick} saved={saved} />
+                <Field label="Display Currency (optional)" value="" onChange={() => {}} placeholder="e.g. USD" darkMode={dm} />
+                <Field label="Exchange Rate (manual)" value="" onChange={() => {}} type="number" placeholder="e.g. 16000" darkMode={dm} />
+                <p className={`text-xs ${t2}`}>Rate is entered manually — no live FX in v1.</p>
+                <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
               </div>
             )}
 
@@ -219,81 +211,43 @@ export function SettingsView({ businessType, onBusinessTypeChange, users, setUse
             {tab === 'tax' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-slate-700">Tax Rates</h3>
-                  <button
-                    onClick={() => setTaxModal(true)}
-                    className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-                  >
-                    <Plus size={14} />
-                    Add Rate
+                  <h3 className={t1}>Tax Rates</h3>
+                  <button onClick={() => setTaxModal(true)} className="flex items-center gap-1.5 text-sm text-blue-600 border border-blue-200 dark:border-blue-800 px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors font-medium">
+                    <Plus size={14} /> Add Rate
                   </button>
                 </div>
-                {taxes.length === 0 ? (
-                  <p className="text-sm text-slate-400 text-center py-6">No tax rates yet.</p>
-                ) : (
-                  taxes.map(rate => (
-                    <div key={rate.id} className="border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3">
+                {taxes.length === 0
+                  ? <p className={`text-sm text-center py-6 ${t2}`}>No tax rates yet.</p>
+                  : taxes.map(rate => (
+                    <div key={rate.id} className={`border rounded-xl p-4 flex items-center justify-between gap-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                       <div>
-                        <p className="text-sm text-slate-700" style={{ fontWeight: 500 }}>{rate.name}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {rate.rate}% · {rate.inclusive ? 'Inclusive' : 'Exclusive'}
-                          {rate.isDefault ? ' · Default' : ''}
-                        </p>
+                        <p className={`text-sm font-semibold ${t1}`}>{rate.name}</p>
+                        <p className={`text-xs mt-0.5 ${t2}`}>{rate.rate}% · {rate.inclusive ? 'Inclusive' : 'Exclusive'}{rate.isDefault ? ' · Default' : ''}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {rate.isDefault && (
-                          <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-xs">Default</span>
-                        )}
-                        <button
-                          onClick={() => deleteTax(rate.id)}
-                          className="text-slate-300 hover:text-red-400 transition-colors"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {rate.isDefault && <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-xs font-semibold">Default</span>}
+                        <button onClick={() => deleteTax(rate.id)} className={`transition-colors ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-400'}`}><Trash2 size={15} /></button>
                       </div>
                     </div>
                   ))
-                )}
+                }
               </div>
             )}
 
             {/* ── Payments ── */}
             {tab === 'payments' && (
               <div className="space-y-4">
-                <h3 className="text-slate-700">Payment Methods</h3>
-                <p className="text-sm text-slate-500">
-                  Enable the methods available at checkout. Payments are recorded manually — no live gateway in v1.
-                </p>
+                <h3 className={t1}>Payment Methods</h3>
+                <p className={`text-sm ${t2}`}>Enable the methods available at checkout.</p>
                 <div className="space-y-3">
                   {payments.map(pm => (
-                    <div key={pm.id} className="flex items-center justify-between border border-slate-200 rounded-xl px-4 py-3">
-                      <span className="text-sm text-slate-700">{pm.label}</span>
-                      <button
-                        onClick={() => togglePayment(pm.id)}
-                        aria-checked={pm.enabled}
-                        role="switch"
-                        style={{ width: 40, height: 22, position: 'relative', flexShrink: 0 }}
-                        className={`rounded-full transition-colors ${pm.enabled ? 'bg-blue-600' : 'bg-slate-200'}`}
-                      >
-                        <span
-                          style={{
-                            position: 'absolute',
-                            width: 18,
-                            height: 18,
-                            top: 2,
-                            left: 2,
-                            backgroundColor: 'white',
-                            borderRadius: '50%',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-                            transform: pm.enabled ? 'translateX(18px)' : 'translateX(0)',
-                            transition: 'transform 0.2s',
-                          }}
-                        />
-                      </button>
+                    <div key={pm.id} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <span className={`text-sm font-medium ${t1}`}>{pm.label}</span>
+                      <Toggle checked={pm.enabled} onChange={() => togglePayment(pm.id)} />
                     </div>
                   ))}
                 </div>
-                <SaveButton onSave={handleSaveClick} saved={saved} />
+                <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
               </div>
             )}
 
@@ -301,35 +255,29 @@ export function SettingsView({ businessType, onBusinessTypeChange, users, setUse
             {tab === 'users' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-slate-700">Users & Roles</h3>
-                  <button
-                    onClick={() => setInviteModal(true)}
-                    className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-                  >
-                    <Plus size={14} />
-                    Invite User
+                  <h3 className={t1}>Users & Roles</h3>
+                  <button onClick={() => setInviteModal(true)} className="flex items-center gap-1.5 text-sm text-blue-600 border border-blue-200 dark:border-blue-800 px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors font-medium">
+                    <Plus size={14} /> Invite User
                   </button>
                 </div>
                 <div className="space-y-3">
                   {users.map(user => (
-                    <div key={user.id} className="flex items-center gap-3 border border-slate-200 rounded-xl px-4 py-3">
-                      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 shrink-0" style={{ fontWeight: 600 }}>
+                    <div key={user.id} className={`flex items-center gap-3 border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-blue-600 shrink-0 font-bold text-sm ${dm ? 'bg-blue-900/40' : 'bg-blue-100'}`}>
                         {user.name[0]}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-700">{user.name}</p>
-                        <p className="text-xs text-slate-400">{user.email}</p>
+                        <p className={`text-sm font-medium ${t1}`}>{user.name}</p>
+                        <p className={`text-xs ${t2}`}>{user.email}</p>
                       </div>
                       <span className={[
-                        'px-2 py-0.5 rounded-full text-xs capitalize',
-                        user.role === 'owner'   ? 'bg-violet-50 text-violet-600' :
-                        user.role === 'manager' ? 'bg-blue-50 text-blue-600'    :
-                                                   'bg-slate-100 text-slate-500',
-                      ].join(' ')}>
-                        {user.role}
-                      </span>
+                        'px-2 py-0.5 rounded-full text-xs font-semibold capitalize',
+                        user.role === 'owner'   ? 'bg-violet-500/10 text-violet-600' :
+                        user.role === 'manager' ? 'bg-blue-500/10 text-blue-600'    :
+                                                   'bg-slate-500/10 text-slate-500',
+                      ].join(' ')}>{user.role}</span>
                       {user.role !== 'owner' && (
-                        <button onClick={() => deleteUser(user.id)} className="text-slate-300 hover:text-red-400 transition-colors shrink-0">
+                        <button onClick={() => setDeleteUserId(user.id)} className={`transition-colors ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-400'} shrink-0`}>
                           <Trash2 size={14} />
                         </button>
                       )}
@@ -337,17 +285,17 @@ export function SettingsView({ businessType, onBusinessTypeChange, users, setUse
                   ))}
                 </div>
 
-                <div className="mt-8 border-t border-slate-200 pt-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Shield size={18} className="text-slate-700" />
-                    <h3 className="text-slate-700">Role Permissions</h3>
+                {/* Role permissions */}
+                <div className={`mt-8 border-t pt-6 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield size={16} className={t2} />
+                    <h3 className={t1}>Role Permissions</h3>
                   </div>
-                  <p className="text-sm text-slate-500 mb-4">Configure which menu tabs are accessible for each staff role.</p>
-                  
+                  <p className={`text-sm mb-4 ${t2}`}>Configure which menu tabs each role can access.</p>
                   <div className="space-y-4">
                     {(['manager', 'cashier'] as Role[]).map(role => (
-                      <div key={role} className="border border-slate-200 rounded-xl p-4">
-                        <h4 className="text-sm font-semibold text-slate-700 capitalize mb-3">{role} Access</h4>
+                      <div key={role} className={`border rounded-xl p-4 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <h4 className={`text-sm font-semibold capitalize mb-3 ${t1}`}>{role} Access</h4>
                         <div className="flex flex-wrap gap-2">
                           {(['pos', 'dashboard', 'inventory', 'reports', 'settings'] as ViewType[]).map(v => {
                             const hasAccess = permissions[role].includes(v);
@@ -355,12 +303,13 @@ export function SettingsView({ businessType, onBusinessTypeChange, users, setUse
                               <button
                                 key={v}
                                 onClick={() => togglePermission(role, v)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                                  hasAccess 
-                                    ? 'bg-blue-50 border-blue-200 text-blue-700' 
-                                    : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors flex items-center gap-1 ${
+                                  hasAccess
+                                    ? 'bg-blue-500/10 border-blue-500/30 text-blue-600'
+                                    : dm ? 'bg-transparent border-slate-700 text-slate-500 hover:border-slate-600' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
                                 }`}
                               >
+                                {hasAccess && <Check size={10} />}
                                 {v === 'pos' ? 'POS Terminal' : v.charAt(0).toUpperCase() + v.slice(1)}
                               </button>
                             );
@@ -368,10 +317,10 @@ export function SettingsView({ businessType, onBusinessTypeChange, users, setUse
                         </div>
                       </div>
                     ))}
-                    <div className="text-xs text-slate-400 mt-2">Note: The "Owner" role automatically has full access to all areas.</div>
+                    <p className={`text-xs ${t2}`}>Owner role always has full access to all areas.</p>
                   </div>
                   <div className="mt-6">
-                    <SaveButton onSave={handleSaveClick} saved={saved} />
+                    <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
                   </div>
                 </div>
               </div>
@@ -380,72 +329,69 @@ export function SettingsView({ businessType, onBusinessTypeChange, users, setUse
         </div>
       </div>
 
+      {/* Modals */}
       <ConfirmationModal
-        isOpen={confirmModal}
+        isOpen={confirmSave}
         title="Save Changes"
-        message="Are you sure you want to apply these changes to your business settings?"
+        message="Apply these settings to your business configuration?"
+        confirmText="Save Changes"
         onConfirm={handleConfirmSave}
-        onCancel={() => setConfirmModal(false)}
+        onCancel={() => setConfirmSave(false)}
       />
 
-      {/* ── Add Tax Rate modal ── */}
+      <ConfirmationModal
+        isOpen={deleteUserId !== null}
+        title="Remove User"
+        message="This user will no longer have access to the system. This action cannot be undone."
+        confirmText="Remove User"
+        isDestructive
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteUserId(null)}
+      />
+
       {taxModal && (
-        <Modal title="Add Tax Rate" onClose={() => setTaxModal(false)}>
+        <Modal title="Add Tax Rate" onClose={() => setTaxModal(false)} darkMode={dm}>
           <div className="space-y-3">
-            <Field label="Name (e.g. PPN, GST, VAT)" value={newTaxName} onChange={setNewTaxName} placeholder="PPN" />
-            <Field label="Rate (%)"                   value={newTaxRate} onChange={setNewTaxRate} type="number" placeholder="11" />
-            <div className="flex items-center justify-between border border-slate-200 rounded-xl px-4 py-3">
-              <div>
-                <p className="text-sm text-slate-700">Inclusive</p>
-                <p className="text-xs text-slate-400">Tax is included in the price</p>
+            <Field label="Name (e.g. PPN, VAT)" value={newTaxName} onChange={setNewTaxName} placeholder="PPN" darkMode={dm} />
+            <Field label="Rate (%)" value={newTaxRate} onChange={setNewTaxRate} type="number" placeholder="11" darkMode={dm} />
+            {[{ label: 'Inclusive', sub: 'Tax is included in the price', val: newTaxIncl, set: setNewTaxIncl },
+              { label: 'Set as default', sub: 'Apply to all products', val: newTaxDef, set: setNewTaxDef }].map(({ label, sub, val, set }) => (
+              <div key={label} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                <div>
+                  <p className={`text-sm font-medium ${dm ? 'text-slate-200' : 'text-slate-700'}`}>{label}</p>
+                  <p className={`text-xs ${dm ? 'text-slate-500' : 'text-slate-400'}`}>{sub}</p>
+                </div>
+                <Toggle checked={val} onChange={set} />
               </div>
-              <Toggle checked={newTaxIncl} onChange={setNewTaxIncl} />
-            </div>
-            <div className="flex items-center justify-between border border-slate-200 rounded-xl px-4 py-3">
-              <div>
-                <p className="text-sm text-slate-700">Set as default</p>
-                <p className="text-xs text-slate-400">Apply to all products by default</p>
-              </div>
-              <Toggle checked={newTaxDef} onChange={setNewTaxDef} />
-            </div>
+            ))}
           </div>
-          <button
-            disabled={!newTaxName.trim() || !newTaxRate}
-            onClick={saveTax}
-            className="mt-5 w-full bg-blue-600 text-white rounded-xl py-3 hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+          <button disabled={!newTaxName.trim() || !newTaxRate} onClick={saveTax}
+            className="mt-5 w-full bg-blue-600 text-white rounded-xl py-3 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed font-semibold">
             Add Tax Rate
           </button>
         </Modal>
       )}
 
-      {/* ── Invite User modal ── */}
       {inviteModal && (
-        <Modal title="Invite User" onClose={() => setInviteModal(false)}>
+        <Modal title="Invite User" onClose={() => setInviteModal(false)} darkMode={dm}>
           <div className="space-y-3">
-            <Field label="Full Name *"    value={inviteName}  onChange={setInviteName}  placeholder="e.g. Dewi Sartika" />
-            <Field label="Email *"        value={inviteEmail} onChange={setInviteEmail} type="email" placeholder="dewi@warkop.id" />
+            <Field label="Full Name *"  value={inviteName}  onChange={setInviteName}  placeholder="e.g. Dewi Sartika" darkMode={dm} />
+            <Field label="Email *"      value={inviteEmail} onChange={setInviteEmail} type="email" placeholder="dewi@warkop.id" darkMode={dm} />
             <div>
-              <label className="text-sm text-slate-500 block mb-1">Role</label>
-              <select
-                value={inviteRole}
-                onChange={e => setInviteRole(e.target.value as User['role'])}
-                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 text-slate-700 bg-white"
-              >
+              <label className={`text-sm block mb-1 ${dm ? 'text-slate-400' : 'text-slate-500'}`}>Role</label>
+              <select value={inviteRole} onChange={e => setInviteRole(e.target.value as User['role'])}
+                className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'border-slate-200 text-slate-700 bg-white'}`}>
                 <option value="cashier">Cashier — can process orders, cannot edit settings</option>
                 <option value="manager">Manager — can edit products & view reports</option>
                 <option value="owner">Owner — full access</option>
               </select>
             </div>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
-              In a live environment, an invitation email would be sent to this address. This is a frontend demo.
+            <div className={`border rounded-xl p-3 text-xs ${dm ? 'bg-amber-900/20 border-amber-800/40 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+              In a live environment, an invitation email would be sent. This is a frontend demo.
             </div>
           </div>
-          <button
-            disabled={!inviteName.trim() || !inviteEmail.trim()}
-            onClick={saveInvite}
-            className="mt-5 w-full bg-blue-600 text-white rounded-xl py-3 hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+          <button disabled={!inviteName.trim() || !inviteEmail.trim()} onClick={saveInvite}
+            className="mt-5 w-full bg-blue-600 text-white rounded-xl py-3 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed font-semibold">
             Send Invitation
           </button>
         </Modal>
@@ -454,64 +400,46 @@ export function SettingsView({ businessType, onBusinessTypeChange, users, setUse
   );
 }
 
-function Field({ label, value, onChange, type = 'text', placeholder }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
+function Field({ label, value, onChange, type = 'text', placeholder, darkMode }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string; darkMode: boolean;
 }) {
   return (
     <div>
-      <label className="text-sm text-slate-500 block mb-1">{label}</label>
+      <label className={`text-sm block mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{label}</label>
       <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 text-slate-700 placeholder-slate-300"
+        type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-500' : 'border-slate-200 text-slate-700 placeholder-slate-300 bg-white'}`}
       />
     </div>
   );
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
-    <button
-      onClick={() => onChange(!checked)}
-      style={{ width: 40, height: 22, position: 'relative', flexShrink: 0 }}
-      className={`rounded-full transition-colors ${checked ? 'bg-blue-600' : 'bg-slate-200'}`}
-    >
-      <span style={{
-        position: 'absolute', width: 18, height: 18, top: 2, left: 2,
-        backgroundColor: 'white', borderRadius: '50%',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-        transform: checked ? 'translateX(18px)' : 'translateX(0)',
-        transition: 'transform 0.2s',
-      }} />
+    <button onClick={onChange} style={{ width: 40, height: 22, position: 'relative', flexShrink: 0 }}
+      className={`rounded-full transition-colors ${checked ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+      <span style={{ position: 'absolute', width: 18, height: 18, top: 2, left: 2, backgroundColor: 'white', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transform: checked ? 'translateX(18px)' : 'translateX(0)', transition: 'transform 0.2s' }} />
     </button>
   );
 }
 
 function SaveButton({ onSave, saved }: { onSave: () => void; saved: boolean }) {
   return (
-    <button
-      onClick={onSave}
-      className={[
-        'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm text-white transition-all',
-        saved ? 'bg-emerald-600' : 'bg-blue-600 hover:bg-blue-700',
-      ].join(' ')}
-    >
+    <button onClick={onSave} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all ${saved ? 'bg-emerald-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
       {saved ? <><Check size={15} /> Saved!</> : 'Save Changes'}
     </button>
   );
 }
 
-function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+function Modal({ title, children, onClose, darkMode }: { title: string; children: React.ReactNode; onClose: () => void; darkMode: boolean }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl p-5 w-full max-w-sm max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className={`relative rounded-2xl p-5 w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}>
+        <button onClick={onClose} className={`absolute top-4 right-4 transition-colors ${darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}>
           <X size={18} />
         </button>
-        <h3 className="text-slate-800 mb-4">{title}</h3>
+        <h3 className={`mb-4 font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{title}</h3>
         {children}
       </div>
     </div>

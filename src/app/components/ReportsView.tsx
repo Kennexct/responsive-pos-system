@@ -28,9 +28,10 @@ type Period = 'week' | 'month';
 
 interface Props {
   orders: RecentOrder[];
+  darkMode: boolean;
 }
 
-export function ReportsView({ orders }: Props) {
+export function ReportsView({ orders, darkMode }: Props) {
   const [period, setPeriod] = useState<Period>('week');
 
   const salesData = period === 'week' ? WEEKLY_SALES : MONTHLY_SALES;
