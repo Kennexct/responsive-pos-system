@@ -74,7 +74,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
   const productPerformance = useMemo(() => {
     const acc: Record<string, { revenue: number, qty: number, name: string }> = {};
     completedOrders.forEach(o => {
-      o.items.forEach(item => {
+      (o.items || []).forEach(item => {
         if (!acc[item.product.id]) acc[item.product.id] = { revenue: 0, qty: 0, name: item.product.name };
         const price = item.product.price + (item.variant?.priceModifier || 0);
         acc[item.product.id].revenue += price * item.qty;
@@ -89,7 +89,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
   const categoryContribution = useMemo(() => {
     const acc: Record<string, number> = {};
     completedOrders.forEach(o => {
-      o.items.forEach(item => {
+      (o.items || []).forEach(item => {
         acc[item.product.category] = (acc[item.product.category] || 0) + (item.product.price * item.qty);
       });
     });
