@@ -106,58 +106,36 @@ export default function App() {
     customerId?: string,
     pointsEarnedInput?: number,
     pointsRedeemed?: number,
-    pointsDiscountAmt?: number
+    pointsDiscountAmt?: number,
+    finalTaxParam?: number,
+    totalParam?: number,
+    finalSubtotalParam?: number
   ) => {
     let subtotalBeforeDiscount = 0;
     let itemDiscountTotal = 0;
-    let taxAmt = 0;
     
     cart.forEach(item => {
       const basePrice = item.product.price + (item.variant?.priceModifier || 0);
       const linePrice = basePrice * item.qty;
       subtotalBeforeDiscount += linePrice;
       
-      let itemTotal = linePrice;
       if (item.itemDiscountNominal) {
         itemDiscountTotal += (item.itemDiscountNominal * item.qty);
-        itemTotal -= (item.itemDiscountNominal * item.qty);
       } else if (item.discount) {
-        const d = linePrice * (item.discount / 100);
-        itemDiscountTotal += d;
-        itemTotal -= d;
-      }
-      
-      const cat = categories.find(c => c.name === item.product.category);
-      if (cat?.isTaxable) {
-        taxAmt += itemTotal * TAX_RATE; // Approximation before promo code
+        itemDiscountTotal += (linePrice * (item.discount / 100));
       }
     });
 
-    const subtotal = subtotalBeforeDiscount - itemDiscountTotal;
-    let promoDiscountAmt = 0;
-    
-    if (promoCode) {
-      const promo = discountSettings.promoCodes.find(p => p.code === promoCode);
-      if (promo) {
-        if (promo.type === 'percent') {
-          promoDiscountAmt = subtotal * (promo.value / 100);
-        } else {
-          promoDiscountAmt = promo.value;
-        }
-      }
-    }
-
-    const finalSubtotal = Math.max(0, subtotal - promoDiscountAmt - (pointsDiscountAmt || 0));
-    const effectiveRatio = subtotal > 0 ? (finalSubtotal / subtotal) : 1;
-    const finalTax = Math.round(taxAmt * effectiveRatio);
-    const total = finalSubtotal + finalTax;
+    const finalSubtotal = finalSubtotalParam ?? subtotalBeforeDiscount;
+    const finalTax = finalTaxParam ?? 0;
+    const total = totalParam ?? finalSubtotal;
+    const discountTotal = subtotalBeforeDiscount - finalSubtotal - (pointsDiscountAmt || 0);
     
     let pointsEarned = 0;
     if (customerId && loyaltySettings.enabled && loyaltySettings.earnRateSpend > 0) {
       pointsEarned = Math.floor(total / loyaltySettings.earnRateSpend) * loyaltySettings.earnRatePoints;
     }
     
-    const discountTotal = itemDiscountTotal + promoDiscountAmt + (pointsDiscountAmt || 0);
     const totalCost = cart.reduce((sum, item) => sum + (item.product.costPrice * item.qty), 0);
 
     const newOrder: RecentOrder = {
@@ -186,11 +164,34 @@ export default function App() {
     setOrders(prev => [newOrder, ...prev]);
 
     if (customerId) {
-      setCustomers(prev => prev.map(c => c.id === customerId ? {
-        ...c,
-        totalSpend: c.totalSpend + total,
-        pointsBalance: c.pointsBalance - (pointsRedeemed || 0) + pointsEarned
-      } : c));
+      setCustomers(prev => prev.map(c => {
+        if (c.id === customerId) {
+          const newTotalSpend = c.totalSpend + total;
+          const newTotalTransactions = (c.totalTransactions || 0) + 1;
+          const newAtv = Math.round(newTotalSpend / newTotalTransactions);
+          
+          // Auto Tier Upgrade
+          let newTierId = c.tierId;
+          const applicableTiers = loyaltySettings.tiers
+            .filter(t => newTotalSpend >= t.minSpend)
+            .sort((a, b) => b.minSpend - a.minSpend);
+            
+          if (applicableTiers.length > 0) {
+            newTierId = applicableTiers[0].id;
+          }
+
+          return {
+            ...c,
+            totalSpend: newTotalSpend,
+            pointsBalance: c.pointsBalance - (pointsRedeemed || 0) + pointsEarned,
+            totalTransactions: newTotalTransactions,
+            averageTransactionValue: newAtv,
+            lastPurchaseDate: new Date().toISOString(),
+            tierId: newTierId
+          };
+        }
+        return c;
+      }));
     }
 
     // Decrease stock
@@ -359,6 +360,7 @@ export default function App() {
                 customers={customers}
                 loyaltySettings={loyaltySettings}
                 darkMode={darkMode}
+                orders={orders}
               />
             )}
             {view === 'settings'  && (

@@ -20,7 +20,7 @@ interface POSViewProps {
   loyaltySettings: LoyaltySettings;
   taxRules?: TaxRule[];
   terminalViewMode?: TerminalViewMode;
-  onOrderComplete: (cart: CartItem[], orderType: OrderType, paymentMethod: PaymentMethod, amountPaid: number, promoCode?: string, customerId?: string, pointsEarned?: number, pointsRedeemed?: number, pointsDiscountAmt?: number) => void;
+  onOrderComplete: (cart: CartItem[], orderType: OrderType, paymentMethod: PaymentMethod, amountPaid: number, promoCode?: string, customerId?: string, pointsEarned?: number, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => void;
 }
 
 const ORDER_TYPES: { id: OrderType; label: string }[] = [
@@ -100,6 +100,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
   const { subtotal, tierDiscountAmt, tax, exclusiveTax, total } = useMemo(() => {
     let sub = 0;
     let totalTaxableBase = 0;
+    let discountableSubtotal = 0;
     
     cart.forEach(item => {
       const basePrice = item.product.price + (item.variant?.priceModifier || 0);
@@ -112,14 +113,19 @@ export function POSView({ businessType, products, categories, discountSettings, 
       if (cat?.isTaxable) {
         totalTaxableBase += itemTotal;
       }
+      if (cat?.isDiscountable !== false) {
+        discountableSubtotal += itemTotal;
+      }
     });
 
     const customer = customers?.find(c => c.id === selectedCustomerId);
     const tier = customer?.tierId ? loyaltySettings?.tiers?.find(t => t.id === customer.tierId) : null;
     const tierDiscountPercent = tier?.discountPercent || 0;
-    const tierDisc = Math.round(sub * (tierDiscountPercent / 100));
+    const tierDisc = Math.round(discountableSubtotal * (tierDiscountPercent / 100));
     
-    const taxableAfterTierDisc = totalTaxableBase * (1 - (tierDiscountPercent / 100));
+    // Taxable base needs to be proportionally reduced by the tier discount
+    const effectiveTierDiscRatio = sub > 0 ? tierDisc / sub : 0;
+    const taxableAfterTierDisc = totalTaxableBase * (1 - effectiveTierDiscRatio);
     let currentTaxBase = taxableAfterTierDisc;
     
     let exclusiveTaxTotal = 0;
@@ -159,9 +165,9 @@ export function POSView({ businessType, products, categories, discountSettings, 
     setShowHeld(false);
   };
 
-  const handleCheckoutDone = (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number) => {
+  const handleCheckoutDone = (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => {
     // Points earned is calculated in App.tsx or here? App.tsx handles saving the order. Let's pass what App needs.
-    onOrderComplete(cart, orderType, method, amountPaid, promoCode, selectedCustomerId || undefined, undefined, pointsRedeemed, pointsDiscountAmt);
+    onOrderComplete(cart, orderType, method, amountPaid, promoCode, selectedCustomerId || undefined, undefined, pointsRedeemed, pointsDiscountAmt, finalTax, total, finalSubtotal);
     setTableNote('');
     setSelectedCustomerId(null);
   };

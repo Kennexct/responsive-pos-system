@@ -35,11 +35,19 @@ export interface Customer {
   totalSpend: number;
   registrationDate: string;
   tierId?: string;
+  dateOfBirth?: string;
+  marketingConsent?: boolean;
+  blacklistFlag?: boolean;
+  tags?: string[];
+  totalTransactions: number;
+  averageTransactionValue: number;
+  lastPurchaseDate?: string;
+  favoriteCategory?: string;
 }
 
 export const INITIAL_CUSTOMERS: Customer[] = [
-  { id: 'c1', name: 'Andi Pratama', phone: '081234567890', pointsBalance: 1500, totalSpend: 250000, registrationDate: '2023-11-10T10:00:00Z', tierId: 'silver' },
-  { id: 'c2', name: 'Rina Wijaya', phone: '081987654321', pointsBalance: 0, totalSpend: 45000, registrationDate: '2024-01-15T14:30:00Z', tierId: 'bronze' },
+  { id: 'c1', name: 'Andi Pratama', phone: '081234567890', pointsBalance: 1500, totalSpend: 250000, registrationDate: '2023-11-10T10:00:00Z', tierId: 'silver', totalTransactions: 5, averageTransactionValue: 50000, lastPurchaseDate: '2024-05-12T10:00:00Z', marketingConsent: true },
+  { id: 'c2', name: 'Rina Wijaya', phone: '081987654321', pointsBalance: 0, totalSpend: 45000, registrationDate: '2024-01-15T14:30:00Z', tierId: 'bronze', totalTransactions: 1, averageTransactionValue: 45000, lastPurchaseDate: '2024-01-15T14:30:00Z', tags: ['VIP'] },
 ];
 
 export interface LoyaltyTier {
@@ -73,17 +81,18 @@ export interface Category {
   id: string;
   name: string;
   isTaxable: boolean;
+  isDiscountable?: boolean;
 }
 
 export const CATEGORIES: Category[] = [
-  { id: 'cat-all', name: 'All', isTaxable: true },
-  { id: 'cat-coffee', name: 'Coffee', isTaxable: true },
-  { id: 'cat-tea', name: 'Tea', isTaxable: true },
-  { id: 'cat-food', name: 'Food', isTaxable: true },
-  { id: 'cat-snacks', name: 'Snacks', isTaxable: true },
-  { id: 'cat-dessert', name: 'Dessert', isTaxable: true },
-  { id: 'cat-juice', name: 'Juice', isTaxable: true },
-  { id: 'cat-others', name: 'Others', isTaxable: true },
+  { id: 'cat-all', name: 'All', isTaxable: true, isDiscountable: true },
+  { id: 'cat-coffee', name: 'Coffee', isTaxable: true, isDiscountable: true },
+  { id: 'cat-tea', name: 'Tea', isTaxable: true, isDiscountable: true },
+  { id: 'cat-food', name: 'Food', isTaxable: true, isDiscountable: true },
+  { id: 'cat-snacks', name: 'Snacks', isTaxable: true, isDiscountable: true },
+  { id: 'cat-dessert', name: 'Dessert', isTaxable: true, isDiscountable: true },
+  { id: 'cat-juice', name: 'Juice', isTaxable: true, isDiscountable: true },
+  { id: 'cat-others', name: 'Others', isTaxable: true, isDiscountable: false },
 ];
 
 export interface ProductVariant {

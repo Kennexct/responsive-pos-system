@@ -847,3 +847,26 @@ Start by understanding the current project context, then ask questions one at a 
 **Exploring approaches:**
 - Propose 2-3 different approaches with trade-offs
 - Present options conversationally with your recommendation and reasons
+
+---
+
+## SKILL 17: ECC (Agent Harness Operating System)
+
+Implement these principles automatically on every build, bug fix, or feedback request:
+
+1. **Verification Loops (Pass@k mindset)**
+   - Always run continuous evaluations (e.g., test builds, syntax checks, linting).
+   - Never declare a task complete without executing a verification check first.
+
+2. **Subagent Orchestration & Parallelization**
+   - Delegate heavy, isolated tasks (research, background builds, broad audits) to subagents (like `research` or `self`) to keep the main thread's context clean and execution fast.
+
+3. **Memory Persistence & Continuous Learning**
+   - Write state, summaries, and learned patterns (via artifacts like `walkthrough.md`, `task.md`, or specific skill tracking) to persist memory across sessions.
+   - Auto-extract patterns from errors or user feedback so that mistakes are never repeated.
+
+4. **Token & Context Optimization**
+   - Keep actions targeted. Avoid touching files unnecessarily or dumping massive context into the conversation without a clear reason.
+   
+5. **AgentShield Security Paradigm**
+   - Validate and sanitize all inputs and edits. Enforce strict boundaries during execution. Audit code for vulnerabilities automatically as part of the build loop.

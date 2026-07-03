@@ -18,7 +18,7 @@ interface CheckoutModalProps {
   loyaltySettings?: LoyaltySettings;
   selectedCustomerId?: string | null;
   onClose: (completed?: boolean) => void;
-  onConfirm: (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number) => void;
+  onConfirm: (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => void;
 }
 
 const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[] = [
@@ -129,6 +129,10 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const finalTax = Math.round(taxAmount * effectiveRatio);
   const total = finalSubtotal + finalTax;
 
+  const pointsEarnedPreview = (customer && loyaltySettings?.enabled && loyaltySettings.earnRateSpend > 0) 
+    ? Math.floor(total / loyaltySettings.earnRateSpend) * loyaltySettings.earnRatePoints 
+    : 0;
+
   const cashPaid   = parseInt(cashInput.replace(/\D/g, ''), 10) || 0;
   const change     = cashPaid - total;
   const canConfirm = method !== 'cash' || cashPaid >= total;
@@ -136,7 +140,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const QUICK_AMOUNTS = [50000, 100000, 150000, 200000, 250000, 500000].filter(a => a >= total);
 
   const handleConfirm = () => {
-    onConfirm(method, method === 'cash' ? cashPaid : total, appliedPromo?.code, pointsRedeemed, pointsDiscountAmt);
+    onConfirm(method, method === 'cash' ? cashPaid : total, appliedPromo?.code, pointsRedeemed, pointsDiscountAmt, finalTax, total, finalSubtotal);
     setStep('success');
   };
 
@@ -283,6 +287,11 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
           <div className={`flex justify-between text-sm font-bold ${t1} pt-1 mt-1 border-t ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
             <span>Total</span><span className="text-blue-500">{formatIDR(total)}</span>
           </div>
+          {pointsEarnedPreview > 0 && (
+            <div className={`flex justify-between text-xs text-amber-500 font-medium pt-1`}>
+              <span>Points to earn</span><span>+{pointsEarnedPreview} pts</span>
+            </div>
+          )}
         </div>
 
         {/* Points Input */}
