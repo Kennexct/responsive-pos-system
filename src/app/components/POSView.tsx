@@ -174,6 +174,8 @@ export function POSView({ businessType, products, categories, discountSettings, 
 
   const handleCheckoutClose = () => {
     setShowCheckout(false);
+  };
+
   const dm = darkMode;
   const bg      = dm ? 'bg-slate-900' : 'bg-slate-100';
   const toolbar  = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
