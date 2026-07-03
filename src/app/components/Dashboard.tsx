@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { TrendingUp, ShoppingBag, Users, DollarSign, ArrowUp, ArrowDown } from 'lucide-react';
 import { WEEKLY_SALES, TOP_PRODUCTS, PAYMENT_BREAKDOWN, formatIDR } from './mockData';
-import type { RecentOrder } from './mockData';
+import type { RecentOrder, Product, Customer, LoyaltySettings } from './mockData';
 
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Cash', qris: 'QRIS', card: 'Card', 'bank-transfer': 'Bank Transfer',
@@ -22,6 +22,9 @@ function getDynamicDate(): string {
 
 interface Props {
   orders: RecentOrder[];
+  products: Product[];
+  customers: Customer[];
+  loyaltySettings: LoyaltySettings;
   darkMode: boolean;
 }
 
@@ -47,10 +50,13 @@ export function Dashboard({ orders, darkMode }: Props) {
     { label: "Today's Revenue",  value: formatIDR(todaySales),    change: '+12.5%', up: true,  icon: DollarSign,  iconBg: dm ? 'bg-blue-900/40'    : 'bg-blue-50',    iconColor: 'text-blue-500',    accent: 'border-l-blue-500'    },
     { label: 'Orders Today',     value: String(todayOrders),      change: '+8.3%',  up: true,  icon: ShoppingBag, iconBg: dm ? 'bg-emerald-900/40' : 'bg-emerald-50', iconColor: 'text-emerald-500', accent: 'border-l-emerald-500' },
     { label: 'Avg Order Value',  value: formatIDR(avgOrderValue), change: '+3.8%',  up: true,  icon: TrendingUp,  iconBg: dm ? 'bg-violet-900/40'  : 'bg-violet-50',  iconColor: 'text-violet-500',  accent: 'border-l-violet-500'  },
-    { label: 'Customers',        value: '34',                     change: '-2.1%',  up: false, icon: Users,       iconBg: dm ? 'bg-orange-900/40'  : 'bg-orange-50',  iconColor: 'text-orange-500',  accent: 'border-l-orange-500'  },
+    { label: 'Customers',        value: String(customers.length), change: '+2.1%',  up: true,  icon: Users,       iconBg: dm ? 'bg-orange-900/40'  : 'bg-orange-50',  iconColor: 'text-orange-500',  accent: 'border-l-orange-500'  },
   ];
 
   const displayOrders = orders.slice(0, 8);
+  
+  const lowStockProducts = products.filter(p => p.trackInventory && p.stock <= p.lowStockThreshold);
+  const totalPointsLiability = customers.reduce((sum, c) => sum + c.pointsBalance, 0) * loyaltySettings.redemptionValue;
 
   return (
     <div className={`flex-1 overflow-y-auto ${bg}`}>
@@ -68,24 +74,28 @@ export function Dashboard({ orders, darkMode }: Props) {
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 mb-2">
-          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex-1">
-            <div className="p-2 bg-amber-500/20 rounded-lg text-amber-600 dark:text-amber-500">
-              <TrendingUp size={20} />
+          {lowStockProducts.length > 0 && (
+            <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex-1">
+              <div className="p-2 bg-amber-500/20 rounded-lg text-amber-600 dark:text-amber-500">
+                <ShoppingBag size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Low Stock Alert</p>
+                <p className="text-xs text-amber-600 dark:text-amber-500">{lowStockProducts.length} product(s) below reorder threshold.</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">High Void Rate Detected</p>
-              <p className="text-xs text-amber-600 dark:text-amber-500">Void rate is 4.5% today, higher than usual.</p>
+          )}
+          {totalPointsLiability > 500000 && (
+            <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex-1">
+              <div className="p-2 bg-red-500/20 rounded-lg text-red-600 dark:text-red-500">
+                <DollarSign size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-red-700 dark:text-red-400">High Points Liability</p>
+                <p className="text-xs text-red-600 dark:text-red-500">Unredeemed points value exceeds {formatIDR(500000)} (Current: {formatIDR(totalPointsLiability)}).</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex-1">
-            <div className="p-2 bg-red-500/20 rounded-lg text-red-600 dark:text-red-500">
-              <DollarSign size={20} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-red-700 dark:text-red-400">High Points Liability</p>
-              <p className="text-xs text-red-600 dark:text-red-500">Unredeemed points value exceeds Rp 1.500.000.</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Stat cards */}

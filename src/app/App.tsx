@@ -287,7 +287,7 @@ export default function App() {
             )}
             {view === 'dashboard'  && <MobileOwnerView orders={orders} darkMode={darkMode} />}
             {view === 'inventory'  && <InventoryView products={products} onProductsChange={setProducts} categories={categories} darkMode={darkMode} />}
-            {view === 'reports'    && <ReportsView orders={orders} categories={categories} darkMode={darkMode} />}
+            {view === 'reports'    && <ReportsView orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} categories={categories} darkMode={darkMode} />}
             {view === 'daily-sales'&& (
               <DailySalesView 
                 orders={orders} 
@@ -343,9 +343,9 @@ export default function App() {
                 onOrderComplete={(c, o, p, a, pc, cid, pe, pr, pda) => handleOrderComplete(c, o, p, a, pc, cid, pe, pr, pda)}
               />
             )}
-            {view === 'dashboard' && <Dashboard orders={orders} darkMode={darkMode} />}
+            {view === 'dashboard' && <Dashboard orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} darkMode={darkMode} />}
             {view === 'inventory' && <InventoryView products={products} onProductsChange={setProducts} categories={categories} darkMode={darkMode} />}
-            {view === 'reports'   && <ReportsView orders={orders} categories={categories} darkMode={darkMode} />}
+            {view === 'reports'   && <ReportsView orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} categories={categories} darkMode={darkMode} />}
             {view === 'daily-sales'&& (
               <DailySalesView 
                 orders={orders} 
