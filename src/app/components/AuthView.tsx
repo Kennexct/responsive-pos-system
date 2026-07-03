@@ -11,9 +11,9 @@ interface AuthViewProps {
 }
 
 const DEMO_ACCOUNTS = [
-  { email: 'budi@warkop.id',  label: 'Owner',   role: 'Full access',         color: 'text-violet-600 bg-violet-50 dark:bg-violet-900/30 dark:text-violet-400' },
-  { email: 'ani@warkop.id',   label: 'Cashier', role: 'POS only',            color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' },
-  { email: 'citra@warkop.id', label: 'Cashier', role: 'POS only',            color: 'text-sky-600 bg-sky-50 dark:bg-sky-900/30 dark:text-sky-400' },
+  { email: 'budi@warkop.id',  label: 'Owner',   role: 'Full access',         colorLight: 'text-violet-600 bg-violet-50', colorDark: 'bg-violet-900/30 text-violet-400' },
+  { email: 'ani@warkop.id',   label: 'Cashier', role: 'POS only',            colorLight: 'text-blue-600 bg-blue-50', colorDark: 'bg-blue-900/30 text-blue-400' },
+  { email: 'citra@warkop.id', label: 'Cashier', role: 'POS only',            colorLight: 'text-sky-600 bg-sky-50', colorDark: 'bg-sky-900/30 text-sky-400' },
 ];
 
 export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) {
@@ -65,9 +65,9 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
             <Store size={40} className="text-white" />
           </div>
           <h1 className="text-3xl font-bold mb-4">POS Pro</h1>
-          <p className="text-blue-100 text-lg leading-relaxed mb-8">The professional point-of-sale system for modern F&B and retail businesses.</p>
+          <p className="text-blue-100 text-lg leading-relaxed mb-8">Streamline your business operations with real-time insights.</p>
           <div className="grid grid-cols-3 gap-4 text-sm">
-            {['Orders', 'Inventory', 'Reports'].map(f => (
+            {['Smart Ordering', 'Stock Tracking', 'Live Analytics'].map(f => (
               <div key={f} className="bg-white/10 rounded-xl p-3 backdrop-blur-sm border border-white/10">
                 <p className="font-semibold">{f}</p>
               </div>
@@ -77,7 +77,7 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
       </div>
 
       {/* Right panel — form */}
-      <div className={`flex flex-1 lg:max-w-md items-center justify-center p-6 ${darkMode ? '' : ''}`}>
+      <div className={`flex flex-1 lg:max-w-md items-center justify-center p-6`}>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -198,7 +198,7 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
                       <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{acc.role}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${acc.color}`}>{acc.label}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${darkMode ? acc.colorDark : acc.colorLight}`}>{acc.label}</span>
                       <ChevronRight size={14} className="text-slate-400" />
                     </div>
                   </button>

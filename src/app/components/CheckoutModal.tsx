@@ -29,7 +29,7 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[]
 ];
 
 export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, categories, subtotalBeforePromo, taxAmount, customers, loyaltySettings, selectedCustomerId, onClose, onConfirm }: CheckoutModalProps) {
-  const [orderNumber] = useState(() => `INV-${Date.now().toString().slice(-6)}`);
+  const [orderNumber] = useState(() => `INV-${Date.now().toString().slice(-6)}${Math.random().toString(36).substring(2, 4).toUpperCase()}`);
   const [step,       setStep]      = useState<'payment' | 'success'>('payment');
   const [method,     setMethod]    = useState<PaymentMethod>('cash');
   const [cashInput,  setCashInput] = useState('');
@@ -236,7 +236,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
     return (
       <ModalShell onClose={() => onClose(true)} darkMode={dm}>
         <div className="flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
+          <div className={`w-16 h-16 rounded-full ${dm ? 'bg-emerald-900/40' : 'bg-emerald-100'} flex items-center justify-center mb-4`}>
             <CheckCircle size={32} className="text-emerald-600" />
           </div>
           <h2 className={`text-xl font-bold mb-1 ${t1}`}>Payment Received</h2>
@@ -301,7 +301,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
               <div className="flex items-center gap-2">
                 <input type="checkbox" checked={usePoints} onChange={e => setUsePoints(e.target.checked)} className="w-4 h-4 text-amber-500" />
                 <div>
-                  <div className={`text-sm font-medium ${usePoints ? 'text-amber-600 dark:text-amber-500' : t1}`}>
+                  <div className={`text-sm font-medium ${usePoints ? (dm ? 'text-amber-500' : 'text-amber-600') : t1}`}>
                     Redeem Points
                   </div>
                   <div className={`text-xs ${t2}`}>
@@ -436,7 +436,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
         disabled={!canConfirm}
         className={[
           'w-full py-4 rounded-xl transition-colors text-white font-semibold tabular-nums',
-          canConfirm ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-300 dark:bg-slate-700 text-slate-400 cursor-not-allowed',
+          canConfirm ? 'bg-emerald-600 hover:bg-emerald-700' : (dm ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-slate-300 text-slate-400 cursor-not-allowed'),
         ].join(' ')}
       >
         Confirm Payment · {formatIDR(total)}

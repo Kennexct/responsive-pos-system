@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, User, Phone, Mail, Award, CreditCard, Calendar, MessageCircle, X, ChevronRight, Tag, Users } from 'lucide-react';
+import { Search, User, Phone, Mail, Award, CreditCard, Calendar, MessageCircle, X, ChevronRight, Tag, Users, CheckCircle } from 'lucide-react';
 import type { Customer, LoyaltySettings, RecentOrder } from './mockData';
 import { formatIDR } from './mockData';
 
@@ -55,16 +55,16 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
         {/* Header & Tabs */}
         <div className="p-4 sm:p-6 pb-2 shrink-0">
           <h1 className={`text-2xl font-bold ${t1} mb-4`}>CRM & Loyalty</h1>
-          <div className="flex gap-4 border-b border-slate-200 dark:border-slate-700">
+          <div className={`flex gap-2 overflow-x-auto pb-2 border-b ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
             <button
               onClick={() => setActiveTab('directory')}
-              className={`pb-2 px-1 border-b-2 transition-colors font-medium text-sm ${activeTab === 'directory' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap ${activeTab === 'directory' ? (dm ? 'bg-blue-900/20 text-blue-400 border-b-2 border-blue-500' : 'bg-blue-50 text-blue-700 border-b-2 border-blue-600') : (dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100')}`}
             >
               Customer Directory
             </button>
             <button
               onClick={() => setActiveTab('segments')}
-              className={`pb-2 px-1 border-b-2 transition-colors font-medium text-sm ${activeTab === 'segments' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap ${activeTab === 'segments' ? (dm ? 'bg-blue-900/20 text-blue-400 border-b-2 border-blue-500' : 'bg-blue-50 text-blue-700 border-b-2 border-blue-600') : (dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100')}`}
             >
               Segmentation & Campaigns
             </button>
@@ -123,7 +123,7 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
                                 <span className={`font-semibold ${t1}`}>{c.name}</span>
                                 {c.tags && c.tags.length > 0 && (
                                   <div className="flex gap-1 mt-0.5">
-                                    {c.tags.map(t => <span key={t} className="px-1.5 py-0.5 rounded text-[10px] bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{t}</span>)}
+                                    {c.tags.map(t => <span key={t} className={`px-1.5 py-0.5 rounded text-[10px] ${dm ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>{t}</span>)}
                                   </div>
                                 )}
                               </div>
@@ -132,11 +132,11 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
                           <td className="px-4 py-3">
                             <div className="flex flex-col gap-1 items-start">
                               {c.tierId ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 capitalize">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${dm ? 'bg-amber-900/30 text-amber-300' : 'bg-amber-100 text-amber-800'}`}>
                                   {loyaltySettings.tiers?.find(t => t.id === c.tierId)?.name || c.tierId}
                                 </span>
                               ) : <span className={`text-xs ${t2}`}>-</span>}
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300`}>{c.rfmSegment}</span>
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded ${dm ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-800'}`}>{c.rfmSegment}</span>
                             </div>
                           </td>
                           <td className="px-4 py-3">
@@ -148,7 +148,7 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1.5">
                               <Award size={14} className={c.pointsBalance > 0 ? 'text-amber-500' : t2} />
-                              <span className={`font-medium ${c.pointsBalance > 0 ? 'text-amber-600 dark:text-amber-400' : t1}`}>
+                              <span className={`font-medium ${c.pointsBalance > 0 ? (dm ? 'text-amber-400' : 'text-amber-600') : t1}`}>
                                 {c.pointsBalance.toLocaleString('id-ID')} pts
                               </span>
                             </div>
@@ -184,10 +184,10 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
                   <button 
                     key={s.id} 
                     onClick={() => setSegmentFilter(s.id)}
-                    className={`flex flex-col text-left p-3 rounded-xl transition-colors border ${segmentFilter === s.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : `border-transparent hover:bg-slate-100 dark:hover:bg-slate-700/50`}`}
+                    className={`flex flex-col text-left p-3 rounded-xl transition-colors border ${segmentFilter === s.id ? (dm ? 'border-blue-500 bg-blue-900/20' : 'border-blue-500 bg-blue-50') : (dm ? 'border-transparent hover:bg-slate-700/50' : 'border-transparent hover:bg-slate-100')}`}
                   >
-                    <span className={`font-medium text-sm ${segmentFilter === s.id ? 'text-blue-700 dark:text-blue-400' : t1}`}>{s.label}</span>
-                    <span className={`text-xs ${segmentFilter === s.id ? 'text-blue-500 dark:text-blue-300' : t2}`}>{s.desc}</span>
+                    <span className={`font-medium text-sm ${segmentFilter === s.id ? (dm ? 'text-blue-400' : 'text-blue-700') : t1}`}>{s.label}</span>
+                    <span className={`text-xs ${segmentFilter === s.id ? (dm ? 'text-blue-300' : 'text-blue-500') : t2}`}>{s.desc}</span>
                   </button>
                 ))}
               </div>
@@ -256,8 +256,8 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
 
 function CustomerDetailsModal({ customer, orders, darkMode, onClose }: { customer: Customer, orders: RecentOrder[], darkMode: boolean, onClose: () => void }) {
   const dm = darkMode;
-  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
-  const t1 = dm ? 'text-slate-100' : 'text-slate-900';
+  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
+  const t1 = dm ? 'text-slate-100' : 'text-slate-800';
   const t2 = dm ? 'text-slate-400' : 'text-slate-500';
 
   return (
@@ -265,7 +265,7 @@ function CustomerDetailsModal({ customer, orders, darkMode, onClose }: { custome
       <div className={`w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-right ${dm ? 'bg-slate-900' : 'bg-slate-50'}`}>
         <div className={`p-4 border-b flex items-center justify-between sticky top-0 z-10 ${surface}`}>
           <h2 className={`font-semibold ${t1}`}>Customer Details</h2>
-          <button onClick={onClose} className={`p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 ${t2}`}>
+          <button onClick={onClose} className={`p-2 rounded-full ${dm ? 'hover:bg-slate-800' : 'hover:bg-slate-100'} ${t2}`}>
             <X size={20} />
           </button>
         </div>
@@ -278,7 +278,7 @@ function CustomerDetailsModal({ customer, orders, darkMode, onClose }: { custome
             <h3 className={`text-xl font-bold ${t1}`}>{customer.name}</h3>
             <p className={`${t2}`}>{customer.phone}</p>
             {customer.marketingConsent && (
-              <span className="mt-2 px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center gap-1">
+              <span className={`mt-2 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${dm ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-800'}`}>
                 <CheckCircle size={12} /> Marketing Opt-In
               </span>
             )}
@@ -296,7 +296,7 @@ function CustomerDetailsModal({ customer, orders, darkMode, onClose }: { custome
                       <span className={`text-sm font-medium ${t1}`}>{o.orderNumber}</span>
                       <span className={`text-xs block ${t2}`}>{new Date(o.createdAt).toLocaleString()}</span>
                     </div>
-                    <span className={`text-sm font-bold text-blue-600 dark:text-blue-400`}>{formatIDR(o.total)}</span>
+                    <span className={`text-sm font-bold ${dm ? 'text-blue-400' : 'text-blue-600'}`}>{formatIDR(o.total)}</span>
                   </div>
                   <div className={`text-xs flex gap-2 ${t2}`}>
                     {o.pointsEarned ? <span className="text-amber-500">+{o.pointsEarned} pts</span> : null}
@@ -317,8 +317,8 @@ function CampaignModal({ darkMode, customersCount, onClose }: { darkMode: boolea
   const [sent, setSent] = useState(false);
   
   const dm = darkMode;
-  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
-  const t1 = dm ? 'text-slate-100' : 'text-slate-900';
+  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
+  const t1 = dm ? 'text-slate-100' : 'text-slate-800';
   const t2 = dm ? 'text-slate-400' : 'text-slate-500';
 
   if (sent) {
@@ -330,7 +330,7 @@ function CampaignModal({ darkMode, customersCount, onClose }: { darkMode: boolea
           </div>
           <h2 className={`text-xl font-bold ${t1} mb-2`}>Campaign Sent!</h2>
           <p className={`${t2} mb-6`}>Message successfully broadcasted to {customersCount} customers via WhatsApp integration.</p>
-          <button onClick={onClose} className="w-full py-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-medium rounded-xl">
+          <button onClick={onClose} className={`w-full py-3 font-medium rounded-xl ${dm ? 'bg-slate-100 text-slate-900' : 'bg-slate-900 text-white'}`}>
             Close
           </button>
         </div>
@@ -343,7 +343,7 @@ function CampaignModal({ darkMode, customersCount, onClose }: { darkMode: boolea
       <div className={`w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden ${surface}`}>
         <div className={`p-4 border-b flex items-center justify-between ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
           <h2 className={`font-semibold ${t1} flex items-center gap-2`}><MessageCircle size={18} className="text-emerald-500"/> Broadcast Campaign</h2>
-          <button onClick={onClose} className={`p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 ${t2}`}>
+          <button onClick={onClose} className={`p-1.5 rounded-full ${dm ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${t2}`}>
             <X size={20} />
           </button>
         </div>

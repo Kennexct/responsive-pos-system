@@ -28,7 +28,7 @@ interface Props {
   darkMode: boolean;
 }
 
-export function Dashboard({ orders, darkMode }: Props) {
+export function Dashboard({ orders, products, customers, loyaltySettings, darkMode }: Props) {
   const dm = darkMode;
 
   const sessionSales  = orders.filter(o => o.status === 'completed').reduce((s, o) => s + o.total, 0);
@@ -53,7 +53,7 @@ export function Dashboard({ orders, darkMode }: Props) {
     { label: 'Customers',        value: String(customers.length), change: '+2.1%',  up: true,  icon: Users,       iconBg: dm ? 'bg-orange-900/40'  : 'bg-orange-50',  iconColor: 'text-orange-500',  accent: 'border-l-orange-500'  },
   ];
 
-  const displayOrders = orders.slice(0, 8);
+  const displayOrders = orders.slice(0, 6);
   
   const lowStockProducts = products.filter(p => p.trackInventory && p.stock <= p.lowStockThreshold);
   const totalPointsLiability = customers.reduce((sum, c) => sum + c.pointsBalance, 0) * loyaltySettings.redemptionValue;
@@ -62,7 +62,7 @@ export function Dashboard({ orders, darkMode }: Props) {
     <div className={`flex-1 overflow-y-auto ${bg}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div>
-          <h1 className={t1}>Dashboard</h1>
+          <h1 className={`text-xl sm:text-2xl font-bold ${t1}`}>Dashboard</h1>
           <p className={`text-sm mt-0.5 ${t2}`}>
             {getDynamicDate()}
             {sessionOrders > 0 && (
@@ -76,23 +76,23 @@ export function Dashboard({ orders, darkMode }: Props) {
         <div className="flex flex-col md:flex-row gap-4 mb-2">
           {lowStockProducts.length > 0 && (
             <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex-1">
-              <div className="p-2 bg-amber-500/20 rounded-lg text-amber-600 dark:text-amber-500">
+              <div className={`p-2 rounded-lg ${dm ? 'bg-amber-900/20 text-amber-500' : 'bg-amber-500/20 text-amber-600'}`}>
                 <ShoppingBag size={20} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Low Stock Alert</p>
-                <p className="text-xs text-amber-600 dark:text-amber-500">{lowStockProducts.length} product(s) below reorder threshold.</p>
+                <p className={`text-sm font-semibold ${dm ? 'text-amber-400' : 'text-amber-700'}`}>Low Stock Alert</p>
+                <p className={`text-xs ${dm ? 'text-amber-500' : 'text-amber-600'}`}>{lowStockProducts.length} product(s) below reorder threshold.</p>
               </div>
             </div>
           )}
           {totalPointsLiability > 500000 && (
             <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex-1">
-              <div className="p-2 bg-red-500/20 rounded-lg text-red-600 dark:text-red-500">
+              <div className={`p-2 rounded-lg ${dm ? 'bg-red-900/20 text-red-500' : 'bg-red-500/20 text-red-600'}`}>
                 <DollarSign size={20} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-red-700 dark:text-red-400">High Points Liability</p>
-                <p className="text-xs text-red-600 dark:text-red-500">Unredeemed points value exceeds {formatIDR(500000)} (Current: {formatIDR(totalPointsLiability)}).</p>
+                <p className={`text-sm font-semibold ${dm ? 'text-red-400' : 'text-red-700'}`}>High Points Liability</p>
+                <p className={`text-xs ${dm ? 'text-red-500' : 'text-red-600'}`}>Unredeemed points value exceeds {formatIDR(500000)} (Current: {formatIDR(totalPointsLiability)}).</p>
               </div>
             </div>
           )}
@@ -113,7 +113,7 @@ export function Dashboard({ orders, darkMode }: Props) {
                     {card.change}
                   </span>
                 </div>
-                <p className={`text-xs mb-1 ${t2}`}>{card.label}</p>
+                <h3 className={`text-xs mb-1 ${t2}`}>{card.label}</h3>
                 <p className={`text-base font-bold ${t1}`}>{card.value}</p>
               </div>
             );
@@ -124,7 +124,7 @@ export function Dashboard({ orders, darkMode }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className={`lg:col-span-2 rounded-2xl p-5 shadow-sm border ${surface}`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={t1}>Weekly Sales</h3>
+              <h3 className={`font-semibold ${t1}`}>Weekly Sales</h3>
               <span className={`text-xs px-2 py-1 rounded-full ${dm ? 'bg-slate-700 text-slate-400' : 'bg-slate-100 text-slate-400'}`}>Last 7 days</span>
             </div>
             <ResponsiveContainer width="100%" height={220}>
@@ -145,7 +145,7 @@ export function Dashboard({ orders, darkMode }: Props) {
           </div>
 
           <div className={`rounded-2xl p-5 shadow-sm border ${surface}`}>
-            <h3 className={`${t1} mb-4`}>Payment Mix</h3>
+            <h3 className={`font-semibold ${t1} mb-4`}>Payment Mix</h3>
             <ResponsiveContainer width="100%" height={160}>
               <PieChart>
                 <Pie data={PAYMENT_BREAKDOWN} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
@@ -171,7 +171,7 @@ export function Dashboard({ orders, darkMode }: Props) {
         {/* Top products + recent orders */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className={`rounded-2xl p-5 shadow-sm border ${surface}`}>
-            <h3 className={`${t1} mb-4`}>Top Products</h3>
+            <h3 className={`font-semibold ${t1} mb-4`}>Top Products</h3>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={TOP_PRODUCTS} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridLine} horizontal={false} />
@@ -184,14 +184,14 @@ export function Dashboard({ orders, darkMode }: Props) {
           </div>
 
           <div className={`rounded-2xl p-5 shadow-sm border ${surface}`}>
-            <h3 className={`${t1} mb-4`}>
+            <h3 className={`font-semibold ${t1} mb-4`}>
               Recent Transactions
               {displayOrders.length > 0 && (
                 <span className={`ml-2 text-xs font-normal ${t2}`}>({displayOrders.length} shown)</span>
               )}
             </h3>
             <div className="space-y-3">
-              {displayOrders.slice(0, 6).map(order => (
+              {displayOrders.map(order => (
                 <div key={order.id} className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${dm ? 'bg-blue-900/40' : 'bg-blue-50'}`}>
                     <ShoppingBag size={13} className="text-blue-500" />
@@ -201,7 +201,7 @@ export function Dashboard({ orders, darkMode }: Props) {
                     <p className={`text-xs flex items-center gap-1 capitalize ${t2}`}>
                       <span>{order.orderType}</span>
                       <span>·</span>
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${dm ? 'bg-slate-700 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
                         {PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod}
                       </span>
                     </p>

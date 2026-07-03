@@ -151,11 +151,11 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
         {/* Collapse toggle — desktop only */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden md:flex absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1E2330] border border-[#2A3142] items-center justify-center hover:bg-[#2A3142] transition-colors"
+          className={`hidden md:flex absolute -right-3 top-20 w-6 h-6 rounded-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'} border items-center justify-center ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-50'} transition-colors`}
         >
           {collapsed
-            ? <ChevronRight size={12} className="text-slate-400" />
-            : <ChevronLeft  size={12} className="text-slate-400" />
+            ? <ChevronRight size={12} className={darkMode ? 'text-slate-400' : 'text-slate-500'} />
+            : <ChevronLeft  size={12} className={darkMode ? 'text-slate-400' : 'text-slate-500'} />
           }
         </button>
       </aside>

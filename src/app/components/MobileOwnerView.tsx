@@ -22,13 +22,23 @@ export function MobileOwnerView({ orders, darkMode }: Props) {
   const dynamicDate  = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   const dm = darkMode;
 
+  const bg = dm ? 'bg-slate-900' : 'bg-slate-50';
+  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
+  const t1 = dm ? 'text-slate-100' : 'text-slate-800';
+  const t2 = dm ? 'text-slate-400' : 'text-slate-500';
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+
+  const tooltipStyle = { borderRadius: 10, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 11, background: dm ? '#1E2330' : '#fff', color: dm ? '#F1F5F9' : '#1E293B' };
+
   return (
-    <div className={`min-h-full pb-24 overflow-y-auto ${dm ? 'bg-slate-900' : 'bg-slate-50'}`}>
+    <div className={`min-h-full pb-24 overflow-y-auto ${bg}`}>
       {/* Header */}
-      <div className="bg-slate-900 text-white px-4 pt-6 pb-8">
-        <p className="text-slate-400 text-xs mb-1">{dynamicDate}</p>
-        <h1 className="text-white text-xl font-bold">Good Morning, Owner 👋</h1>
-        <p className="text-slate-400 text-sm mt-0.5">POS Pro Dashboard</p>
+      <div className={`px-4 pt-6 pb-8 ${dm ? 'bg-slate-800 border-b border-slate-700' : 'bg-white border-b border-slate-200 shadow-sm'}`}>
+        <p className={`text-xs mb-1 ${t2}`}>{dynamicDate}</p>
+        <h1 className={`text-xl font-bold ${t1}`}>{greeting} 👋</h1>
+        <p className={`text-sm mt-0.5 ${t2}`}>POS Pro Dashboard</p>
       </div>
 
       <div className="px-4 -mt-4 space-y-4">
@@ -56,26 +66,26 @@ export function MobileOwnerView({ orders, darkMode }: Props) {
 
         {/* Sales + orders cards */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <div className={`rounded-2xl p-4 shadow-sm border ${surface}`}>
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${dm ? 'bg-blue-900/40' : 'bg-blue-100'}`}>
                 <DollarSign size={15} className="text-blue-600" />
               </div>
-              <span className="text-xs text-slate-500">Today's Sales</span>
+              <span className={`text-xs ${t2}`}>Today's Sales</span>
             </div>
-            <p className="text-slate-800" style={{ fontWeight: 700 }}>{formatIDR(todaySales)}</p>
+            <p className={`font-bold ${t1}`}>{formatIDR(todaySales)}</p>
             <p className="text-xs text-emerald-600 mt-1 flex items-center gap-0.5">
               <ArrowUp size={10} /> 12.5% vs yesterday
             </p>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <div className={`rounded-2xl p-4 shadow-sm border ${surface}`}>
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${dm ? 'bg-emerald-900/40' : 'bg-emerald-100'}`}>
                 <ShoppingBag size={15} className="text-emerald-600" />
               </div>
-              <span className="text-xs text-slate-500">Orders</span>
+              <span className={`text-xs ${t2}`}>Orders</span>
             </div>
-            <p className="text-slate-800" style={{ fontWeight: 700 }}>{todayOrders}</p>
+            <p className={`font-bold ${t1}`}>{todayOrders}</p>
             <p className="text-xs text-emerald-600 mt-1 flex items-center gap-0.5">
               <ArrowUp size={10} /> 8.3% vs yesterday
             </p>
@@ -83,9 +93,9 @@ export function MobileOwnerView({ orders, darkMode }: Props) {
         </div>
 
         {/* Weekly sales mini chart */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+        <div className={`rounded-2xl p-4 shadow-sm border ${surface}`}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-slate-700 text-sm">Weekly Sales</h3>
+            <h3 className={`text-sm font-semibold ${t1}`}>Weekly Sales</h3>
             <TrendingUp size={15} className="text-blue-500" />
           </div>
           <ResponsiveContainer width="100%" height={100}>
@@ -96,10 +106,10 @@ export function MobileOwnerView({ orders, darkMode }: Props) {
                   <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}   />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 10, fill: dm ? '#64748B' : '#94A3B8' }} axisLine={false} tickLine={false} />
               <YAxis hide />
               <Tooltip
-                contentStyle={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 11 }}
+                contentStyle={tooltipStyle}
                 formatter={(v: number) => [formatIDR(v), 'Sales']}
               />
               <Area type="monotone" dataKey="sales" stroke="#3B82F6" strokeWidth={2} fill="url(#mobileGrad)" />
@@ -109,28 +119,28 @@ export function MobileOwnerView({ orders, darkMode }: Props) {
 
         {/* Live session orders */}
         {recentOrders.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-slate-700 text-sm">Live Orders This Session</h3>
-              <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+          <div className={`rounded-2xl shadow-sm border overflow-hidden ${surface}`}>
+            <div className={`px-4 py-3 border-b flex items-center justify-between ${dm ? 'border-slate-700' : 'border-slate-100'}`}>
+              <h3 className={`text-sm font-semibold ${t1}`}>Live Orders This Session</h3>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${dm ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
                 {recentOrders.length} new
               </span>
             </div>
-            <div className="divide-y divide-slate-50">
+            <div className={`divide-y ${dm ? 'divide-slate-700' : 'divide-slate-100'}`}>
               {recentOrders.map(order => (
                 <div key={order.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${dm ? 'bg-blue-900/40' : 'bg-blue-50'}`}>
                     <ShoppingBag size={13} className="text-blue-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-700">{order.orderNumber}</p>
-                    <p className="text-xs text-slate-400 capitalize">
+                    <p className={`text-sm ${t1}`}>{order.orderNumber}</p>
+                    <p className={`text-xs capitalize ${t2}`}>
                       {order.orderType} · {PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-slate-800" style={{ fontWeight: 500 }}>{formatIDR(order.total)}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className={`text-sm font-medium ${t1}`}>{formatIDR(order.total)}</p>
+                    <p className={`text-xs ${t2}`}>
                       {new Date(order.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
@@ -142,21 +152,23 @@ export function MobileOwnerView({ orders, darkMode }: Props) {
 
         {/* Low stock alerts */}
         {lowStockItems.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-amber-50">
-              <AlertTriangle size={16} className="text-amber-600" />
-              <h3 className="text-amber-700 text-sm">Low Stock Alerts ({lowStockItems.length})</h3>
+          <div className={`rounded-2xl shadow-sm border overflow-hidden ${surface}`}>
+            <div className={`flex items-center gap-2 px-4 py-3 border-b ${dm ? 'bg-amber-900/20 border-slate-700' : 'bg-amber-50 border-slate-100'}`}>
+              <AlertTriangle size={16} className={dm ? 'text-amber-400' : 'text-amber-600'} />
+              <h3 className={`text-sm font-semibold ${dm ? 'text-amber-400' : 'text-amber-700'}`}>Low Stock Alerts ({lowStockItems.length})</h3>
             </div>
-            <div className="divide-y divide-slate-50">
+            <div className={`divide-y ${dm ? 'divide-slate-700' : 'divide-slate-100'}`}>
               {lowStockItems.slice(0, 5).map(p => (
                 <div key={p.id} className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span>{p.emoji}</span>
-                    <span className="text-sm text-slate-700">{p.name}</span>
+                    <span className={`text-sm ${t1}`}>{p.name}</span>
                   </div>
                   <span className={[
                     'text-xs px-2 py-0.5 rounded-full',
-                    p.stock <= 3 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600',
+                    p.stock <= 3
+                      ? (dm ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-600')
+                      : (dm ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-600'),
                   ].join(' ')}>
                     {p.stock} left
                   </span>
@@ -167,11 +179,11 @@ export function MobileOwnerView({ orders, darkMode }: Props) {
         )}
 
         {/* POS notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
-          <ShoppingBag size={18} className="text-blue-600 mt-0.5 shrink-0" />
+        <div className={`rounded-2xl p-4 flex items-start gap-3 border ${dm ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-200'}`}>
+          <ShoppingBag size={18} className={`mt-0.5 shrink-0 ${dm ? 'text-blue-400' : 'text-blue-600'}`} />
           <div>
-            <p className="text-sm text-blue-800" style={{ fontWeight: 600 }}>POS Terminal</p>
-            <p className="text-xs text-blue-600 mt-0.5">
+            <p className={`text-sm font-semibold ${dm ? 'text-blue-300' : 'text-blue-800'}`}>POS Terminal</p>
+            <p className={`text-xs mt-0.5 ${dm ? 'text-blue-400' : 'text-blue-600'}`}>
               For checkout, please use a tablet or desktop. The POS terminal is optimized for larger screens.
             </p>
           </div>

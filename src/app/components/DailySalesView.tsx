@@ -239,9 +239,9 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
 
   return (
     <div className={`flex-1 overflow-y-auto ${bg}`}>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div>
-          <h1 className={t1}>Daily Sales</h1>
+          <h1 className={`text-xl sm:text-2xl font-bold ${t1}`}>Daily Sales</h1>
           <p className={`text-sm mt-0.5 ${t2}`}>Shift summary & invoice lookup</p>
         </div>
 
@@ -291,7 +291,7 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
           <div className="overflow-x-auto min-h-[300px]">
             <table className="w-full text-sm">
               <thead>
-                <tr className={`text-left border-b ${dm ? 'bg-slate-700/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                <tr className={`text-left border-b ${dm ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
                   <th className={`px-5 py-3 text-xs font-semibold ${t2}`}>Invoice</th>
                   <th className={`px-5 py-3 text-xs font-semibold ${t2}`}>Time</th>
                   <th className={`px-5 py-3 text-xs font-semibold ${t2}`}>Total</th>
@@ -300,7 +300,7 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
                   <th className={`px-5 py-3 text-xs font-semibold text-right ${t2}`}>Action</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${dm ? 'divide-slate-700' : 'divide-slate-50'}`}>
+              <tbody className={`divide-y ${dm ? 'divide-slate-700' : 'divide-slate-100'}`}>
                 {filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan={6} className={`px-5 py-8 text-center ${t2}`}>No invoices found for today.</td>
@@ -309,7 +309,7 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
                   filteredOrders.map((order, index) => (
                     <tr 
                       key={order.id} 
-                      className={`transition-colors ${dm ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50/80'}`}
+                      className={`transition-colors ${dm ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50'}`}
                     >
                       <td className="px-5 py-3">
                         <button 

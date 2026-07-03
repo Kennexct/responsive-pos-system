@@ -129,8 +129,28 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
   };
 
   const exportCSV = () => {
-    // Simple mock export
-    alert("CSV Export initiated.");
+    if (completedOrders.length === 0) return;
+    const headers = ['Order Number','Date','Cashier','Payment Method','Subtotal','Tax','Total','Status'];
+    const rows = completedOrders.map(o => [
+      o.orderNumber,
+      new Date(o.createdAt).toLocaleString('id-ID'),
+      o.cashier,
+      o.paymentMethod,
+      o.subtotal,
+      o.tax,
+      o.total,
+      o.status
+    ]);
+    const csvContent = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `pos-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -188,7 +208,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                   <div key={stat.label} className={`p-5 rounded-2xl border ${surface}`}>
                     <p className={`text-sm font-medium ${t2}`}>{stat.label}</p>
                     <p className={`text-2xl font-bold mt-2 ${t1}`}>{stat.value}</p>
-                    <p className={`text-xs mt-1 text-slate-400`}>{stat.desc}</p>
+                    <p className={`text-xs mt-1 ${t2}`}>{stat.desc}</p>
                   </div>
                 ))}
               </div>
@@ -199,7 +219,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={paymentBreakdown} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                        <Pie data={paymentBreakdown} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={5} dataKey="value">
                           {paymentBreakdown.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                         </Pie>
                         <Tooltip contentStyle={tooltipStyle} formatter={(val: number) => formatIDR(val)} />
@@ -225,7 +245,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     <div>
                       <p className={`text-sm font-medium ${t2}`}>Total Points Liability</p>
                       <p className={`text-2xl font-bold mt-2 text-amber-500`}>{formatIDR(totalPointsLiabilityIDR)}</p>
-                      <p className={`text-xs mt-1 text-slate-400`}>{totalPointsLiability.toLocaleString('id-ID')} pts unredeemed</p>
+                      <p className={`text-xs mt-1 ${t2}`}>{totalPointsLiability.toLocaleString('id-ID')} pts unredeemed</p>
                     </div>
                     {totalPointsLiabilityIDR > 500000 && (
                       <AlertCircle className="text-red-500" size={24} />
@@ -278,7 +298,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={categoryContribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                        <Pie data={categoryContribution} cx="50%" cy="50%" innerRadius={50} outerRadius={72} paddingAngle={5} dataKey="value">
                           {categoryContribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                         </Pie>
                         <Tooltip contentStyle={tooltipStyle} formatter={(val: number) => formatIDR(val)} />
@@ -307,7 +327,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                   {staffPerformance.map(staff => (
                     <tr key={staff.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
                       <td className={`px-6 py-4 font-medium ${t1}`}>{staff.name}</td>
-                      <td className={`px-6 py-4 text-emerald-600 dark:text-emerald-400 font-semibold`}>{formatIDR(staff.sales)}</td>
+                      <td className={`px-6 py-4 font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(staff.sales)}</td>
                       <td className={`px-6 py-4 ${t1}`}>{staff.txns}</td>
                       <td className={`px-6 py-4 ${t1}`}>{formatIDR(staff.atv)}</td>
                     </tr>
@@ -328,19 +348,19 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
               <div className={`p-6 rounded-2xl border ${surface}`}>
                 <h3 className={`font-semibold mb-6 text-lg ${t1}`}>Estimated P&L Snapshot</h3>
                 <div className="space-y-4 text-sm">
-                  <div className="flex justify-between pb-2 border-b border-dashed border-slate-200 dark:border-slate-700">
+                  <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                     <span className={t2}>Gross Sales (Excl. Tax)</span>
                     <span className={t1}>{formatIDR(totalSales - totalTax + discountLeakage)}</span>
                   </div>
-                  <div className="flex justify-between pb-2 border-b border-dashed border-slate-200 dark:border-slate-700">
+                  <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                     <span className={t2}>Discounts & Promos</span>
                     <span className="text-red-500">-{formatIDR(discountLeakage)}</span>
                   </div>
-                  <div className="flex justify-between pb-2 border-b border-slate-200 dark:border-slate-700 font-medium">
+                  <div className={`flex justify-between pb-2 border-b font-medium ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                     <span className={t1}>Net Sales</span>
                     <span className={t1}>{formatIDR(totalSales - totalTax)}</span>
                   </div>
-                  <div className="flex justify-between pb-2 border-b border-dashed border-slate-200 dark:border-slate-700">
+                  <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                     <span className={t2}>Cost of Goods Sold (COGS)</span>
                     <span className="text-red-500">-{formatIDR(totalCost)}</span>
                   </div>
@@ -349,7 +369,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     <span className="text-emerald-500">{formatIDR(grossProfit)}</span>
                   </div>
                   <div className="flex justify-end">
-                    <span className={`text-xs px-2 py-1 rounded-full ${profitMargin >= 30 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>
+                    <span className={`text-xs px-2 py-1 rounded-full ${profitMargin >= 30 ? (dm ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700') : (dm ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700')}`}>
                       {profitMargin}% Margin
                     </span>
                   </div>
@@ -359,7 +379,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
               <div className={`p-6 rounded-2xl border ${surface}`}>
                 <h3 className={`font-semibold mb-6 text-lg ${t1}`}>Tax & Compliance</h3>
                 <div className="space-y-4 text-sm">
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
+                  <div className={`flex justify-between items-center pb-3 border-b ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                     <div>
                       <p className={`font-medium ${t1}`}>Total Tax Collected</p>
                       <p className={`text-xs mt-0.5 ${t2}`}>To be remitted to tax authorities</p>

@@ -71,7 +71,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
         return prev.map(i => i.id === existing.id ? { ...i, qty: i.qty + 1 } : i);
       }
       return [...prev, { 
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        id: Date.now().toString() + Math.random().toString(36).substring(2, 11),
         product, 
         qty: 1, 
         discount: 0,
@@ -174,21 +174,12 @@ export function POSView({ businessType, products, categories, discountSettings, 
 
   const handleCheckoutClose = () => {
     setShowCheckout(false);
-    if (cart.length > 0 && heldOrders.length === 0) {
-      // If the order was completed, handleCheckoutDone was called. We should clear the cart now.
-      // But we need a way to know if it was completed or just closed.
-      // Actually, if we just clear cart when onOrderComplete is called, it unmounts the modal.
-      // So instead, let's just clear the cart inside handleCheckoutClose if the modal was in success state.
-      // Since POSView doesn't know the state, we can pass a boolean to onClose.
-    }
-  };
-
   const dm = darkMode;
   const bg      = dm ? 'bg-slate-900' : 'bg-slate-100';
   const toolbar  = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
   const inputCls = dm ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-500 focus:border-blue-400' : 'bg-slate-50 border-slate-200 text-slate-700 focus:border-blue-400';
-  const catActive = dm ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white';
-  const catInact  = dm ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200';
+  const catActive = dm ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white';
+  const catInact  = dm ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200';
   const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
   const t1      = dm ? 'text-slate-100' : 'text-slate-800';
   const t2      = dm ? 'text-slate-400' : 'text-slate-500';
@@ -310,7 +301,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
               <p className="text-sm">No products found</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 content-start">
               {filtered.map(product => {
                 const inCartQty  = cart.filter(i => i.product.id === product.id).reduce((s, i) => s + i.qty, 0);
                 const inCart     = inCartQty > 0;
@@ -603,7 +594,7 @@ function CartPanel({
         </div>
         <div className="flex items-center gap-2">
           {cart.length > 0 && (
-            <button onClick={onClearCart} className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+            <button onClick={onClearCart} className={`text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded transition-colors ${dm ? 'hover:bg-red-900/20' : 'hover:bg-red-50'}`}>
               Clear
             </button>
           )}
@@ -699,7 +690,7 @@ function CartPanel({
                       <span className="text-sm text-blue-500 tabular-nums font-semibold">{formatIDR(discounted)}</span>
                     </div>
                   </div>
-                  <button onClick={() => onRemoveItem(item.id)} className={`p-1.5 -mr-1 rounded-lg transition-colors ${t2} hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20`}>
+                  <button onClick={() => onRemoveItem(item.id)} className={`p-1.5 -mr-1 rounded-lg transition-colors ${t2} hover:text-red-500 ${dm ? 'hover:bg-red-900/20' : 'hover:bg-red-50'}`}>
                     <Trash2 size={14} />
                   </button>
                 </div>

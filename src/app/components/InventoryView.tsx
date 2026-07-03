@@ -312,7 +312,7 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
                           )}
                           <button
                             onClick={() => openEditProduct(product)}
-                            className="text-xs text-blue-600 hover:text-blue-800 px-2.5 py-1.5 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors font-medium"
+                            className={`text-xs text-blue-600 hover:text-blue-800 px-2.5 py-1.5 border rounded-lg transition-colors font-medium ${dm ? 'border-blue-800 hover:bg-blue-900/20' : 'border-blue-200 hover:bg-blue-50'}`}
                           >
                             <Pencil size={12} />
                           </button>
@@ -533,7 +533,7 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
                 </div>
                 
                 {newTrackInventory && (
-                  <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-dashed border-slate-300 dark:border-slate-600">
+                  <div className={`grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-dashed ${dm ? 'border-slate-600' : 'border-slate-300'}`}>
                     {!editingId && (
                       <div>
                         <label className={`text-xs block mb-1 ${t2}`}>Initial Stock *</label>
@@ -588,7 +588,7 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+          <div className={`mt-6 pt-4 border-t flex justify-end ${dm ? 'border-slate-700' : 'border-slate-100'}`}>
             <button
               disabled={!newName.trim() || !newPrice || !newCostPrice || (!editingId && newTrackInventory && !newStock)}
               onClick={saveProduct}
@@ -616,7 +616,7 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <button onClick={onChange} style={{ width: 40, height: 22, position: 'relative', flexShrink: 0 }}
-      className={`rounded-full transition-colors ${checked ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+      className={`rounded-full transition-colors ${checked ? 'bg-blue-600' : (dm ? 'bg-slate-600' : 'bg-slate-300')}`}>
       <span style={{ position: 'absolute', width: 18, height: 18, top: 2, left: 2, backgroundColor: 'white', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transform: checked ? 'translateX(18px)' : 'translateX(0)', transition: 'transform 0.2s' }} />
     </button>
   );
