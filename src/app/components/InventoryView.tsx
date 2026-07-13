@@ -529,7 +529,7 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
                     <p className={`text-sm font-medium ${t1}`}>Track Inventory</p>
                     <p className={`text-xs ${t2}`}>Monitor stock levels for this item</p>
                   </div>
-                  <Toggle checked={newTrackInventory} onChange={() => setNewTrackInventory(!newTrackInventory)} />
+                  <Toggle darkMode={darkMode} checked={newTrackInventory} onChange={() => setNewTrackInventory(!newTrackInventory)} />
                 </div>
                 
                 {newTrackInventory && (
@@ -555,7 +555,7 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
                   <p className={`text-sm font-medium ${t1}`}>Allow Discounts</p>
                   <p className={`text-xs ${t2}`}>Item eligible for manual and promo discounts</p>
                 </div>
-                <Toggle checked={newAllowDiscount} onChange={() => setNewAllowDiscount(!newAllowDiscount)} />
+                <Toggle darkMode={darkMode} checked={newAllowDiscount} onChange={() => setNewAllowDiscount(!newAllowDiscount)} />
               </div>
 
               {/* Variants Section */}
@@ -613,10 +613,10 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
   );
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+function Toggle({ checked, onChange, darkMode }: { checked: boolean; onChange: () => void; darkMode: boolean }) {
   return (
     <button onClick={onChange} style={{ width: 40, height: 22, position: 'relative', flexShrink: 0 }}
-      className={`rounded-full transition-colors ${checked ? 'bg-blue-600' : (dm ? 'bg-slate-600' : 'bg-slate-300')}`}>
+      className={`rounded-full transition-colors ${checked ? 'bg-blue-600' : (darkMode ? 'bg-slate-600' : 'bg-slate-300')}`}>
       <span style={{ position: 'absolute', width: 18, height: 18, top: 2, left: 2, backgroundColor: 'white', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transform: checked ? 'translateX(18px)' : 'translateX(0)', transition: 'transform 0.2s' }} />
     </button>
   );

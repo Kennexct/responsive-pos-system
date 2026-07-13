@@ -20,7 +20,7 @@ interface POSViewProps {
   loyaltySettings: LoyaltySettings;
   taxRules?: TaxRule[];
   terminalViewMode?: TerminalViewMode;
-  onOrderComplete: (cart: CartItem[], orderType: OrderType, paymentMethod: PaymentMethod, amountPaid: number, promoCode?: string, customerId?: string, pointsEarned?: number, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => void;
+  onOrderComplete: (cart: CartItem[], orderType: OrderType, paymentMethod: PaymentMethod, amountPaid: number, promoCode?: string, customerId?: string, pointsEarned?: number, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => string | void;
 }
 
 const ORDER_TYPES: { id: OrderType; label: string }[] = [
@@ -68,6 +68,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
       // Find exact match based on product AND variant
       const existing = prev.find(i => i.product.id === product.id && i.variant?.id === variant?.id);
       if (existing) {
+        if (product.trackInventory && existing.qty + 1 > product.stock) return prev;
         return prev.map(i => i.id === existing.id ? { ...i, qty: i.qty + 1 } : i);
       }
       return [...prev, { 
@@ -84,15 +85,29 @@ export function POSView({ businessType, products, categories, discountSettings, 
   };
 
   const updateQty = (id: string, delta: number) =>
-    setCart(prev => prev.map(i => i.id === id ? { ...i, qty: i.qty + delta } : i).filter(i => i.qty > 0));
+    setCart(prev => prev.map(i => {
+      if (i.id === id) {
+        const newQty = i.qty + delta;
+        if (i.product.trackInventory && newQty > i.product.stock) return i;
+        return { ...i, qty: newQty };
+      }
+      return i;
+    }).filter(i => i.qty > 0));
 
   const setDiscount = (id: string, pct: number, nominal?: number) =>
-    setCart(prev => prev.map(i => i.id === id ? { 
-      ...i, 
-      discount: Math.max(0, Math.min(100, pct)),
-      itemDiscountPercent: pct,
-      itemDiscountNominal: nominal 
-    } : i));
+    setCart(prev => prev.map(i => {
+      if (i.id === id) {
+        const basePrice = i.product.price + (i.variant?.priceDelta || 0);
+        const finalNominal = nominal !== undefined ? Math.max(0, Math.min(basePrice, nominal)) : undefined;
+        return {
+          ...i, 
+          discount: Math.max(0, Math.min(100, pct)),
+          itemDiscountPercent: pct,
+          itemDiscountNominal: finalNominal 
+        };
+      }
+      return i;
+    }));
 
   const removeItem = (id: string) => setCart(prev => prev.filter(i => i.id !== id));
   const clearCart  = () => setCart([]);
@@ -166,10 +181,10 @@ export function POSView({ businessType, products, categories, discountSettings, 
   };
 
   const handleCheckoutDone = (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => {
-    // Points earned is calculated in App.tsx or here? App.tsx handles saving the order. Let's pass what App needs.
-    onOrderComplete(cart, orderType, method, amountPaid, promoCode, selectedCustomerId || undefined, undefined, pointsRedeemed, pointsDiscountAmt, finalTax, total, finalSubtotal);
+    const invoiceNum = onOrderComplete(cart, orderType, method, amountPaid, promoCode, selectedCustomerId || undefined, undefined, pointsRedeemed, pointsDiscountAmt, finalTax, total, finalSubtotal);
     setTableNote('');
     setSelectedCustomerId(null);
+    return invoiceNum;
   };
 
   const handleCheckoutClose = () => {

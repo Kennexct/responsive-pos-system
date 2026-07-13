@@ -262,7 +262,7 @@ export function SettingsView({
                 <Field label="Phone"          value={bizPhone}   onChange={setBizPhone}   darkMode={dm} type="tel" />
                 <Field label="Email"          value={bizEmail}   onChange={setBizEmail}   darkMode={dm} type="email" />
                 <Field label="Address"        value={bizAddress} onChange={setBizAddress} darkMode={dm} />
-                <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
+                <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
               </div>
             )}
 
@@ -284,7 +284,7 @@ export function SettingsView({
                 <Field label="Display Currency (optional)" value="" onChange={() => {}} placeholder="e.g. USD" darkMode={dm} />
                 <Field label="Exchange Rate (manual)" value="" onChange={() => {}} type="number" placeholder="e.g. 16000" darkMode={dm} />
                 <p className={`text-xs ${t2}`}>Rate is entered manually — no live FX in v1.</p>
-                <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
+                <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
               </div>
             )}
 
@@ -324,7 +324,7 @@ export function SettingsView({
                     {categories.filter(c => c.id !== 'cat-all').map(cat => (
                       <div key={cat.id} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                         <span className={`text-sm font-medium ${t1}`}>{cat.name}</span>
-                        <Toggle checked={cat.isTaxable} onChange={() => toggleCategoryTax(cat.id)} />
+                        <Toggle darkMode={darkMode} checked={cat.isTaxable} onChange={() => toggleCategoryTax(cat.id)} />
                       </div>
                     ))}
                   </div>
@@ -342,14 +342,14 @@ export function SettingsView({
                       <span className={`text-sm font-medium block ${t1}`}>Enable All Discounts</span>
                       <span className={`text-xs ${t2}`}>Master switch for discount features.</span>
                     </div>
-                    <Toggle checked={discountSettings.enabled} onChange={() => setDiscountSettings(prev => ({...prev, enabled: !prev.enabled}))} />
+                    <Toggle darkMode={darkMode} checked={discountSettings.enabled} onChange={() => setDiscountSettings(prev => ({...prev, enabled: !prev.enabled}))} />
                   </div>
                   <div className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                     <div>
                       <span className={`text-sm font-medium block ${t1}`}>Allow Item-Level Discounts</span>
                       <span className={`text-xs ${t2}`}>Allow cashiers to apply ad-hoc discounts to specific items.</span>
                     </div>
-                    <Toggle 
+                    <Toggle darkMode={darkMode} 
                       checked={discountSettings.allowItemDiscount} 
                       onChange={() => setDiscountSettings(prev => ({...prev, allowItemDiscount: !prev.allowItemDiscount}))} 
                     />
@@ -381,14 +381,14 @@ export function SettingsView({
                           )}
                         </div>
                         <div className="flex items-center gap-3">
-                          <Toggle checked={promo.active} onChange={() => togglePromo(promo.id)} />
+                          <Toggle darkMode={darkMode} checked={promo.active} onChange={() => togglePromo(promo.id)} />
                           <button onClick={() => deletePromo(promo.id)} className={`transition-colors ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-400'}`}><Trash2 size={15} /></button>
                         </div>
                       </div>
                     ))
                   }
                 </div>
-                <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
+                <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
               </div>
             )}
 
@@ -404,7 +404,7 @@ export function SettingsView({
                       <span className={`text-sm font-medium block ${t1}`}>Enable Loyalty Program</span>
                       <span className={`text-xs ${t2}`}>Allow customers to earn and redeem points.</span>
                     </div>
-                    <Toggle checked={loyaltySettings.enabled} onChange={() => setLoyaltySettings(prev => ({...prev, enabled: !prev.enabled}))} />
+                    <Toggle darkMode={darkMode} checked={loyaltySettings.enabled} onChange={() => setLoyaltySettings(prev => ({...prev, enabled: !prev.enabled}))} />
                   </div>
 
                   {loyaltySettings.enabled && (
@@ -470,7 +470,7 @@ export function SettingsView({
                     </div>
                   )}
                 </div>
-                <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
+                <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
               </div>
             )}
 
@@ -490,12 +490,12 @@ export function SettingsView({
                     <span className={`text-sm font-medium block ${t1}`}>Require Manager PIN</span>
                     <span className={`text-xs ${t2}`}>Cashiers must enter a manager's PIN to refund or void an order.</span>
                   </div>
-                  <Toggle 
+                  <Toggle darkMode={darkMode} 
                     checked={refundSettings.managerPinRequired} 
                     onChange={() => setRefundSettings(prev => ({...prev, managerPinRequired: !prev.managerPinRequired}))} 
                   />
                 </div>
-                <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
+                <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
               </div>
             )}
 
@@ -508,11 +508,11 @@ export function SettingsView({
                   {payments.map(pm => (
                     <div key={pm.id} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                       <span className={`text-sm font-medium ${t1}`}>{pm.label}</span>
-                      <Toggle checked={pm.enabled} onChange={() => togglePayment(pm.id)} />
+                      <Toggle darkMode={darkMode} checked={pm.enabled} onChange={() => togglePayment(pm.id)} />
                     </div>
                   ))}
                 </div>
-                <SaveButton onSave={() => setConfirmSave(true)} saved={saved} />
+                <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
               </div>
             )}
 
@@ -600,7 +600,7 @@ export function SettingsView({
           <Field label="Tax Name" value={newTaxName} onChange={setNewTaxName} placeholder="e.g. Service Charge" darkMode={dm} />
           <Field label="Rate (%)" value={newTaxRate} onChange={setNewTaxRate} placeholder="e.g. 5" type="number" darkMode={dm} />
           <div className="flex items-center gap-2 mb-6">
-            <Toggle checked={newTaxInclusive} onChange={() => setNewTaxInclusive(!newTaxInclusive)} />
+            <Toggle darkMode={darkMode} checked={newTaxInclusive} onChange={() => setNewTaxInclusive(!newTaxInclusive)} />
             <span className={`text-sm ${t2}`}>Tax included in price</span>
           </div>
           <button onClick={addTax} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700">Add Tax</button>
@@ -649,7 +649,7 @@ export function SettingsView({
           </div>
 
           <div className="flex items-center gap-2 mb-6">
-            <Toggle checked={newPromoCannotCombine} onChange={() => setNewPromoCannotCombine(!newPromoCannotCombine)} />
+            <Toggle darkMode={darkMode} checked={newPromoCannotCombine} onChange={() => setNewPromoCannotCombine(!newPromoCannotCombine)} />
             <span className={`text-sm ${t2}`}>Cannot combine with item discounts</span>
           </div>
 
@@ -694,19 +694,19 @@ function Field({ label, value, onChange, placeholder, type = 'text', darkMode }:
   );
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+function Toggle({ checked, onChange, darkMode }: { checked: boolean; onChange: () => void; darkMode: boolean }) {
   return (
     <button onClick={onChange} style={{ width: 40, height: 22, position: 'relative', flexShrink: 0 }}
-      className={`rounded-full transition-colors ${checked ? 'bg-blue-600' : (dm ? 'bg-slate-600' : 'bg-slate-300')}`}>
+      className={`rounded-full transition-colors ${checked ? 'bg-blue-600' : (darkMode ? 'bg-slate-600' : 'bg-slate-300')}`}>
       <span style={{ position: 'absolute', width: 18, height: 18, top: 2, left: 2, backgroundColor: 'white', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transform: checked ? 'translateX(18px)' : 'translateX(0)', transition: 'transform 0.2s' }} />
     </button>
   );
 }
 
-function SaveButton({ onSave, saved }: { onSave: () => void; saved: boolean }) {
+function SaveButton({ onSave, saved, darkMode }: { onSave: () => void; saved: boolean; darkMode: boolean }) {
   return (
     <div className="pt-2">
-      <button onClick={onSave} disabled={saved} className={`px-6 py-2.5 rounded-xl font-semibold transition-colors ${saved ? (dm ? 'bg-emerald-900/40 text-emerald-600' : 'bg-emerald-100 text-emerald-600') : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+      <button onClick={onSave} disabled={saved} className={`px-6 py-2.5 rounded-xl font-semibold transition-colors ${saved ? (darkMode ? 'bg-emerald-900/40 text-emerald-600' : 'bg-emerald-100 text-emerald-600') : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
         {saved ? 'Saved!' : 'Save Settings'}
       </button>
     </div>

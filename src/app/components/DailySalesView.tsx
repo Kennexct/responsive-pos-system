@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, FileText, ChevronRight, X, AlertTriangle, ArrowLeft, RefreshCcw, XCircle, Printer } from 'lucide-react';
-import type { RecentOrder, RefundSettings, CartItem } from './mockData';
+import type { RecentOrder, RefundSettings, CartItem, User } from './mockData';
 import { formatIDR } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 
@@ -10,9 +10,10 @@ interface DailySalesViewProps {
   refundSettings: RefundSettings;
   onRefund: (orderId: string, reason: string) => void;
   onVoid: (orderId: string, reason: string) => void;
+  users: User[];
 }
 
-export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onVoid }: DailySalesViewProps) {
+export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onVoid, users }: DailySalesViewProps) {
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<RecentOrder | null>(null);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
@@ -54,9 +55,12 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
     }
     
     // Hardcoded manager PIN for demo purposes - in real app, validate against users
-    if (refundSettings.managerPinRequired && pin !== '1234' && pin !== '9999') {
-      setError('Invalid Manager PIN. (Hint: Try 1234)');
-      return;
+    if (refundSettings.managerPinRequired) {
+      const validManager = users.find(u => (u.role === 'manager' || u.role === 'owner') && u.pin === pin);
+      if (!validManager) {
+        setError('Invalid Manager PIN.');
+        return;
+      }
     }
 
     if (modalOrder) {

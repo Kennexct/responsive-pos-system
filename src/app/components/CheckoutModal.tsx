@@ -18,7 +18,7 @@ interface CheckoutModalProps {
   loyaltySettings?: LoyaltySettings;
   selectedCustomerId?: string | null;
   onClose: (completed?: boolean) => void;
-  onConfirm: (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => void;
+  onConfirm: (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => string | void;
 }
 
 const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[] = [
@@ -29,8 +29,9 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[]
 ];
 
 export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, categories, subtotalBeforePromo, taxAmount, customers, loyaltySettings, selectedCustomerId, onClose, onConfirm }: CheckoutModalProps) {
-  const [orderNumber] = useState(() => `INV-${Date.now().toString().slice(-6)}${Math.random().toString(36).substring(2, 4).toUpperCase()}`);
+  const [orderNumber, setOrderNumber] = useState('');
   const [step,       setStep]      = useState<'payment' | 'success'>('payment');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [method,     setMethod]    = useState<PaymentMethod>('cash');
   const [cashInput,  setCashInput] = useState('');
   
@@ -87,6 +88,15 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
     let applicableSubtotal = subtotalBeforePromo;
     
     if (appliedPromo.categories && appliedPromo.categories.length > 0) {
+      let tierDiscPct = 0;
+      if (selectedCustomerId && loyaltySettings?.enabled && customers) {
+        const cust = customers.find(c => c.id === selectedCustomerId);
+        if (cust) {
+          const tier = loyaltySettings.tiers.slice().sort((a,b) => b.minSpend - a.minSpend).find(t => cust.totalSpend >= t.minSpend);
+          tierDiscPct = tier?.discountPercent || 0;
+        }
+      }
+
       const allowedCategoryNames = categories
         .filter(c => appliedPromo.categories!.includes(c.id))
         .map(c => c.name);
@@ -94,11 +104,14 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
       applicableSubtotal = cart
         .filter(item => allowedCategoryNames.includes(item.product.category))
         .reduce((sum, item) => {
-          const basePrice = item.product.price + (item.variant?.priceModifier || 0);
+          const basePrice = item.product.price + (item.variant?.priceDelta || 0);
           const linePrice = basePrice * item.qty;
           let after = linePrice;
           if (item.itemDiscountNominal) after -= (item.itemDiscountNominal * item.qty);
           else if (item.discount) after -= linePrice * (item.discount / 100);
+          
+          if (tierDiscPct > 0) after -= after * (tierDiscPct / 100);
+          
           return sum + after;
         }, 0);
     }
@@ -140,7 +153,10 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const QUICK_AMOUNTS = [50000, 100000, 150000, 200000, 250000, 500000].filter(a => a >= total);
 
   const handleConfirm = () => {
-    onConfirm(method, method === 'cash' ? cashPaid : total, appliedPromo?.code, pointsRedeemed, pointsDiscountAmt, finalTax, total, finalSubtotal);
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const invoiceNum = onConfirm(method, method === 'cash' ? cashPaid : total, appliedPromo?.code, pointsRedeemed, pointsDiscountAmt, finalTax, total, finalSubtotal);
+    if (invoiceNum) setOrderNumber(invoiceNum);
     setStep('success');
   };
 
@@ -433,7 +449,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
 
       <button
         onClick={handleConfirm}
-        disabled={!canConfirm}
+        disabled={!canConfirm || isSubmitting}
         className={[
           'w-full py-4 rounded-xl transition-colors text-white font-semibold tabular-nums',
           canConfirm ? 'bg-emerald-600 hover:bg-emerald-700' : (dm ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-slate-300 text-slate-400 cursor-not-allowed'),

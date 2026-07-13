@@ -10,6 +10,7 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  pin: string;
 }
 
 export type RolePermissions = Record<Role, ViewType[]>;
@@ -21,9 +22,9 @@ export const DEFAULT_PERMISSIONS: RolePermissions = {
 };
 
 export const INITIAL_USERS: User[] = [
-  { id: '1', name: 'Budi Santoso', email: 'budi@warkop.id',  role: 'owner'   },
-  { id: '2', name: 'Ani Wijaya',   email: 'ani@warkop.id',   role: 'cashier' },
-  { id: '3', name: 'Citra Dewi',   email: 'citra@warkop.id', role: 'cashier' },
+  { id: '1', name: 'Budi Santoso', email: 'budi@warkop.id',  role: 'owner',   pin: '9999' },
+  { id: '2', name: 'Ani Wijaya',   email: 'ani@warkop.id',   role: 'cashier', pin: '1234' },
+  { id: '3', name: 'Citra Dewi',   email: 'citra@warkop.id', role: 'cashier', pin: '5678' },
 ];
 
 export interface Customer {

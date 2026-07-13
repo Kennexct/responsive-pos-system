@@ -11,9 +11,9 @@ interface AuthViewProps {
 }
 
 const DEMO_ACCOUNTS = [
-  { email: 'budi@warkop.id',  label: 'Owner',   role: 'Full access',         colorLight: 'text-violet-600 bg-violet-50', colorDark: 'bg-violet-900/30 text-violet-400' },
-  { email: 'ani@warkop.id',   label: 'Cashier', role: 'POS only',            colorLight: 'text-blue-600 bg-blue-50', colorDark: 'bg-blue-900/30 text-blue-400' },
-  { email: 'citra@warkop.id', label: 'Cashier', role: 'POS only',            colorLight: 'text-sky-600 bg-sky-50', colorDark: 'bg-sky-900/30 text-sky-400' },
+  { email: 'budi@warkop.id',  label: 'Owner',   role: 'Full access',         pin: '9999', colorLight: 'text-violet-600 bg-violet-50', colorDark: 'bg-violet-900/30 text-violet-400' },
+  { email: 'ani@warkop.id',   label: 'Cashier', role: 'POS only',            pin: '1234', colorLight: 'text-blue-600 bg-blue-50', colorDark: 'bg-blue-900/30 text-blue-400' },
+  { email: 'citra@warkop.id', label: 'Cashier', role: 'POS only',            pin: '5678', colorLight: 'text-sky-600 bg-sky-50', colorDark: 'bg-sky-900/30 text-sky-400' },
 ];
 
 export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) {
@@ -21,6 +21,7 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [name,     setName]     = useState('');
+  const [role,     setRole]     = useState<Role>('cashier');
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
 
@@ -31,14 +32,15 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
     await new Promise(r => setTimeout(r, 400)); // fake async for UX feel
 
     if (isLogin) {
-      const user = users.find(u => u.email === email);
+      const user = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
       if (!user) { setError('Email not found. Try a demo account below.'); setLoading(false); return; }
-      if (!password) { setError('Password is required.'); setLoading(false); return; }
+      if (!password) { setError('Password/PIN is required.'); setLoading(false); return; }
+      if (user.pin !== password) { setError('Incorrect password/PIN.'); setLoading(false); return; }
       onLogin(user);
     } else {
       if (!name.trim() || !email.trim() || !password) { setError('All fields are required.'); setLoading(false); return; }
-      if (users.some(u => u.email === email)) { setError('Email is already registered.'); setLoading(false); return; }
-      const newUser: User = { id: Date.now().toString(), name: name.trim(), email: email.trim(), role: 'owner' };
+      if (users.some(u => u.email.toLowerCase() === email.trim().toLowerCase())) { setError('Email is already registered.'); setLoading(false); return; }
+      const newUser: User = { id: Date.now().toString(), name: name.trim(), email: email.trim(), role: role, pin: password };
       onSignup(newUser);
     }
     setLoading(false);
@@ -134,15 +136,26 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
 
               {!isLogin && (
                 <motion.div
-                  key="name-field"
+                  key="signup-fields"
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 16 }}
+                  className="space-y-4"
                 >
-                  <label className={labelCls}>Full Name</label>
-                  <div className="relative">
-                    <UserIcon size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input type="text" placeholder="Your full name" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+                  <div>
+                    <label className={labelCls}>Full Name</label>
+                    <div className="relative">
+                      <UserIcon size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input type="text" placeholder="Budi Santoso" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Role</label>
+                    <select value={role} onChange={e => setRole(e.target.value as Role)} className={inputCls}>
+                      <option value="owner">Owner</option>
+                      <option value="manager">Manager</option>
+                      <option value="cashier">Cashier</option>
+                    </select>
                   </div>
                 </motion.div>
               )}
@@ -182,13 +195,13 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
           {isLogin && (
             <div className={`mt-6 rounded-2xl p-4 border ${darkMode ? 'bg-slate-800/60 border-slate-700' : 'bg-white border-slate-100 shadow-sm'}`}>
               <p className={`text-xs font-semibold mb-3 ${darkMode ? 'text-slate-400' : 'text-slate-400'}`}>
-                DEMO ACCOUNTS — any password
+                DEMO ACCOUNTS
               </p>
               <div className="space-y-2">
                 {DEMO_ACCOUNTS.map(acc => (
                   <button
                     key={acc.email}
-                    onClick={() => { setEmail(acc.email); setPassword('demo'); setError(''); }}
+                    onClick={() => { setEmail(acc.email); setPassword(acc.pin); setError(''); }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left border transition-all hover:scale-[1.01] active:scale-[0.99] ${
                       darkMode ? 'border-slate-700 hover:border-slate-600 bg-slate-800/50' : 'border-slate-100 hover:border-slate-200 bg-slate-50 hover:bg-white'
                     } ${email === acc.email ? 'ring-2 ring-blue-500' : ''}`}

@@ -218,11 +218,12 @@ export default function App() {
     );
   }
 
-  const allowedViews = permissions[currentUser.role];
+  const allowedViews = permissions[currentUser.role] || [];
 
   const VIEW_TITLE: Record<ViewType, string> = {
     pos: 'POS Terminal', dashboard: 'Dashboard',
     inventory: 'Inventory', reports: 'Reports', settings: 'Settings',
+    'daily-sales': 'Daily Sales', customers: 'Customers'
   };
 
   return (
@@ -289,12 +290,20 @@ export default function App() {
             {view === 'inventory'  && <InventoryView products={products} onProductsChange={setProducts} categories={categories} darkMode={darkMode} />}
             {view === 'reports'    && <ReportsView orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} categories={categories} darkMode={darkMode} />}
             {view === 'daily-sales'&& (
-              <DailySalesView 
+              <DailySalesView users={users} 
                 orders={orders} 
                 darkMode={darkMode} 
                 refundSettings={refundSettings} 
                 onRefund={handleRefund} 
                 onVoid={handleVoid} 
+              />
+            )}
+            {view === 'customers' && (
+              <CustomersView
+                customers={customers}
+                loyaltySettings={loyaltySettings}
+                darkMode={darkMode}
+                orders={orders}
               />
             )}
             {view === 'settings'   && (
@@ -315,6 +324,8 @@ export default function App() {
                 setTerminalViewMode={setTerminalViewMode}
                 refundSettings={refundSettings}
                 setRefundSettings={setRefundSettings}
+                loyaltySettings={loyaltySettings}
+                setLoyaltySettings={setLoyaltySettings}
                 darkMode={darkMode}
                 onToggleDark={() => setDarkMode(d => !d)}
                 bizName={bizName}   setBizName={setBizName}
@@ -347,7 +358,7 @@ export default function App() {
             {view === 'inventory' && <InventoryView products={products} onProductsChange={setProducts} categories={categories} darkMode={darkMode} />}
             {view === 'reports'   && <ReportsView orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} categories={categories} darkMode={darkMode} />}
             {view === 'daily-sales'&& (
-              <DailySalesView 
+              <DailySalesView users={users} 
                 orders={orders} 
                 darkMode={darkMode} 
                 refundSettings={refundSettings} 
