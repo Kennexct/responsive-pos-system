@@ -1,0 +1,69 @@
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
+
+type ToastType = 'success' | 'error' | 'info';
+
+interface ToastMessage {
+  id: string;
+  message: string;
+  type: ToastType;
+}
+
+interface ToastContextValue {
+  showToast: (message: string, type?: ToastType) => void;
+}
+
+const ToastContext = createContext<ToastContextValue | undefined>(undefined);
+
+export function ToastProvider({ children, darkMode }: { children: ReactNode, darkMode: boolean }) {
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2">
+        <AnimatePresence>
+          {toasts.map(toast => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, y: 50, scale: 0.3 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border min-w-[300px] ${
+                darkMode 
+                  ? 'bg-slate-800 border-slate-700 text-white' 
+                  : 'bg-white border-slate-200 text-slate-800'
+              }`}
+            >
+              {toast.type === 'success' && <CheckCircle className="text-emerald-500" size={20} />}
+              {toast.type === 'error' && <AlertCircle className="text-red-500" size={20} />}
+              {toast.type === 'info' && <Info className="text-blue-500" size={20} />}
+              <span className="flex-1 text-sm font-medium">{toast.message}</span>
+              <button 
+                onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                className={`p-1 rounded-md transition-colors ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}
+              >
+                <X size={14} className={darkMode ? 'text-slate-400' : 'text-slate-500'} />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+export const useToast = () => {
+  const context = useContext(ToastContext);
+  if (!context) throw new Error('useToast must be used within ToastProvider');
+  return context;
+};

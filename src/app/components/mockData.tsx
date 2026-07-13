@@ -159,6 +159,8 @@ export interface RecentOrder {
   total: number;
   totalCost: number;
   paymentMethod: PaymentMethod;
+  splitPaymentMethod?: PaymentMethod;
+  splitAmount?: number;
   orderType: OrderType;
   status: OrderStatus;
   createdAt: string;

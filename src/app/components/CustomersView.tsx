@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, User, Phone, Mail, Award, CreditCard, Calendar, MessageCircle, X, ChevronRight, Tag, Users, CheckCircle } from 'lucide-react';
+import { Search, User, Phone, Mail, Award, CreditCard, Calendar, MessageCircle, X, ChevronRight, Tag, Users, CheckCircle, ArrowUpDown } from 'lucide-react';
 import type { Customer, LoyaltySettings, RecentOrder } from './mockData';
 import { formatIDR } from './mockData';
 
@@ -29,13 +29,28 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
   const [showCampaignModal, setShowCampaignModal] = useState<boolean>(false);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [segmentFilter, setSegmentFilter] = useState<string>('all');
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
   const customersWithRFM = useMemo(() => customers.map(c => ({ ...c, rfmSegment: getRFMSegment(c) })), [customers]);
 
   const filteredDirectory = customersWithRFM.filter(c => 
     (c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)) &&
     (filterTier === 'all' || c.tierId === filterTier)
-  );
+  ).sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    const aVal = key === 'name' ? a.name : key === 'points' ? a.points : key === 'spend' ? a.totalSpend : 0;
+    const bVal = key === 'name' ? b.name : key === 'points' ? b.points : key === 'spend' ? b.totalSpend : 0;
+    if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+    setSortConfig({ key, direction });
+  };
 
   const segmentedCustomers = customersWithRFM.filter(c => {
     if (segmentFilter === 'all') return true;
@@ -114,12 +129,18 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm whitespace-nowrap">
                     <thead>
-                      <tr className={`border-b text-left ${dm ? 'border-slate-700 bg-slate-800/50' : 'border-slate-100 bg-slate-50'}`}>
-                        <th className={`px-4 py-3 font-semibold ${t2}`}>Customer</th>
+                      <tr className={`text-left text-xs uppercase tracking-wider border-b ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <th className={`px-4 py-3 font-semibold ${t2} cursor-pointer select-none`} onClick={() => handleSort('name')}>
+                          <div className="flex items-center gap-1">Customer <ArrowUpDown size={14} className="opacity-50" /></div>
+                        </th>
                         <th className={`px-4 py-3 font-semibold ${t2}`}>Tier & Segment</th>
                         <th className={`px-4 py-3 font-semibold ${t2}`}>Contact</th>
-                        <th className={`px-4 py-3 font-semibold ${t2}`}>Points</th>
-                        <th className={`px-4 py-3 font-semibold ${t2}`}>Behavioral Stats</th>
+                        <th className={`px-4 py-3 font-semibold ${t2} cursor-pointer select-none`} onClick={() => handleSort('points')}>
+                          <div className="flex items-center gap-1">Points <ArrowUpDown size={14} className="opacity-50" /></div>
+                        </th>
+                        <th className={`px-4 py-3 font-semibold ${t2} cursor-pointer select-none`} onClick={() => handleSort('spend')}>
+                          <div className="flex items-center gap-1">Behavioral Stats <ArrowUpDown size={14} className="opacity-50" /></div>
+                        </th>
                       </tr>
                     </thead>
                     <tbody className={`divide-y ${dm ? 'divide-slate-700' : 'divide-slate-100'}`}>

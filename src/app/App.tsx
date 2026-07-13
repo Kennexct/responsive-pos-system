@@ -1,5 +1,7 @@
 import { useState, useEffect, type ElementType } from 'react';
 import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu, Monitor, Users, Receipt } from 'lucide-react';
+import { usePersistentState } from './hooks/usePersistentState';
+import { ToastProvider } from './contexts/ToastContext';
 import { Sidebar } from './components/Sidebar';
 import { POSView } from './components/POSView';
 import { Dashboard } from './components/Dashboard';
@@ -32,7 +34,7 @@ export default function App() {
   const [view, setView]               = useState<ViewType>('pos');
   const [businessType, setBusinessType] = useState<BusinessType>('fnb');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [terminalViewMode, setTerminalViewMode] = useState<TerminalViewMode>('grid');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // ─── Theme ────────────────────────────────────────────────────────────────
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -48,39 +50,40 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // ─── Business Settings ─────────────────────────────────────────────────────
-  const [bizName,    setBizName]    = useState('Warung Kopi Santai');
-  const [bizPhone,   setBizPhone]   = useState('+62 812 3456 7890');
-  const [bizAddress, setBizAddress] = useState('Jl. Sudirman No. 123, Jakarta');
-  const [bizEmail,   setBizEmail]   = useState('hello@warkop.id');
+  // ─── Business Info (Persistent) ──────────────────────────────────────────
+  const [bizName, setBizName, bnLoaded] = usePersistentState('pos-bizname', 'Warung Kopi Santai');
+  const [bizPhone, setBizPhone, bpLoaded] = usePersistentState('pos-bizphone', '+62 812 3456 7890');
+  const [bizEmail, setBizEmail, beLoaded] = usePersistentState('pos-bizemail', 'hello@warkop.id');
+  const [bizAddress, setBizAddress, baLoaded] = usePersistentState('pos-bizaddress', 'Jl. Sudirman No. 123, Jakarta');
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users, setUsers]             = useState<User[]>([...INITIAL_USERS]);
-  const [permissions, setPermissions] = useState<RolePermissions>(DEFAULT_PERMISSIONS);
+  const [users, setUsers, usersLoaded] = usePersistentState<User[]>('pos-users', [...INITIAL_USERS]);
+  const [permissions, setPermissions, permsLoaded] = usePersistentState<RolePermissions>('pos-perms', DEFAULT_PERMISSIONS);
 
-  // ─── Shared Data ───────────────────────────────────────────────────────────
-  const [categories, setCategories] = useState<Category[]>([...CATEGORIES]);
-  const [products, setProducts] = useState<Product[]>([...PRODUCTS]);
-  const [orders,   setOrders]   = useState<RecentOrder[]>([...RECENT_ORDERS]);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodEntry[]>(INITIAL_PAYMENTS);
-  // ─── Taxes & Discounts ───────────────────────────────────────────────────
-  const [discountSettings, setDiscountSettings] = useState<DiscountSettings>({
+  // ─── Data State (Persistent) ─────────────────────────────────────────────
+  const [categories, setCategories, catLoaded] = usePersistentState<Category[]>('pos-categories', [...CATEGORIES]);
+  const [products, setProducts, prodLoaded] = usePersistentState<Product[]>('pos-products', [...PRODUCTS]);
+  const [orders, setOrders, ordersLoaded] = usePersistentState<RecentOrder[]>('pos-orders', [...RECENT_ORDERS]);
+  const [paymentMethods, setPaymentMethods, pmLoaded] = usePersistentState<PaymentMethodEntry[]>('pos-payments', INITIAL_PAYMENTS);
+  const [customers, setCustomers, custLoaded] = usePersistentState<Customer[]>('pos-customers', [...INITIAL_CUSTOMERS]);
+  
+  // ─── Taxes & Discounts (Persistent) ──────────────────────────────────────
+  const [discountSettings, setDiscountSettings, dsLoaded] = usePersistentState<DiscountSettings>('pos-discounts', {
     enabled: true,
     allowItemDiscount: true,
     promoCodes: [{ id: '1', code: 'PROMO10', type: 'percent', value: 10, active: true }]
   });
-  const [taxRules, setTaxRules] = useState<TaxRule[]>(INITIAL_TAX_RULES);
-  const [refundSettings, setRefundSettings] = useState<RefundSettings>({
+  const [refundSettings, setRefundSettings, rsLoaded] = usePersistentState<RefundSettings>('pos-refunds', {
     managerPinRequired: true
   });
-  const [customers, setCustomers] = useState<Customer[]>([...INITIAL_CUSTOMERS]);
-  const [loyaltySettings, setLoyaltySettings] = useState<LoyaltySettings>({ ...INITIAL_LOYALTY_SETTINGS });
+  const [loyaltySettings, setLoyaltySettings, lsLoaded] = usePersistentState<LoyaltySettings>('pos-loyalty', { ...INITIAL_LOYALTY_SETTINGS });
+  const [taxRules, setTaxRules, trLoaded] = usePersistentState<TaxRule[]>('pos-taxrules', INITIAL_TAX_RULES);
+  const [terminalViewMode, setTerminalViewMode, tvmLoaded] = usePersistentState<TerminalViewMode>('pos-terminalview', 'grid');
 
   const handleRefund = (orderId: string, reason: string) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'refunded', refundReason: reason } : o));
     
-    // Restock items
     const orderToRefund = orders.find(o => o.id === orderId);
     if (orderToRefund && orderToRefund.items) {
       setProducts(prev => prev.map(p => {
@@ -95,7 +98,6 @@ export default function App() {
 
   const handleVoid = (orderId: string, reason: string) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'voided', refundReason: reason } : o));
-    // No restock for voids
   };
 
   const handleOrderComplete = (
@@ -171,7 +173,6 @@ export default function App() {
           const newTotalTransactions = (c.totalTransactions || 0) + 1;
           const newAtv = Math.round(newTotalSpend / newTotalTransactions);
           
-          // Auto Tier Upgrade
           let newTierId = c.tierId;
           const applicableTiers = loyaltySettings.tiers
             .filter(t => newTotalSpend >= t.minSpend)
@@ -195,7 +196,6 @@ export default function App() {
       }));
     }
 
-    // Decrease stock
     const updatedProducts = products.map(p => {
       const inCart = cart.filter(i => i.product.id === p.id).reduce((s, i) => s + i.qty, 0);
       if (inCart > 0 && p.trackInventory) {
@@ -206,20 +206,26 @@ export default function App() {
     setProducts(updatedProducts);
   };
 
-  if (!currentUser) {
+  const isFullyLoaded = catLoaded && prodLoaded && ordersLoaded && pmLoaded && dsLoaded && rsLoaded && lsLoaded && trLoaded && tvmLoaded && bnLoaded && bpLoaded && beLoaded && baLoaded && usersLoaded && permsLoaded && custLoaded;
+
+  if (!isFullyLoaded) {
+    return <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>Loading...</div>;
+  }
+
+  if (!isAuthenticated || !currentUser) {
     return (
       <div className={darkMode ? 'dark' : ''}>
         <AuthView
           users={users}
           darkMode={darkMode}
-          onLogin={setCurrentUser}
-          onSignup={(u) => { setUsers(prev => [...prev, u]); setCurrentUser(u); }}
+          onLogin={(u) => { setCurrentUser(u); setIsAuthenticated(true); }}
+          onSignup={(u) => { setUsers(prev => [...prev, u]); setCurrentUser(u); setIsAuthenticated(true); }}
         />
       </div>
     );
   }
 
-  const allowedViews = permissions[currentUser.role] || [];
+  const allowedViews = currentUser ? permissions[currentUser.role] || [] : [];
 
   const VIEW_TITLE: Record<ViewType, string> = {
     pos: 'POS Terminal', dashboard: 'Dashboard',
@@ -228,15 +234,14 @@ export default function App() {
   };
 
   return (
-    <div className={`h-screen flex overflow-hidden relative ${darkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-      {/* Dynamic Background Decoration */}
+    <ToastProvider darkMode={darkMode}>
+      <div className={`h-screen flex overflow-hidden relative ${darkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className={`absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[120px] opacity-30 ${darkMode ? 'bg-blue-600' : 'bg-blue-300'}`} />
         <div className={`absolute top-[40%] -right-[10%] w-[40%] h-[60%] rounded-full blur-[120px] opacity-20 ${darkMode ? 'bg-purple-600' : 'bg-purple-300'}`} />
         <div className={`absolute -bottom-[20%] left-[20%] w-[60%] h-[40%] rounded-full blur-[120px] opacity-20 ${darkMode ? 'bg-emerald-600' : 'bg-emerald-300'}`} />
       </div>
 
-      {/* Main Content Area (z-10 to sit above background) */}
       <div className="z-10 flex w-full h-full">
       <Sidebar
         currentView={view}
@@ -245,14 +250,13 @@ export default function App() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         currentUser={currentUser}
-        onLogout={() => { setCurrentUser(null); setView('pos'); }}
+        onLogout={() => { setCurrentUser(null); setIsAuthenticated(false); setView('pos'); }}
         allowedViews={allowedViews}
         darkMode={darkMode}
         onToggleDark={() => setDarkMode(d => !d)}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile top bar */}
         <header className={`md:hidden flex items-center justify-between px-4 h-14 border-b shrink-0 backdrop-blur-md ${
           darkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white/60 border-slate-200'
         }`}>
@@ -443,6 +447,6 @@ export default function App() {
         </nav>
       </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }

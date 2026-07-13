@@ -26,11 +26,27 @@ interface Props {
 
 export function ReportsView({ orders, products, customers, loyaltySettings, categories, darkMode }: Props) {
   const [reportTab, setReportTab] = useState<ReportTab>('sales');
+  const [dateRange, setDateRange] = useState<'all' | 'today' | '7days' | '30days'>('30days');
   
   const dm = darkMode;
   
   // ── Global Metrics ────────────────────────────────────────────────────────
-  const completedOrders = useMemo(() => orders.filter(o => o.status === 'completed'), [orders]);
+  const completedOrders = useMemo(() => {
+    const today = new Date();
+    const startDate = new Date();
+    if (dateRange === '7days') startDate.setDate(today.getDate() - 7);
+    if (dateRange === '30days') startDate.setDate(today.getDate() - 30);
+    const startStr = startDate.toISOString().slice(0, 10);
+    const todayStr = today.toISOString().slice(0, 10);
+
+    return orders.filter(o => {
+      if (o.status !== 'completed') return false;
+      if (dateRange === 'all') return true;
+      const orderDate = o.createdAt.slice(0, 10);
+      if (dateRange === 'today') return orderDate === todayStr;
+      return orderDate >= startStr && orderDate <= todayStr;
+    });
+  }, [orders, dateRange]);
   
   const totalSales = completedOrders.reduce((s, o) => s + o.total, 0);
   const totalTax = completedOrders.reduce((s, o) => s + o.tax, 0);
@@ -163,13 +179,30 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
             <h1 className={`text-2xl font-bold ${t1}`}>Analytics & Reports</h1>
             <p className={`text-sm mt-0.5 ${t2}`}>Insights into business performance</p>
           </div>
-          <button
-            onClick={exportCSV}
-            className={`flex items-center gap-2 border rounded-xl px-4 py-2 text-sm font-medium transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50 bg-white'}`}
-          >
-            <Download size={15} />
-            <span className="hidden sm:inline">Export Report</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1 p-1 rounded-xl border w-fit ${dm ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+              {(['all', 'today', '7days', '30days'] as const).map(range => (
+                <button
+                  key={range}
+                  onClick={() => setDateRange(range)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    dateRange === range
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {range === 'all' ? 'All Time' : range === 'today' ? 'Today' : range === '7days' ? '7 Days' : '30 Days'}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={exportCSV}
+              className={`flex items-center gap-2 border rounded-xl px-4 py-2 text-sm font-medium transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50 bg-white'}`}
+            >
+              <Download size={15} />
+              <span className="hidden sm:inline">Export</span>
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, FileText, ChevronRight, X, AlertTriangle, ArrowLeft, RefreshCcw, XCircle, Printer } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Search, Eye, RefreshCcw, XCircle, ArrowLeft, Download, CheckCircle, Receipt, X, Calendar, FileText, ChevronRight, AlertTriangle, Printer } from 'lucide-react';
 import type { RecentOrder, RefundSettings, CartItem, User } from './mockData';
 import { formatIDR } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -26,22 +26,34 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days'>('today');
+
+  const today = new Date();
+  const startDate = new Date();
+  if (dateRange === '7days') startDate.setDate(today.getDate() - 7);
+  if (dateRange === '30days') startDate.setDate(today.getDate() - 30);
+  const startStr = startDate.toISOString().slice(0, 10);
+  const todayStr = today.toISOString().slice(0, 10);
+
+  const periodOrdersRaw = orders.filter(o => {
+    const orderDate = o.createdAt.slice(0, 10);
+    if (dateRange === 'today') return orderDate === todayStr;
+    return orderDate >= startStr && orderDate <= todayStr;
+  });
   
   // Only include completed orders in revenue metrics
-  const todayOrders = orders.filter(o => o.createdAt.startsWith(todayStr) && o.status === 'completed');
+  const periodOrders = periodOrdersRaw.filter(o => o.status === 'completed');
   
-  const totalRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
-  const totalItems = todayOrders.reduce((sum, o) => sum + o.itemCount, 0);
-  const totalOrders = todayOrders.length;
+  const totalRevenue = periodOrders.reduce((sum, o) => sum + o.total, 0);
+  const totalItems = periodOrders.reduce((sum, o) => sum + o.itemCount, 0);
+  const totalOrders = periodOrders.length;
   
-  const paymentBreakdown = todayOrders.reduce((acc, o) => {
+  const paymentBreakdown = periodOrders.reduce((acc, o) => {
     acc[o.paymentMethod] = (acc[o.paymentMethod] || 0) + o.total;
     return acc;
   }, {} as Record<string, number>);
 
-  const filteredOrders = orders
-    .filter(o => o.createdAt.startsWith(todayStr))
+  const filteredOrders = periodOrdersRaw
     .filter(o => {
       const q = search.toLowerCase();
       return o.orderNumber.toLowerCase().includes(q) || o.cashier.toLowerCase().includes(q) || (o.paymentMethod && o.paymentMethod.toLowerCase().includes(q));
@@ -244,15 +256,32 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
   return (
     <div className={`flex-1 overflow-y-auto ${bg}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        <div>
-          <h1 className={`text-xl sm:text-2xl font-bold ${t1}`}>Daily Sales</h1>
-          <p className={`text-sm mt-0.5 ${t2}`}>Shift summary & invoice lookup</p>
-        </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className={`text-xl sm:text-2xl font-bold ${t1}`}>Sales History</h1>
+              <p className={`text-sm mt-0.5 ${t2}`}>Shift summary & invoice lookup</p>
+            </div>
+            <div className={`flex items-center gap-1 p-1 rounded-xl border w-fit ${dm ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+              {(['today', '7days', '30days'] as const).map(range => (
+                <button
+                  key={range}
+                  onClick={() => setDateRange(range)}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    dateRange === range
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {range === 'today' ? 'Today' : range === '7days' ? 'Last 7 Days' : 'Last 30 Days'}
+                </button>
+              ))}
+            </div>
+          </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className={`p-5 rounded-2xl border shadow-sm ${surface}`}>
-            <p className={`text-sm font-medium ${t2} mb-1`}>Today's Revenue</p>
+            <p className={`text-sm font-medium ${t2} mb-1`}>Revenue</p>
             <p className={`text-2xl font-bold text-emerald-600`}>{formatIDR(totalRevenue)}</p>
           </div>
           <div className={`p-5 rounded-2xl border shadow-sm ${surface}`}>

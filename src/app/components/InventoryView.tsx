@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Search, Plus, AlertTriangle, TrendingDown, TrendingUp, X, Trash2, ImagePlus, Pencil, PlusCircle, Layers } from 'lucide-react';
+import { Search, Plus, AlertTriangle, TrendingDown, TrendingUp, X, Trash2, ImagePlus, Pencil, PlusCircle, Layers, ArrowUpDown } from 'lucide-react';
 import { formatIDR } from './mockData';
 import type { Product, Category, ProductVariant } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -62,6 +62,8 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
   const [newAllowDiscount, setNewAllowDiscount] = useState(true);
   const [newVariants, setNewVariants] = useState<ProductVariant[]>([]);
 
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
   const fileInputRef              = useRef<HTMLInputElement>(null);
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -73,7 +75,21 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
     const matchSearch = p.name.toLowerCase().includes(searchLower) || (p.sku && p.sku.toLowerCase().includes(searchLower)) || (p.barcode && p.barcode.toLowerCase().includes(searchLower));
     const matchTab    = tab === 'all' || (p.trackInventory && p.stock <= p.lowStockThreshold);
     return matchSearch && matchTab;
+  }).sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    const aVal = key === 'name' ? a.name : key === 'price' ? a.price : key === 'stock' ? a.stock : 0;
+    const bVal = key === 'name' ? b.name : key === 'price' ? b.price : key === 'stock' ? b.stock : 0;
+    if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+    return 0;
   });
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+    setSortConfig({ key, direction });
+  };
 
   const openAdjust = (p: Product) => {
     setSelected(p); setAdjQty(''); setAdjNote(''); setAdjType('in'); setAdjModal(true);
@@ -239,10 +255,16 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
             <table className="w-full text-sm">
               <thead>
                 <tr className={`text-left border-b ${dm ? 'bg-slate-700/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
-                  <th className={`px-5 py-3 text-xs font-semibold ${t2}`}>Product</th>
+                  <th className={`px-5 py-3 text-xs font-semibold ${t2} cursor-pointer select-none`} onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-1">Product <ArrowUpDown size={14} className="opacity-50" /></div>
+                  </th>
                   <th className={`px-5 py-3 text-xs font-semibold hidden lg:table-cell ${t2}`}>Category / SKU</th>
-                  <th className={`px-5 py-3 text-xs font-semibold ${t2}`}>Price / Margin</th>
-                  <th className={`px-5 py-3 text-xs font-semibold ${t2}`}>Stock</th>
+                  <th className={`px-5 py-3 text-xs font-semibold ${t2} cursor-pointer select-none`} onClick={() => handleSort('price')}>
+                    <div className="flex items-center gap-1">Price / Margin <ArrowUpDown size={14} className="opacity-50" /></div>
+                  </th>
+                  <th className={`px-5 py-3 text-xs font-semibold ${t2} cursor-pointer select-none`} onClick={() => handleSort('stock')}>
+                    <div className="flex items-center gap-1">Stock <ArrowUpDown size={14} className="opacity-50" /></div>
+                  </th>
                   <th className={`px-5 py-3 text-xs font-semibold ${t2}`}>Status</th>
                   <th className={`px-5 py-3 text-xs font-semibold ${t2}`}>Actions</th>
                 </tr>

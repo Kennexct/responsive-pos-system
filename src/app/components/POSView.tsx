@@ -111,7 +111,12 @@ export function POSView({ businessType, products, categories, discountSettings, 
     }));
 
   const removeItem = (id: string) => setCart(prev => prev.filter(i => i.id !== id));
-  const clearCart  = () => setCart([]);
+  const clearCart  = () => {
+    if (cart.length === 0) return;
+    if (window.confirm("Are you sure you want to clear the cart?")) {
+      setCart([]);
+    }
+  };
 
   const { subtotal, tierDiscountAmt, tax, exclusiveTax, total } = useMemo(() => {
     let sub = 0;

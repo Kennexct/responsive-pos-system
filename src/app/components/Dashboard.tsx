@@ -2,7 +2,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { TrendingUp, ShoppingBag, Users, DollarSign, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, ShoppingBag, Users, DollarSign, ArrowUp, ArrowDown } from 'lucide-react';
 import { WEEKLY_SALES, TOP_PRODUCTS, PAYMENT_BREAKDOWN, formatIDR } from './mockData';
 import type { RecentOrder, Product, Customer, LoyaltySettings } from './mockData';
 
@@ -57,6 +57,7 @@ export function Dashboard({ orders, products, customers, loyaltySettings, darkMo
   
   const lowStockProducts = products.filter(p => p.trackInventory && p.stock <= p.lowStockThreshold);
   const totalPointsLiability = customers.reduce((sum, c) => sum + c.pointsBalance, 0) * loyaltySettings.redemptionValue;
+  const isSalesDrop = todaySales < 2000000 && new Date().getHours() > 15;
 
   return (
     <div className={`flex-1 overflow-y-auto ${bg}`}>
@@ -93,6 +94,17 @@ export function Dashboard({ orders, products, customers, loyaltySettings, darkMo
               <div>
                 <p className={`text-sm font-semibold ${dm ? 'text-red-400' : 'text-red-700'}`}>High Points Liability</p>
                 <p className={`text-xs ${dm ? 'text-red-500' : 'text-red-600'}`}>Unredeemed points value exceeds {formatIDR(500000)} (Current: {formatIDR(totalPointsLiability)}).</p>
+              </div>
+            </div>
+          )}
+          {isSalesDrop && (
+            <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex-1">
+              <div className={`p-2 rounded-lg ${dm ? 'bg-red-900/20 text-red-500' : 'bg-red-500/20 text-red-600'}`}>
+                <TrendingDown size={20} />
+              </div>
+              <div>
+                <p className={`text-sm font-semibold ${dm ? 'text-red-400' : 'text-red-700'}`}>Sales Pacing Alert</p>
+                <p className={`text-xs ${dm ? 'text-red-500' : 'text-red-600'}`}>Today's revenue is pacing heavily below average.</p>
               </div>
             </div>
           )}

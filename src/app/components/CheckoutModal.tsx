@@ -43,7 +43,12 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const [promoError, setPromoError] = useState('');
   
   // Points state
-  const [usePoints, setUsePoints] = useState(false);
+  const [pointsToRedeem, setPointsToRedeem] = useState<string>('');
+
+  // Split payment state
+  const [isSplit, setIsSplit] = useState(false);
+  const [method2, setMethod2] = useState<PaymentMethod>(availableMethods.length > 1 ? availableMethods[1].id : availableMethods[0]?.id || 'cash');
+  const [splitAmount, setSplitAmount] = useState<string>('');
 
   const applyPromo = () => {
     setPromoError('');
@@ -133,10 +138,11 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   let pointsRedeemed = 0;
   const customer = customers?.find(c => c.id === selectedCustomerId);
 
-  if (usePoints && customer && loyaltySettings?.enabled) {
-    const maxPointsValue = customer.pointsBalance * loyaltySettings.redemptionValue;
-    pointsDiscountAmt = Math.min(finalSubtotalAfterPromo, maxPointsValue);
-    pointsRedeemed = Math.ceil(pointsDiscountAmt / loyaltySettings.redemptionValue);
+  if (Number(pointsToRedeem) > 0 && customer && loyaltySettings?.enabled) {
+    const requestedPoints = Math.min(Number(pointsToRedeem), customer.pointsBalance);
+    const maxPointsNeeded = Math.ceil(finalSubtotalAfterPromo / loyaltySettings.redemptionValue);
+    pointsRedeemed = Math.min(requestedPoints, maxPointsNeeded);
+    pointsDiscountAmt = pointsRedeemed * loyaltySettings.redemptionValue;
   }
 
   const finalSubtotal = Math.max(0, finalSubtotalAfterPromo - pointsDiscountAmt);
@@ -150,7 +156,9 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
 
   const cashPaid   = parseInt(cashInput.replace(/\D/g, ''), 10) || 0;
   const change     = cashPaid - total;
-  const canConfirm = method !== 'cash' || cashPaid >= total;
+  const cashRequired = isSplit ? ((method === 'cash' ? (Number(splitAmount) || 0) : 0) + (method2 === 'cash' ? (total - (Number(splitAmount) || 0)) : 0)) : (method === 'cash' ? total : 0);
+  const isCash = (!isSplit && method === 'cash') || (isSplit && (method === 'cash' || method2 === 'cash'));
+  const canConfirm = !isCash || cashPaid >= cashRequired;
 
   const QUICK_AMOUNTS = [50000, 100000, 150000, 200000, 250000, 500000].filter(a => a >= total);
 
@@ -284,7 +292,11 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   }
 
   return (
-    <ModalShell onClose={onClose} darkMode={dm}>
+    <ModalShell onClose={() => {
+      if (window.confirm("Cancel payment and return to cart?")) {
+        onClose();
+      }
+    }} darkMode={dm}>
       <h2 className={`font-bold mb-4 ${t1}`}>Checkout</h2>
 
       {/* Order summary */}
@@ -315,11 +327,10 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
         {/* Points Input */}
         {customer && loyaltySettings?.enabled && customer.pointsBalance > 0 && (
           <div className="mt-2 mb-3">
-            <label className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors ${usePoints ? 'border-amber-500 bg-amber-500/10' : dm ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" checked={usePoints} onChange={e => setUsePoints(e.target.checked)} className="w-4 h-4 text-amber-500" />
+            <div className={`p-3 rounded-xl border transition-colors ${Number(pointsToRedeem) > 0 ? 'border-amber-500 bg-amber-500/5' : dm ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
+              <div className="flex items-center justify-between mb-2">
                 <div>
-                  <div className={`text-sm font-medium ${usePoints ? (dm ? 'text-amber-500' : 'text-amber-600') : t1}`}>
+                  <div className={`text-sm font-medium ${Number(pointsToRedeem) > 0 ? (dm ? 'text-amber-500' : 'text-amber-600') : t1}`}>
                     Redeem Points
                   </div>
                   <div className={`text-xs ${t2}`}>
@@ -327,7 +338,24 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                   </div>
                 </div>
               </div>
-            </label>
+              <div className="flex gap-2">
+                <input 
+                  type="number" 
+                  placeholder="Points to redeem"
+                  value={pointsToRedeem}
+                  onChange={e => setPointsToRedeem(e.target.value)}
+                  max={customer.pointsBalance}
+                  min="0"
+                  className={`flex-1 w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-amber-400 ${dm ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                />
+                <button 
+                  onClick={() => setPointsToRedeem(String(customer.pointsBalance))}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                >
+                  Max
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -361,27 +389,73 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
       </div>
 
       {/* Payment method */}
-      <p className={`text-xs font-semibold mb-2 ${t2}`}>PAYMENT METHOD</p>
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        {availableMethods.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setMethod(id)}
-            className={[
-              'flex items-center gap-2 border-2 rounded-xl px-3 py-2.5 transition-all text-left text-sm font-medium',
-              method === id
-                ? 'border-blue-600 bg-blue-600/10 text-blue-600'
-                : dm ? 'border-slate-700 text-slate-400 hover:border-slate-600' : 'border-slate-200 text-slate-600 hover:border-slate-300',
-            ].join(' ')}
-          >
-            <Icon size={17} className="shrink-0" />
-            {label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between mb-2">
+        <p className={`text-xs font-semibold ${t2}`}>PAYMENT METHOD</p>
+        <button onClick={() => setIsSplit(!isSplit)} className="text-xs font-medium text-blue-600 hover:text-blue-700">
+          {isSplit ? 'Single Payment' : 'Split Payment'}
+        </button>
+      </div>
+
+      <div className="space-y-3 mb-4">
+        <div>
+          {isSplit && <p className={`text-xs mb-1 ${t2}`}>Payment 1</p>}
+          <div className="grid grid-cols-2 gap-2">
+            {availableMethods.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setMethod(id)}
+                className={[
+                  'flex items-center gap-2 border-2 rounded-xl px-3 py-2.5 transition-all text-left text-sm font-medium',
+                  method === id
+                    ? 'border-blue-600 bg-blue-600/10 text-blue-600'
+                    : dm ? 'border-slate-700 text-slate-400 hover:border-slate-600' : 'border-slate-200 text-slate-600 hover:border-slate-300',
+                ].join(' ')}
+              >
+                <Icon size={17} className="shrink-0" />
+                {label}
+              </button>
+            ))}
+          </div>
+          {isSplit && (
+            <input
+              type="text"
+              placeholder={`Amount for Payment 1 (Max ${total})`}
+              value={splitAmount ? Number(splitAmount).toLocaleString('id-ID') : ''}
+              onChange={e => {
+                const val = Number(e.target.value.replace(/\D/g, ''));
+                if (val <= total) setSplitAmount(String(val));
+              }}
+              className={`mt-2 w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 ${dm ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+            />
+          )}
+        </div>
+
+        {isSplit && (
+          <div>
+            <p className={`text-xs mb-1 ${t2}`}>Payment 2 (Remaining: {formatIDR(total - (Number(splitAmount) || 0))})</p>
+            <div className="grid grid-cols-2 gap-2">
+              {availableMethods.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={`m2-${id}`}
+                  onClick={() => setMethod2(id)}
+                  className={[
+                    'flex items-center gap-2 border-2 rounded-xl px-3 py-2.5 transition-all text-left text-sm font-medium',
+                    method2 === id
+                      ? 'border-blue-600 bg-blue-600/10 text-blue-600'
+                      : dm ? 'border-slate-700 text-slate-400 hover:border-slate-600' : 'border-slate-200 text-slate-600 hover:border-slate-300',
+                  ].join(' ')}
+                >
+                  <Icon size={17} className="shrink-0" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Cash: numpad */}
-      {method === 'cash' && (
+      {((!isSplit && method === 'cash') || (isSplit && (method === 'cash' || method2 === 'cash'))) && (
         <div className="mb-4">
           <div className={`rounded-xl px-4 py-3 mb-3 border ${dm ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
             <p className={`text-xs font-semibold mb-1 ${t2}`}>AMOUNT RECEIVED</p>
