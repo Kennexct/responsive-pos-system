@@ -5,6 +5,7 @@ import { formatIDR } from './mockData';
 
 interface CustomersViewProps {
   customers: Customer[];
+  setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
   loyaltySettings: LoyaltySettings;
   darkMode: boolean;
   orders: RecentOrder[];
@@ -19,13 +20,14 @@ function getRFMSegment(c: Customer): string {
   return 'At Risk';
 }
 
-export function CustomersView({ customers, loyaltySettings, darkMode, orders }: CustomersViewProps) {
+export function CustomersView({ customers, setCustomers, loyaltySettings, darkMode, orders }: CustomersViewProps) {
   const [activeTab, setActiveTab] = useState<'directory' | 'segments'>('directory');
   const [search, setSearch] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
   
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showCampaignModal, setShowCampaignModal] = useState<boolean>(false);
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [segmentFilter, setSegmentFilter] = useState<string>('all');
 
   const customersWithRFM = useMemo(() => customers.map(c => ({ ...c, rfmSegment: getRFMSegment(c) })), [customers]);
@@ -38,6 +40,9 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
   const segmentedCustomers = customersWithRFM.filter(c => {
     if (segmentFilter === 'all') return true;
     if (segmentFilter === 'champion') return c.rfmSegment === 'Champion';
+    if (segmentFilter === 'loyal') return c.rfmSegment === 'Loyal';
+    if (segmentFilter === 'new') return c.rfmSegment === 'New';
+    if (segmentFilter === 'registered') return c.rfmSegment === 'Registered (No Purchase)';
     if (segmentFilter === 'at-risk') return c.rfmSegment === 'At Risk';
     if (segmentFilter === 'high-spender') return c.averageTransactionValue > 200000;
     return true;
@@ -96,6 +101,12 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
                   ))}
                 </select>
               </div>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${dm ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+              >
+                <User size={16} /> Add Customer
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
@@ -162,6 +173,13 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
                           </td>
                         </tr>
                       ))}
+                      {filteredDirectory.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className={`px-4 py-10 text-center ${t2}`}>
+                            No customers found matching your search.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -178,8 +196,11 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
                 {[
                   { id: 'all', label: 'All Customers', desc: 'The entire database' },
                   { id: 'champion', label: 'Champions', desc: 'High spend, high frequency' },
+                  { id: 'loyal', label: 'Loyal', desc: 'Consistent purchasers' },
+                  { id: 'new', label: 'New', desc: 'Single purchase' },
                   { id: 'high-spender', label: 'High Spenders', desc: 'ATV > Rp 200,000' },
                   { id: 'at-risk', label: 'At Risk', desc: 'No recent activity' },
+                  { id: 'registered', label: 'Registered', desc: 'No purchase yet' },
                 ].map(s => (
                   <button 
                     key={s.id} 
@@ -232,9 +253,18 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
       </div>
 
       {/* Modals */}
+      {showAddModal && (
+        <AddCustomerModal
+          darkMode={darkMode}
+          onClose={() => setShowAddModal(false)}
+          setCustomers={setCustomers}
+        />
+      )}
+
       {selectedCustomer && (
         <CustomerDetailsModal 
           customer={selectedCustomer} 
+          setCustomers={setCustomers}
           orders={orders.filter(o => o.customerId === selectedCustomer.id)}
           darkMode={darkMode}
           onClose={() => setSelectedCustomer(null)}
@@ -254,20 +284,56 @@ export function CustomersView({ customers, loyaltySettings, darkMode, orders }: 
 
 // Subcomponents
 
-function CustomerDetailsModal({ customer, orders, darkMode, onClose }: { customer: Customer, orders: RecentOrder[], darkMode: boolean, onClose: () => void }) {
+function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClose }: { customer: Customer, setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>, orders: RecentOrder[], darkMode: boolean, onClose: () => void }) {
   const dm = darkMode;
   const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
   const t1 = dm ? 'text-slate-100' : 'text-slate-800';
   const t2 = dm ? 'text-slate-400' : 'text-slate-500';
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  const [name, setName] = useState(customer.name);
+  const [phone, setPhone] = useState(customer.phone);
+  const [email, setEmail] = useState(customer.email || '');
+  const [birthday, setBirthday] = useState(customer.birthday || '');
+  const [tags, setTags] = useState(customer.tags?.join(', ') || '');
+  const [pointsBalance, setPointsBalance] = useState(customer.pointsBalance.toString());
+
+  const handleSave = () => {
+    setCustomers(prev => prev.map(c => c.id === customer.id ? {
+      ...c,
+      name,
+      phone,
+      email,
+      birthday,
+      tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+      pointsBalance: parseInt(pointsBalance, 10) || 0
+    } : c));
+    setIsEditing(false);
+  };
+
+  const handleDelete = () => {
+    setCustomers(prev => prev.filter(c => c.id !== customer.id));
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
       <div className={`w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-right ${dm ? 'bg-slate-900' : 'bg-slate-50'}`}>
         <div className={`p-4 border-b flex items-center justify-between sticky top-0 z-10 ${surface}`}>
           <h2 className={`font-semibold ${t1}`}>Customer Details</h2>
-          <button onClick={onClose} className={`p-2 rounded-full ${dm ? 'hover:bg-slate-800' : 'hover:bg-slate-100'} ${t2}`}>
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            {!isEditing && (
+              <button onClick={() => setIsEditing(true)} className={`px-3 py-1 text-sm font-medium rounded-lg ${dm ? 'bg-slate-800 text-blue-400 hover:bg-slate-700' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}>Edit</button>
+            )}
+            {isEditing && (
+              <button onClick={handleSave} className={`px-3 py-1 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white`}>Save</button>
+            )}
+            <button onClick={onClose} className={`p-2 rounded-full ${dm ? 'hover:bg-slate-800' : 'hover:bg-slate-100'} ${t2}`}>
+              <X size={20} />
+            </button>
+          </div>
         </div>
         
         <div className="p-6 overflow-y-auto flex-1">
@@ -275,12 +341,50 @@ function CustomerDetailsModal({ customer, orders, darkMode, onClose }: { custome
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${dm ? 'bg-slate-800 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
               <User size={40} />
             </div>
-            <h3 className={`text-xl font-bold ${t1}`}>{customer.name}</h3>
-            <p className={`${t2}`}>{customer.phone}</p>
-            {customer.marketingConsent && (
-              <span className={`mt-2 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${dm ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-800'}`}>
-                <CheckCircle size={12} /> Marketing Opt-In
-              </span>
+            {!isEditing ? (
+              <>
+                <h3 className={`text-xl font-bold ${t1}`}>{customer.name}</h3>
+                <p className={`${t2}`}>{customer.phone}</p>
+                {customer.email && <p className={`text-sm mt-1 ${t2}`}>{customer.email}</p>}
+                {customer.birthday && <p className={`text-sm mt-1 ${t2}`}>Born: {customer.birthday}</p>}
+                {customer.marketingConsent && (
+                  <span className={`mt-2 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${dm ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-800'}`}>
+                    <CheckCircle size={12} /> Marketing Opt-In
+                  </span>
+                )}
+                {customer.tags && customer.tags.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-2 mt-3">
+                    {customer.tags.map(tag => <span key={tag} className={`px-2 py-1 text-xs rounded-full ${dm ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>{tag}</span>)}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="w-full space-y-3 text-left">
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${t2}`}>Name</label>
+                  <input value={name} onChange={e => setName(e.target.value)} className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                </div>
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${t2}`}>Phone</label>
+                  <input value={phone} onChange={e => setPhone(e.target.value)} className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                </div>
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${t2}`}>Email</label>
+                  <input value={email} onChange={e => setEmail(e.target.value)} className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                </div>
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${t2}`}>Birthday</label>
+                  <input value={birthday} onChange={e => setBirthday(e.target.value)} type="date" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                </div>
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${t2}`}>Tags</label>
+                  <input value={tags} onChange={e => setTags(e.target.value)} placeholder="Comma separated" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                </div>
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${t2}`}>Points Balance</label>
+                  <input value={pointsBalance} onChange={e => setPointsBalance(e.target.value)} type="number" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                </div>
+              </div>
             )}
           </div>
 
@@ -306,6 +410,23 @@ function CustomerDetailsModal({ customer, orders, darkMode, onClose }: { custome
               ))
             )}
           </div>
+          
+          <div className="mt-8 pt-4 border-t border-red-500/20">
+            {!showDeleteConfirm ? (
+              <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-2.5 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                Delete Customer
+              </button>
+            ) : (
+              <div className={`p-4 rounded-xl border border-red-200 dark:border-red-900/50 ${dm ? 'bg-red-900/10' : 'bg-red-50'}`}>
+                <p className={`text-sm font-medium text-red-600 dark:text-red-400 mb-3`}>Are you sure? This cannot be undone.</p>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2 rounded-lg font-medium bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Cancel</button>
+                  <button onClick={handleDelete} className="flex-1 py-2 rounded-lg font-medium bg-red-600 hover:bg-red-700 text-white">Confirm Delete</button>
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </div>
@@ -369,6 +490,78 @@ function CampaignModal({ darkMode, customersCount, onClose }: { darkMode: boolea
           <button onClick={() => setSent(true)} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2">
             Send Broadcast
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddCustomerModal({ darkMode, onClose, setCustomers }: { darkMode: boolean, onClose: () => void, setCustomers: React.Dispatch<React.SetStateAction<Customer[]>> }) {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [birthday, setBirthday] = useState('');
+  const [tags, setTags] = useState('');
+  
+  const dm = darkMode;
+  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
+  const t1 = dm ? 'text-slate-100' : 'text-slate-800';
+  const t2 = dm ? 'text-slate-400' : 'text-slate-500';
+
+  const handleSave = () => {
+    if (!name || !phone) return;
+    const newCustomer: Customer = {
+      id: Date.now().toString(),
+      name,
+      phone,
+      email,
+      birthday,
+      tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+      pointsBalance: 0,
+      totalSpend: 0,
+      totalTransactions: 0,
+      averageTransactionValue: 0,
+      marketingConsent: true,
+      createdAt: new Date().toISOString()
+    };
+    setCustomers(prev => [...prev, newCustomer]);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className={`w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden ${surface}`}>
+        <div className={`p-4 border-b flex items-center justify-between ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+          <h2 className={`font-semibold ${t1}`}>Add New Customer</h2>
+          <button onClick={onClose} className={`p-1.5 rounded-full ${dm ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${t2}`}>
+            <X size={20} />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${t1}`}>Name *</label>
+            <input value={name} onChange={e => setName(e.target.value)} className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
+          </div>
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${t1}`}>Phone *</label>
+            <input value={phone} onChange={e => setPhone(e.target.value)} className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
+          </div>
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${t1}`}>Email</label>
+            <input value={email} onChange={e => setEmail(e.target.value)} type="email" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
+          </div>
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${t1}`}>Birthday</label>
+            <input value={birthday} onChange={e => setBirthday(e.target.value)} type="date" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
+          </div>
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${t1}`}>Tags (comma separated)</label>
+            <input value={tags} onChange={e => setTags(e.target.value)} className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} placeholder="e.g. VIP, Local" />
+          </div>
+        </div>
+        <div className={`p-4 border-t flex justify-end gap-3 ${dm ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
+          <button onClick={onClose} className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${dm ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700'}`}>Cancel</button>
+          <button onClick={handleSave} disabled={!name || !phone} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-colors">Save Customer</button>
         </div>
       </div>
     </div>

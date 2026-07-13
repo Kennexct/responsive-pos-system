@@ -1,9 +1,10 @@
 import { useState, type ElementType } from 'react';
-import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Award } from 'lucide-react';
-import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode } from './mockData';
+import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Award, Tag } from 'lucide-react';
+import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface SettingsViewProps {
+  currentUser?: User;
   businessType: BusinessType;
   onBusinessTypeChange: (t: BusinessType) => void;
   users: User[];
@@ -12,6 +13,7 @@ interface SettingsViewProps {
   setPermissions: React.Dispatch<React.SetStateAction<RolePermissions>>;
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
+  products: Product[];
   discountSettings: DiscountSettings;
   setDiscountSettings: React.Dispatch<React.SetStateAction<DiscountSettings>>;
   refundSettings: RefundSettings;
@@ -22,6 +24,8 @@ interface SettingsViewProps {
   onToggleDark: () => void;
   taxRules?: TaxRule[];
   setTaxRules?: React.Dispatch<React.SetStateAction<TaxRule[]>>;
+  paymentMethods: PaymentMethodEntry[];
+  setPaymentMethods: React.Dispatch<React.SetStateAction<PaymentMethodEntry[]>>;
   terminalViewMode?: TerminalViewMode;
   setTerminalViewMode?: React.Dispatch<React.SetStateAction<TerminalViewMode>>;
   bizName: string;    setBizName: (v: string) => void;
@@ -30,11 +34,12 @@ interface SettingsViewProps {
   bizEmail: string;   setBizEmail: (v: string) => void;
 }
 
-type SettingsTab = 'business' | 'currency' | 'tax' | 'discounts' | 'loyalty' | 'refunds' | 'payments' | 'users';
+type SettingsTab = 'business' | 'currency' | 'tax' | 'discounts' | 'loyalty' | 'refunds' | 'payments' | 'users' | 'categories';
 
 const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
   { id: 'business',  label: 'Business Profile', icon: Store      },
   { id: 'users',     label: 'Staff & Roles',    icon: Users      },
+  { id: 'categories',label: 'Categories',       icon: Tag        },
   { id: 'payments',  label: 'Payment Methods',  icon: CreditCard },
   { id: 'tax',       label: 'Taxes',            icon: Receipt    },
   { id: 'currency',  label: 'Currency',         icon: DollarSign },
@@ -43,42 +48,34 @@ const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
   { id: 'refunds',   label: 'Refunds & Voids',  icon: RefreshCcw },
 ];
 
-interface PaymentMethodEntry { id: string; label: string; enabled: boolean; }
 interface TaxRate            { id: string; name: string; rate: number; inclusive: boolean; isDefault: boolean; }
-
-const INITIAL_PAYMENTS: PaymentMethodEntry[] = [
-  { id: 'cash',          label: 'Cash',                enabled: true  },
-  { id: 'qris',          label: 'QRIS',                enabled: true  },
-  { id: 'card',          label: 'Debit / Credit Card', enabled: true  },
-  { id: 'bank-transfer', label: 'Bank Transfer',       enabled: true  },
-  { id: 'gopay',         label: 'GoPay',               enabled: false },
-  { id: 'ovo',           label: 'OVO',                 enabled: false },
-];
-
-const INITIAL_TAXES: TaxRate[] = [
-  { id: '1', name: 'PPN', rate: 11, inclusive: false, isDefault: true },
-];
 
 export function SettingsView({
   businessType, onBusinessTypeChange,
   users, setUsers,
   permissions, setPermissions,
   categories, setCategories,
+  products,
   discountSettings, setDiscountSettings,
   refundSettings, setRefundSettings,
   loyaltySettings, setLoyaltySettings,
   taxRules = [], setTaxRules,
+  paymentMethods, setPaymentMethods,
   terminalViewMode = 'grid', setTerminalViewMode,
   darkMode, onToggleDark,
   bizName, setBizName, bizPhone, setBizPhone, bizAddress, setBizAddress, bizEmail, setBizEmail,
 }: SettingsViewProps) {
   const [tab,      setTab]      = useState<SettingsTab>('business');
-  const [payments, setPayments] = useState<PaymentMethodEntry[]>(INITIAL_PAYMENTS);
   const [saved,    setSaved]    = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
+  
+  // Currency state
+  const [displayCurrency, setDisplayCurrency] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('');
 
   // Promo code modal
   const [promoModal, setPromoModal] = useState(false);
+  const [editingPromoCodeId, setEditingPromoCodeId] = useState<string | null>(null);
   const [newPromoCode, setNewPromoCode] = useState('');
   const [newPromoType, setNewPromoType] = useState<'percent'|'nominal'>('percent');
   const [newPromoValue, setNewPromoValue] = useState('');
@@ -90,6 +87,7 @@ export function SettingsView({
 
   // Tax modal
   const [taxModal, setTaxModal] = useState(false);
+  const [editingTaxId, setEditingTaxId] = useState<string | null>(null);
   const [newTaxName, setNewTaxName] = useState('');
   const [newTaxRate, setNewTaxRate] = useState('');
   const [newTaxInclusive, setNewTaxInclusive] = useState(false);
@@ -99,6 +97,11 @@ export function SettingsView({
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [newUser, setNewUser] = useState<Partial<User>>({});
 
+  const [categoryModal, setCategoryModal] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryDeleteError, setCategoryDeleteError] = useState('');
+
   const ROLES: Role[] = ['owner', 'manager', 'cashier'];
   const VIEWS: { id: ViewType; label: string }[] = [
     { id: 'pos',         label: 'POS' },
@@ -106,51 +109,83 @@ export function SettingsView({
     { id: 'daily-sales', label: 'Daily Sales' },
     { id: 'inventory',   label: 'Inventory' },
     { id: 'reports',     label: 'Reports' },
+    { id: 'customers',   label: 'Customers' },
     { id: 'settings',    label: 'Settings' }
   ];
 
   const handleSave = () => {
+    if (currentUser?.role !== 'owner') {
+      setConfirmSave(false);
+      return alert("Only owners can modify settings.");
+    }
+    if (loyaltySettings.enabled && loyaltySettings.earnRateSpend <= 0) {
+      setConfirmSave(false);
+      return alert("Earn Rate Spend must be greater than 0.");
+    }
     setConfirmSave(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const togglePayment = (id: string) => setPayments(prev => prev.map(p => p.id === id ? { ...p, enabled: !p.enabled } : p));
+  const togglePayment = (id: string) => setPaymentMethods(prev => prev.map(p => p.id === id ? { ...p, enabled: !p.enabled } : p));
   const toggleCategoryTax = (id: string) => setCategories(prev => prev.map(c => c.id === id ? { ...c, isTaxable: !c.isTaxable } : c));
 
-  const addTax = () => {
+  const saveTax = () => {
     if (!newTaxName || !newTaxRate) return;
     if (setTaxRules) {
-      setTaxRules(prev => [...prev, {
-        id: Date.now().toString(),
-        name: newTaxName,
-        rate: Number(newTaxRate),
-        isInclusive: newTaxInclusive,
-        order: prev.length + 1
-      }]);
+      if (editingTaxId) {
+        setTaxRules(prev => prev.map(t => t.id === editingTaxId ? { ...t, name: newTaxName, rate: Number(newTaxRate), isInclusive: newTaxInclusive } : t));
+      } else {
+        setTaxRules(prev => [...prev, {
+          id: Date.now().toString(),
+          name: newTaxName,
+          rate: Number(newTaxRate),
+          isInclusive: newTaxInclusive,
+          order: prev.length + 1
+        }]);
+      }
     }
-    setTaxModal(false); setNewTaxName(''); setNewTaxRate(''); setNewTaxInclusive(false);
+    setTaxModal(false); setEditingTaxId(null); setNewTaxName(''); setNewTaxRate(''); setNewTaxInclusive(false);
   };
 
-  const addPromo = () => {
+  const savePromo = () => {
     if (!newPromoCode || !newPromoValue) return;
-    const newPromo: PromoCode = {
-      id: Date.now().toString(),
-      code: newPromoCode.toUpperCase(),
-      type: newPromoType,
-      value: Number(newPromoValue),
-      active: true,
-      activeDate: newPromoActiveDate || undefined,
-      expiryDate: newPromoExpiryDate || undefined,
-      minSpend: newPromoMinSpend ? Number(newPromoMinSpend) : undefined,
-      categories: newPromoCategories.length > 0 ? newPromoCategories : undefined,
-      cannotCombine: newPromoCannotCombine
-    };
-    setDiscountSettings(prev => ({ ...prev, promoCodes: [...prev.promoCodes, newPromo] }));
-    setPromoModal(false); 
-    setNewPromoCode(''); setNewPromoValue('');
-    setNewPromoActiveDate(''); setNewPromoExpiryDate('');
-    setNewPromoMinSpend(''); setNewPromoCategories([]); setNewPromoCannotCombine(false);
+    if (newPromoType === 'percent' && Number(newPromoValue) > 100) {
+      return alert("Discount percentage cannot exceed 100%");
+    }
+    const isDuplicate = discountSettings.promoCodes.some(p => p.code === newPromoCode.toUpperCase() && p.id !== editingPromoCodeId);
+    if (isDuplicate) return alert("Promo code already exists.");
+    if (editingPromoCodeId) {
+      setDiscountSettings(prev => ({
+        ...prev,
+        promoCodes: prev.promoCodes.map(p => p.id === editingPromoCodeId ? {
+          ...p,
+          code: newPromoCode.toUpperCase(),
+          type: newPromoType,
+          value: Number(newPromoValue),
+          activeDate: newPromoActiveDate || undefined,
+          expiryDate: newPromoExpiryDate || undefined,
+          minSpend: newPromoMinSpend ? Number(newPromoMinSpend) : undefined,
+          categories: newPromoCategories.length > 0 ? newPromoCategories : undefined,
+          cannotCombine: newPromoCannotCombine
+        } : p)
+      }));
+    } else {
+      const newPromo: PromoCode = {
+        id: Date.now().toString(),
+        code: newPromoCode.toUpperCase(),
+        type: newPromoType,
+        value: Number(newPromoValue),
+        active: true,
+        activeDate: newPromoActiveDate || undefined,
+        expiryDate: newPromoExpiryDate || undefined,
+        minSpend: newPromoMinSpend ? Number(newPromoMinSpend) : undefined,
+        categories: newPromoCategories.length > 0 ? newPromoCategories : undefined,
+        cannotCombine: newPromoCannotCombine
+      };
+      setDiscountSettings(prev => ({ ...prev, promoCodes: [...prev.promoCodes, newPromo] }));
+    }
+    setPromoModal(false); setEditingPromoCodeId(null); setNewPromoCode(''); setNewPromoValue(''); setNewPromoActiveDate(''); setNewPromoExpiryDate(''); setNewPromoMinSpend(''); setNewPromoCategories([]); setNewPromoCannotCombine(false);
   };
   const deletePromo = (id: string) => setDiscountSettings(prev => ({ ...prev, promoCodes: prev.promoCodes.filter(p => p.id !== id) }));
   const togglePromo = (id: string) => setDiscountSettings(prev => ({ ...prev, promoCodes: prev.promoCodes.map(p => p.id === id ? { ...p, active: !p.active } : p) }));
@@ -164,6 +199,11 @@ export function SettingsView({
   const saveUser = () => {
     if (!newUser.name || !newUser.pin) return;
     if (editingUserId) {
+      const existingUser = users.find(u => u.id === editingUserId);
+      if (existingUser?.role === 'owner' && newUser.role !== 'owner') {
+        const ownerCount = users.filter(u => u.role === 'owner').length;
+        if (ownerCount <= 1) return alert("Cannot change role of the last owner.");
+      }
       setUsers(users.map(u => u.id === editingUserId ? { ...u, ...newUser } as User : u));
     } else {
       setUsers([...users, { id: Date.now().toString(), name: newUser.name, role: newUser.role || 'cashier', pin: newUser.pin }]);
@@ -173,7 +213,14 @@ export function SettingsView({
 
   const deleteUser = (id: string) => {
     if (users.length <= 1) return alert('Cannot delete the last user.');
-    setUsers(users.filter(u => u.id !== id));
+    const userToDelete = users.find(u => u.id === id);
+    if (userToDelete?.role === 'owner') {
+      const ownerCount = users.filter(u => u.role === 'owner').length;
+      if (ownerCount <= 1) return alert("Cannot delete the last owner account.");
+    }
+    if (window.confirm(`Are you sure you want to delete ${userToDelete?.name}?`)) {
+      setUsers(users.filter(u => u.id !== id));
+    }
   };
 
   const togglePermission = (role: Role, view: ViewType) => {
@@ -281,8 +328,8 @@ export function SettingsView({
                     </div>
                   ))}
                 </div>
-                <Field label="Display Currency (optional)" value="" onChange={() => {}} placeholder="e.g. USD" darkMode={dm} />
-                <Field label="Exchange Rate (manual)" value="" onChange={() => {}} type="number" placeholder="e.g. 16000" darkMode={dm} />
+                <Field label="Display Currency (optional)" value={displayCurrency} onChange={setDisplayCurrency} placeholder="e.g. USD" darkMode={dm} />
+                <Field label="Exchange Rate (manual)" value={exchangeRate} onChange={setExchangeRate} type="number" placeholder="e.g. 16000" darkMode={dm} />
                 <p className={`text-xs ${t2}`}>Rate is entered manually — no live FX in v1.</p>
                 <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
               </div>
@@ -308,8 +355,19 @@ export function SettingsView({
                         </div>
                         <div className="flex items-center gap-2">
                           <button onClick={() => {
+                            setEditingTaxId(rate.id);
+                            setNewTaxName(rate.name);
+                            setNewTaxRate(rate.rate.toString());
+                            setNewTaxInclusive(rate.isInclusive);
+                            setTaxModal(true);
+                          }} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50`}>
+                            Edit
+                          </button>
+                          <button onClick={() => {
                             if (setTaxRules) setTaxRules(prev => prev.filter(t => t.id !== rate.id));
-                          }} className={`transition-colors ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-400'}`}><Trash2 size={15} /></button>
+                          }} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50`}>
+                            Delete
+                          </button>
                         </div>
                       </div>
                     ))
@@ -382,7 +440,23 @@ export function SettingsView({
                         </div>
                         <div className="flex items-center gap-3">
                           <Toggle darkMode={darkMode} checked={promo.active} onChange={() => togglePromo(promo.id)} />
-                          <button onClick={() => deletePromo(promo.id)} className={`transition-colors ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-400'}`}><Trash2 size={15} /></button>
+                          <button onClick={() => {
+                            setEditingPromoCodeId(promo.id);
+                            setNewPromoCode(promo.code);
+                            setNewPromoType(promo.type);
+                            setNewPromoValue(promo.value.toString());
+                            setNewPromoActiveDate(promo.activeDate || '');
+                            setNewPromoExpiryDate(promo.expiryDate || '');
+                            setNewPromoMinSpend(promo.minSpend?.toString() || '');
+                            setNewPromoCategories(promo.categories || []);
+                            setNewPromoCannotCombine(promo.cannotCombine || false);
+                            setPromoModal(true);
+                          }} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50`}>
+                            Edit
+                          </button>
+                          <button onClick={() => deletePromo(promo.id)} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50`}>
+                            Delete
+                          </button>
                         </div>
                       </div>
                     ))
@@ -434,6 +508,9 @@ export function SettingsView({
                             <h4 className={`font-semibold ${t1}`}>Membership Tiers</h4>
                             <p className={`text-sm ${t2}`}>Configure tiers based on customer's total spend.</p>
                           </div>
+                          <button onClick={() => setLoyaltySettings(prev => ({...prev, tiers: [...(prev.tiers || []), {id: Date.now().toString(), name: 'New Tier', minSpend: 0, discountPercent: 0}]}))} className={`flex items-center gap-1.5 text-sm text-blue-600 border px-3 py-1.5 rounded-lg transition-colors font-medium ${dm ? 'border-blue-800 hover:bg-blue-900/20' : 'border-blue-200 hover:bg-blue-50'}`}>
+                            <Plus size={14} /> Add Tier
+                          </button>
                         </div>
                         
                         <div className="space-y-3">
@@ -463,6 +540,11 @@ export function SettingsView({
                                   setLoyaltySettings(prev => ({...prev, tiers: newTiers}));
                                 }} className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`} />
                               </div>
+                              <button onClick={() => {
+                                setLoyaltySettings(prev => ({...prev, tiers: (prev.tiers || []).filter((_, i) => i !== index)}));
+                              }} className={`mb-1 transition-colors ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-400 hover:text-red-600'}`}>
+                                <Trash2 size={18} />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -505,7 +587,7 @@ export function SettingsView({
                 <h3 className={t1}>Payment Methods</h3>
                 <p className={`text-sm ${t2}`}>Enable the methods available at checkout.</p>
                 <div className="space-y-3">
-                  {payments.map(pm => (
+                  {paymentMethods.map(pm => (
                     <div key={pm.id} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                       <span className={`text-sm font-medium ${t1}`}>{pm.label}</span>
                       <Toggle darkMode={darkMode} checked={pm.enabled} onChange={() => togglePayment(pm.id)} />
@@ -517,6 +599,57 @@ export function SettingsView({
             )}
 
             {/* ── Users ── */}
+            {tab === 'categories' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className={`text-lg font-bold ${t1}`}>Categories</h3>
+                    <p className={`text-sm ${t2}`}>Manage product categories</p>
+                  </div>
+                  <button onClick={() => { setEditingCategoryId(null); setNewCategoryName(''); setCategoryDeleteError(''); setCategoryModal(true); }} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl flex items-center gap-2">
+                    <Plus size={16} /> Add Category
+                  </button>
+                </div>
+                {categoryDeleteError && (
+                  <div className="p-4 rounded-xl bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-sm">
+                    {categoryDeleteError}
+                  </div>
+                )}
+                <div className={`rounded-xl border ${surface} overflow-hidden`}>
+                  <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                    {categories.map(c => {
+                      const count = products.filter(p => p.categoryId === c.id).length;
+                      return (
+                        <div key={c.id} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                          <div>
+                            <p className={`font-semibold ${t1}`}>{c.name}</p>
+                            <p className={`text-xs ${t2}`}>{count} product(s) linked</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => { setEditingCategoryId(c.id); setNewCategoryName(c.name); setCategoryDeleteError(''); setCategoryModal(true); }} className={`px-3 py-1 text-xs font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50`}>
+                              Edit
+                            </button>
+                            <button onClick={() => {
+                              if (count > 0) {
+                                setCategoryDeleteError(`Cannot delete category "${c.name}" because it is linked to ${count} product(s). Reassign them first.`);
+                                return;
+                              }
+                              if (confirm('Are you sure you want to delete this category?')) {
+                                setCategories(prev => prev.filter(cat => cat.id !== c.id));
+                                setCategoryDeleteError('');
+                              }
+                            }} className={`px-3 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50`}>
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {tab === 'users' && (
               <div className="space-y-6">
                 <div>
@@ -596,19 +729,19 @@ export function SettingsView({
       />
 
       {taxModal && (
-        <Modal title="Add Tax Rate" onClose={() => setTaxModal(false)} darkMode={dm}>
+        <Modal title={editingTaxId ? "Edit Tax Rate" : "Add Tax Rate"} onClose={() => setTaxModal(false)} darkMode={dm}>
           <Field label="Tax Name" value={newTaxName} onChange={setNewTaxName} placeholder="e.g. Service Charge" darkMode={dm} />
           <Field label="Rate (%)" value={newTaxRate} onChange={setNewTaxRate} placeholder="e.g. 5" type="number" darkMode={dm} />
           <div className="flex items-center gap-2 mb-6">
             <Toggle darkMode={darkMode} checked={newTaxInclusive} onChange={() => setNewTaxInclusive(!newTaxInclusive)} />
             <span className={`text-sm ${t2}`}>Tax included in price</span>
           </div>
-          <button onClick={addTax} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700">Add Tax</button>
+          <button onClick={saveTax} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700">{editingTaxId ? 'Save Tax' : 'Add Tax'}</button>
         </Modal>
       )}
 
       {promoModal && (
-        <Modal title="Add Promo Code" onClose={() => setPromoModal(false)} darkMode={dm}>
+        <Modal title={editingPromoCodeId ? "Edit Promo Code" : "Add Promo Code"} onClose={() => setPromoModal(false)} darkMode={dm}>
           <Field label="Promo Code" value={newPromoCode} onChange={e => setNewPromoCode(e.toUpperCase())} placeholder="e.g. SUMMER10" darkMode={dm} />
           <div className="mb-3">
             <label className={`text-sm block mb-1 ${t2}`}>Discount Type</label>
@@ -653,7 +786,32 @@ export function SettingsView({
             <span className={`text-sm ${t2}`}>Cannot combine with item discounts</span>
           </div>
 
-          <button onClick={addPromo} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700 mt-2">Add Promo</button>
+          <button onClick={savePromo} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700 mt-2">{editingPromoCodeId ? 'Save Promo' : 'Add Promo'}</button>
+        </Modal>
+      )}
+
+      {categoryModal && (
+        <Modal title={editingCategoryId ? 'Edit Category' : 'Add Category'} onClose={() => setCategoryModal(false)} darkMode={darkMode}>
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-xs font-medium mb-1 ${t2}`}>Category Name</label>
+              <input value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} className={`w-full p-2 rounded-xl border outline-none text-sm ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+            </div>
+            <button
+              onClick={() => {
+                if (!newCategoryName) return;
+                if (editingCategoryId) {
+                  setCategories(prev => prev.map(c => c.id === editingCategoryId ? { ...c, name: newCategoryName } : c));
+                } else {
+                  setCategories(prev => [...prev, { id: Date.now().toString(), name: newCategoryName, isActive: true }]);
+                }
+                setCategoryModal(false);
+              }}
+              className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
+            >
+              Save Category
+            </button>
+          </div>
         </Modal>
       )}
 

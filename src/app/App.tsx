@@ -10,8 +10,8 @@ import { MobileOwnerView } from './components/MobileOwnerView';
 import { AuthView } from './components/AuthView';
 import { DailySalesView } from './components/DailySalesView';
 import { CustomersView } from './components/CustomersView';
-import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings, TaxRule, TerminalViewMode } from './components/mockData';
-import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS, INITIAL_TAX_RULES } from './components/mockData';
+import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './components/mockData';
+import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS, INITIAL_TAX_RULES, INITIAL_PAYMENTS } from './components/mockData';
 
 const MOBILE_NAV: { id: ViewType; label: string; icon: ElementType }[] = [
   { id: 'pos',         label: 'POS',          icon: Monitor         },
@@ -63,6 +63,7 @@ export default function App() {
   const [categories, setCategories] = useState<Category[]>([...CATEGORIES]);
   const [products, setProducts] = useState<Product[]>([...PRODUCTS]);
   const [orders,   setOrders]   = useState<RecentOrder[]>([...RECENT_ORDERS]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodEntry[]>(INITIAL_PAYMENTS);
   // ─── Taxes & Discounts ───────────────────────────────────────────────────
   const [discountSettings, setDiscountSettings] = useState<DiscountSettings>({
     enabled: true,
@@ -282,7 +283,9 @@ export default function App() {
                 bizName={bizName}
                 darkMode={darkMode}
                 customers={customers}
+                setCustomers={setCustomers}
                 loyaltySettings={loyaltySettings}
+                paymentMethods={paymentMethods}
                 onOrderComplete={(c, o, p, a, pc, cid, pe, pr, pda) => handleOrderComplete(c, o, p, a, pc, cid, pe, pr, pda)}
               />
             )}
@@ -301,6 +304,7 @@ export default function App() {
             {view === 'customers' && (
               <CustomersView
                 customers={customers}
+                setCustomers={setCustomers}
                 loyaltySettings={loyaltySettings}
                 darkMode={darkMode}
                 orders={orders}
@@ -308,6 +312,7 @@ export default function App() {
             )}
             {view === 'settings'   && (
               <SettingsView
+                currentUser={currentUser}
                 businessType={businessType}
                 onBusinessTypeChange={setBusinessType}
                 users={users}
@@ -320,6 +325,9 @@ export default function App() {
                 setDiscountSettings={setDiscountSettings}
                 taxRules={taxRules}
                 setTaxRules={setTaxRules}
+                paymentMethods={paymentMethods}
+                setPaymentMethods={setPaymentMethods}
+                products={products}
                 terminalViewMode={terminalViewMode}
                 setTerminalViewMode={setTerminalViewMode}
                 refundSettings={refundSettings}
@@ -350,7 +358,9 @@ export default function App() {
                 bizName={bizName}
                 darkMode={darkMode}
                 customers={customers}
+                setCustomers={setCustomers}
                 loyaltySettings={loyaltySettings}
+                paymentMethods={paymentMethods}
                 onOrderComplete={(c, o, p, a, pc, cid, pe, pr, pda) => handleOrderComplete(c, o, p, a, pc, cid, pe, pr, pda)}
               />
             )}
@@ -369,6 +379,7 @@ export default function App() {
             {view === 'customers' && (
               <CustomersView
                 customers={customers}
+                setCustomers={setCustomers}
                 loyaltySettings={loyaltySettings}
                 darkMode={darkMode}
                 orders={orders}
@@ -376,6 +387,7 @@ export default function App() {
             )}
             {view === 'settings'  && (
               <SettingsView
+                currentUser={currentUser}
                 businessType={businessType}
                 onBusinessTypeChange={setBusinessType}
                 users={users}
@@ -388,6 +400,9 @@ export default function App() {
                 setDiscountSettings={setDiscountSettings}
                 taxRules={taxRules}
                 setTaxRules={setTaxRules}
+                paymentMethods={paymentMethods}
+                setPaymentMethods={setPaymentMethods}
+                products={products}
                 terminalViewMode={terminalViewMode}
                 setTerminalViewMode={setTerminalViewMode}
                 refundSettings={refundSettings}

@@ -1,7 +1,7 @@
 import { useState, type ElementType } from 'react';
 import { X, Banknote, Smartphone, CreditCard, Building2, Printer, Delete, CheckCircle, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { CartItem, OrderType, PaymentMethod, DiscountSettings, PromoCode, Customer, LoyaltySettings } from './mockData';
+import type { CartItem, OrderType, PaymentMethod, DiscountSettings, PromoCode, Customer, LoyaltySettings, PaymentMethodEntry } from './mockData';
 import { formatIDR } from './mockData';
 
 interface CheckoutModalProps {
@@ -17,6 +17,7 @@ interface CheckoutModalProps {
   customers?: Customer[];
   loyaltySettings?: LoyaltySettings;
   selectedCustomerId?: string | null;
+  paymentMethods: PaymentMethodEntry[];
   onClose: (completed?: boolean) => void;
   onConfirm: (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => string | void;
 }
@@ -28,11 +29,12 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[]
   { id: 'bank-transfer', label: 'Bank Transfer',  icon: Building2  },
 ];
 
-export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, categories, subtotalBeforePromo, taxAmount, customers, loyaltySettings, selectedCustomerId, onClose, onConfirm }: CheckoutModalProps) {
+export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, categories, subtotalBeforePromo, taxAmount, customers, loyaltySettings, selectedCustomerId, paymentMethods, onClose, onConfirm }: CheckoutModalProps) {
+  const availableMethods = PAYMENT_OPTIONS.filter(po => paymentMethods.find(pm => pm.id === po.id)?.enabled);
   const [orderNumber, setOrderNumber] = useState('');
   const [step,       setStep]      = useState<'payment' | 'success'>('payment');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [method,     setMethod]    = useState<PaymentMethod>('cash');
+  const [method,     setMethod]    = useState<PaymentMethod>(availableMethods[0]?.id || 'cash');
   const [cashInput,  setCashInput] = useState('');
   
   // Promo Code State
@@ -361,7 +363,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
       {/* Payment method */}
       <p className={`text-xs font-semibold mb-2 ${t2}`}>PAYMENT METHOD</p>
       <div className="grid grid-cols-2 gap-2 mb-4">
-        {PAYMENT_OPTIONS.map(({ id, label, icon: Icon }) => (
+        {availableMethods.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setMethod(id)}

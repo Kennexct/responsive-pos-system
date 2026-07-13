@@ -17,6 +17,7 @@ interface POSViewProps {
   bizName: string;
   darkMode: boolean;
   customers: Customer[];
+  setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
   loyaltySettings: LoyaltySettings;
   taxRules?: TaxRule[];
   terminalViewMode?: TerminalViewMode;
@@ -29,7 +30,7 @@ const ORDER_TYPES: { id: OrderType; label: string }[] = [
   { id: 'delivery', label: 'Delivery' },
 ];
 
-export function POSView({ businessType, products, categories, discountSettings, currentUser, bizName, darkMode, customers, loyaltySettings, taxRules = [], terminalViewMode = 'grid', onOrderComplete }: POSViewProps) {
+export function POSView({ businessType, products, categories, discountSettings, currentUser, bizName, darkMode, customers, setCustomers, loyaltySettings, taxRules = [], terminalViewMode = 'grid', onOrderComplete }: POSViewProps) {
   const [category, setCategory]       = useState('All');
   const [search, setSearch]           = useState('');
   const [cart, setCart]               = useState<CartItem[]>([]);
@@ -579,6 +580,9 @@ function CartPanel({
   const [discountVal, setDiscountVal] = useState('');
   const [discountType, setDiscountType] = useState<'percent'|'nominal'>('percent');
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [quickAddName, setQuickAddName] = useState('');
+  const [quickAddPhone, setQuickAddPhone] = useState('');
   
   const itemCount = cart.reduce((s, i) => s + i.qty, 0);
 
@@ -820,8 +824,14 @@ function CartPanel({
               <h3 className={`font-semibold ${t1}`}>Select Customer</h3>
               <button onClick={() => setShowCustomerModal(false)} className={t2}><X size={18} /></button>
             </div>
+            <input 
+              value={customerSearch} 
+              onChange={e => setCustomerSearch(e.target.value)} 
+              placeholder="Search name or phone..." 
+              className={`w-full p-2 mb-4 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`}
+            />
             <div className="max-h-60 overflow-y-auto space-y-2">
-              {customers.map(c => (
+              {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).map(c => (
                 <button
                   key={c.id}
                   onClick={() => { onSelectCustomer(c.id); setShowCustomerModal(false); }}
@@ -836,6 +846,25 @@ function CartPanel({
                   </div>
                 </button>
               ))}
+              {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).length === 0 && (
+                <div className="p-3 border rounded-xl border-dashed border-slate-300 dark:border-slate-700">
+                  <p className={`text-xs ${t2} mb-2`}>No customer found. Add quick customer:</p>
+                  <input value={quickAddName} onChange={e => setQuickAddName(e.target.value)} placeholder="Name" className={`w-full p-2 mb-2 rounded-lg border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                  <input value={quickAddPhone} onChange={e => setQuickAddPhone(e.target.value)} placeholder="Phone" className={`w-full p-2 mb-2 rounded-lg border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                  <button onClick={() => {
+                    if (!quickAddName || !quickAddPhone) return;
+                    const newId = Date.now().toString();
+                    setCustomers(prev => [...prev, {
+                      id: newId, name: quickAddName, phone: quickAddPhone, email: '', birthday: '', tags: [], pointsBalance: 0, totalSpend: 0, totalTransactions: 0, averageTransactionValue: 0, marketingConsent: true, createdAt: new Date().toISOString()
+                    }]);
+                    onSelectCustomer(newId);
+                    setShowCustomerModal(false);
+                    setCustomerSearch('');
+                    setQuickAddName('');
+                    setQuickAddPhone('');
+                  }} className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg">Add & Select</button>
+                </div>
+              )}
             </div>
           </div>
         </div>

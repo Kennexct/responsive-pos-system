@@ -2,6 +2,14 @@ export type BusinessType = 'retail' | 'fnb';
 export type ViewType = 'pos' | 'dashboard' | 'daily-sales' | 'inventory' | 'reports' | 'customers' | 'settings';
 export type OrderType = 'dine-in' | 'takeaway' | 'delivery';
 export type PaymentMethod = 'cash' | 'qris' | 'card' | 'bank-transfer';
+
+export interface PaymentMethodEntry { id: PaymentMethod; label: string; enabled: boolean; }
+export const INITIAL_PAYMENTS: PaymentMethodEntry[] = [
+  { id: 'cash',          label: 'Cash',                enabled: true  },
+  { id: 'qris',          label: 'QRIS',                enabled: true  },
+  { id: 'card',          label: 'Debit / Credit Card', enabled: true  },
+  { id: 'bank-transfer', label: 'Bank Transfer',       enabled: true  },
+];
 export type OrderStatus = 'completed' | 'held' | 'cancelled' | 'refunded' | 'voided';
 export type Role = 'owner' | 'manager' | 'cashier';
 
