@@ -1,7 +1,7 @@
 import { TrendingUp, ShoppingBag, AlertTriangle, ArrowUp, DollarSign } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { PRODUCTS, WEEKLY_SALES, formatIDR } from './mockData';
-import type { RecentOrder } from './mockData';
+import { WEEKLY_SALES, formatIDR } from './mockData';
+import type { RecentOrder, Product } from './mockData';
 
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Cash', qris: 'QRIS', card: 'Card', 'bank-transfer': 'Bank Transfer',
@@ -9,12 +9,13 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 interface Props {
   orders: RecentOrder[];
+  products: Product[];
   darkMode: boolean;
 }
 
-export function MobileOwnerView({ orders, darkMode }: Props) {
-  const lowStockItems  = PRODUCTS.filter(p => p.stock <= p.lowStockThreshold);
-  const sessionSales   = orders.reduce((s, o) => s + o.total, 0);
+export function MobileOwnerView({ orders, products, darkMode }: Props) {
+  const lowStockItems  = products.filter(p => p.stock <= p.lowStockThreshold);
+  const sessionSales   = orders.filter(o => o.status === 'completed').reduce((s, o) => s + o.total, 0);
   const todaySales     = 2847500 + sessionSales;
   const todayOrders    = 38 + orders.length;
 

@@ -4,7 +4,7 @@ import {
   AlertTriangle, PlayCircle, X, Package, Percent, UserPlus, Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { BusinessType, CartItem, HeldOrder, OrderType, PaymentMethod, Product, User, Category, DiscountSettings, ProductVariant, Customer, LoyaltySettings, TaxRule, TerminalViewMode } from './mockData';
+import type { BusinessType, CartItem, HeldOrder, OrderType, PaymentMethod, Product, User, Category, DiscountSettings, ProductVariant, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './mockData';
 import { formatIDR } from './mockData';
 import { CheckoutModal } from './CheckoutModal';
 
@@ -21,6 +21,7 @@ interface POSViewProps {
   loyaltySettings: LoyaltySettings;
   taxRules?: TaxRule[];
   terminalViewMode?: TerminalViewMode;
+  paymentMethods: PaymentMethodEntry[];
   onOrderComplete: (cart: CartItem[], orderType: OrderType, paymentMethod: PaymentMethod, amountPaid: number, promoCode?: string, customerId?: string, pointsEarned?: number, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => string | void;
 }
 
@@ -30,7 +31,7 @@ const ORDER_TYPES: { id: OrderType; label: string }[] = [
   { id: 'delivery', label: 'Delivery' },
 ];
 
-export function POSView({ businessType, products, categories, discountSettings, currentUser, bizName, darkMode, customers, setCustomers, loyaltySettings, taxRules = [], terminalViewMode = 'grid', onOrderComplete }: POSViewProps) {
+export function POSView({ businessType, products, categories, discountSettings, currentUser, bizName, darkMode, customers, setCustomers, loyaltySettings, taxRules = [], terminalViewMode = 'grid', paymentMethods, onOrderComplete }: POSViewProps) {
   const [category, setCategory]       = useState('All');
   const [search, setSearch]           = useState('');
   const [cart, setCart]               = useState<CartItem[]>([]);
@@ -98,7 +99,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
   const setDiscount = (id: string, pct: number, nominal?: number) =>
     setCart(prev => prev.map(i => {
       if (i.id === id) {
-        const basePrice = i.product.price + (i.variant?.priceDelta || 0);
+        const basePrice = i.product.price + (i.variant?.priceModifier || 0);
         const finalNominal = nominal !== undefined ? Math.max(0, Math.min(basePrice, nominal)) : undefined;
         return {
           ...i, 
@@ -174,8 +175,15 @@ export function POSView({ businessType, products, categories, discountSettings, 
 
   const holdOrder = () => {
     if (cart.length === 0) return;
-    setHeldOrders(prev => [...prev, { id: Date.now().toString(), items: [...cart], orderType, heldAt: new Date().toLocaleTimeString(), tableNote }]);
-    clearCart();
+    const heldItems = cart.map(i => ({ ...i }));
+    setHeldOrders(prev => [...prev, {
+      id: Date.now().toString(),
+      items: heldItems,
+      orderType,
+      heldAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      tableNote
+    }]);
+    setCart([]);
     setTableNote('');
   };
 
@@ -536,6 +544,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
           selectedCustomerId={selectedCustomerId}
           subtotalBeforePromo={subtotal - tierDiscountAmt}
           taxAmount={exclusiveTax}
+          paymentMethods={paymentMethods}
           onClose={(completed) => {
             setShowCheckout(false);
             if (completed) clearCart();

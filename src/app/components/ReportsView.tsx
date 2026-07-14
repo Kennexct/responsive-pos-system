@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { Download, TrendingUp, Users, ShoppingBag, DollarSign, Activity, AlertCircle } from 'lucide-react';

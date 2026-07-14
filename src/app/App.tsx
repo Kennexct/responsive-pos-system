@@ -82,9 +82,9 @@ export default function App() {
   const [terminalViewMode, setTerminalViewMode, tvmLoaded] = usePersistentState<TerminalViewMode>('pos-terminalview', 'grid');
 
   const handleRefund = (orderId: string, reason: string) => {
+    const orderToRefund = orders.find(o => o.id === orderId);
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'refunded', refundReason: reason } : o));
     
-    const orderToRefund = orders.find(o => o.id === orderId);
     if (orderToRefund && orderToRefund.items) {
       setProducts(prev => prev.map(p => {
         const inOrder = orderToRefund.items!.filter(i => i.product.id === p.id).reduce((s, i) => s + i.qty, 0);
@@ -290,10 +290,10 @@ export default function App() {
                 setCustomers={setCustomers}
                 loyaltySettings={loyaltySettings}
                 paymentMethods={paymentMethods}
-                onOrderComplete={(c, o, p, a, pc, cid, pe, pr, pda) => handleOrderComplete(c, o, p, a, pc, cid, pe, pr, pda)}
+                onOrderComplete={(c, o, p, a, pc, cid, pe, pr, pda, ft, tot, fs) => handleOrderComplete(c, o, p, a, pc, cid, pe, pr, pda, ft, tot, fs)}
               />
             )}
-            {view === 'dashboard'  && <MobileOwnerView orders={orders} darkMode={darkMode} />}
+            {view === 'dashboard'  && <MobileOwnerView orders={orders} products={products} darkMode={darkMode} />}
             {view === 'inventory'  && <InventoryView products={products} onProductsChange={setProducts} categories={categories} darkMode={darkMode} />}
             {view === 'reports'    && <ReportsView orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} categories={categories} darkMode={darkMode} />}
             {view === 'daily-sales'&& (
@@ -365,7 +365,7 @@ export default function App() {
                 setCustomers={setCustomers}
                 loyaltySettings={loyaltySettings}
                 paymentMethods={paymentMethods}
-                onOrderComplete={(c, o, p, a, pc, cid, pe, pr, pda) => handleOrderComplete(c, o, p, a, pc, cid, pe, pr, pda)}
+                onOrderComplete={(c, o, p, a, pc, cid, pe, pr, pda, ft, tot, fs) => handleOrderComplete(c, o, p, a, pc, cid, pe, pr, pda, ft, tot, fs)}
               />
             )}
             {view === 'dashboard' && <Dashboard orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} darkMode={darkMode} />}

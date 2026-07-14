@@ -111,7 +111,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
       applicableSubtotal = cart
         .filter(item => allowedCategoryNames.includes(item.product.category))
         .reduce((sum, item) => {
-          const basePrice = item.product.price + (item.variant?.priceDelta || 0);
+          const basePrice = item.product.price + (item.variant?.priceModifier || 0);
           const linePrice = basePrice * item.qty;
           let after = linePrice;
           if (item.itemDiscountNominal) after -= (item.itemDiscountNominal * item.qty);
@@ -165,9 +165,14 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const handleConfirm = () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
-    const invoiceNum = onConfirm(method, method === 'cash' ? cashPaid : total, appliedPromo?.code, pointsRedeemed, pointsDiscountAmt, finalTax, total, finalSubtotal);
-    if (invoiceNum) setOrderNumber(invoiceNum);
-    setStep('success');
+    try {
+      const invoiceNum = onConfirm(method, method === 'cash' ? cashPaid : total, appliedPromo?.code, pointsRedeemed, pointsDiscountAmt, finalTax, total, finalSubtotal);
+      if (invoiceNum) setOrderNumber(invoiceNum);
+      setStep('success');
+    } catch (e) {
+      console.error('Checkout error:', e);
+      setIsSubmitting(false);
+    }
   };
 
   // ── Numpad handlers ─────────────────────────────────────────────────────

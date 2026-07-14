@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
-import { Search, Eye, RefreshCcw, XCircle, ArrowLeft, Download, CheckCircle, Receipt, X, Calendar, FileText, ChevronRight, AlertTriangle, Printer } from 'lucide-react';
+import { useState } from 'react';
+import { Search, RefreshCcw, XCircle, ArrowLeft, X, ChevronRight, AlertTriangle, Printer } from 'lucide-react';
 import type { RecentOrder, RefundSettings, CartItem, User } from './mockData';
 import { formatIDR } from './mockData';
-import { ConfirmationModal } from './ConfirmationModal';
 
 interface DailySalesViewProps {
   orders: RecentOrder[];
