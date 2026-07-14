@@ -447,6 +447,7 @@ export default function App() {
         </nav>
       </div>
       </div>
+    </div>
     </ToastProvider>
   );
 }
