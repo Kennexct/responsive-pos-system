@@ -70,9 +70,20 @@ export default function App() {
       setBizName(currentUser.businessName);
     }
   }, [currentUser, setBizName]);
-
-  const [users, setUsers, usersLoaded] = usePersistentState<User[]>('pos-users', [...INITIAL_USERS], activeMerchantId);
+  const defaultUsers = currentUser ? [currentUser] : INITIAL_USERS;
+  const [users, setUsers, usersLoaded] = usePersistentState<User[]>('pos-users', defaultUsers, activeMerchantId);
   const [permissions, setPermissions, permsLoaded] = usePersistentState<RolePermissions>('pos-perms', DEFAULT_PERMISSIONS, activeMerchantId);
+
+  useEffect(() => {
+    if (currentUser) {
+      setUsers(prev => {
+        if (!prev.some(u => u.id === currentUser.id)) {
+          return [currentUser, ...prev];
+        }
+        return prev;
+      });
+    }
+  }, [currentUser, setUsers]);
 
   // ─── Data State (Persistent) ─────────────────────────────────────────────
   const [categories, setCategories, catLoaded] = usePersistentState<Category[]>('pos-categories', [...CATEGORIES], activeMerchantId);

@@ -16,16 +16,22 @@ export function usePersistentState<T>(key: string, initialValue: T, merchantId?:
   // Load initial data (localforage first for instant render, then Supabase if configured)
   useEffect(() => {
     let isMounted = true;
+    setIsLoaded(false);
 
     async function init() {
       // 1. Fast local load
       try {
         const localVal = await localforage.getItem<T>(storageKey);
-        if (isMounted && localVal !== null) {
-          setState(localVal);
+        if (isMounted) {
+          if (localVal !== null) {
+            setState(localVal);
+          } else {
+            setState(initialValue);
+          }
         }
       } catch (err) {
         console.error(`Failed to load ${storageKey} from localforage:`, err);
+        if (isMounted) setState(initialValue);
       }
 
       // 2. Cloud Supabase sync
