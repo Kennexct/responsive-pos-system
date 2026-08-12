@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Store, Mail, Lock, User as UserIcon, ChevronRight, KeyRound } from 'lucide-react';
 import type { User, Role } from './mockData';
+import { VPosLogo } from './VPosLogo';
 
 interface AuthViewProps {
   users: User[];
@@ -87,10 +88,10 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
           backgroundSize: '40px 40px',
         }} />
         <div className="relative z-10 max-w-sm text-white text-center">
-          <div className="w-20 h-20 bg-white/15 rounded-3xl flex items-center justify-center mx-auto mb-8 backdrop-blur-sm border border-white/20">
-            <Store size={40} className="text-white" />
+          <div className="mx-auto mb-8 flex justify-center">
+            <VPosLogo size={72} />
           </div>
-          <h1 className="text-3xl font-bold mb-4">POS Pro</h1>
+          <h1 className="text-3xl font-bold mb-4">VPos</h1>
           <p className="text-blue-100 text-lg leading-relaxed mb-8">Streamline your business operations with real-time insights.</p>
           <div className="grid grid-cols-3 gap-4 text-sm">
             {['Smart Ordering', 'Stock Tracking', 'Live Analytics'].map(f => (
@@ -112,10 +113,7 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
         >
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-              <Store size={22} className="text-white" />
-            </div>
-            <span className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>POS Pro</span>
+            <VPosLogo size={36} showText={true} textClassName="text-xl" />
           </div>
 
           <h2 className={`text-2xl font-bold mb-1 ${darkMode ? 'text-white' : 'text-slate-800'}`}>

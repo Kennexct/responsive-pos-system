@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import type { BusinessType, ViewType, User } from './mockData';
 
+import { VPosLogo } from './VPosLogo';
+
 interface SidebarProps {
   currentView: ViewType;
   onViewChange: (v: ViewType) => void;
@@ -52,15 +54,10 @@ export function Sidebar({ currentView, onViewChange, businessType, isOpen, onClo
       >
         {/* Header */}
         <div className={`flex items-center gap-3 px-4 h-16 border-b ${divider} shrink-0`}>
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 shrink-0">
-            {businessType === 'fnb'
-              ? <Coffee size={16} className="text-white" />
-              : <ShoppingBag size={16} className="text-white" />
-            }
-          </div>
+          <VPosLogo size={32} />
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <div className={`truncate text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>POS Pro</div>
+              <div className={`truncate text-base font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>VPos</div>
               <div className="text-xs text-slate-500 truncate">
                 {businessType === 'fnb' ? 'F&B Mode' : 'Retail Mode'}
               </div>

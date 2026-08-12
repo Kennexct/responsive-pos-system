@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import localforage from 'localforage';
 
 localforage.config({
-  name: 'NexaPOS',
+  name: 'VPos',
   storeName: 'pos_data'
 });
 

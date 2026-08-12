@@ -245,7 +245,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   <div class="row" style="margin-top:4px"><span>Payment: ${paymentLabel}</span>${method === 'cash' && cashPaid >= total ? `<span>Change: ${formatIDR(change)}</span>` : ''}</div>
   <div class="div"></div>
   <div class="center" style="margin-top:8px"><strong>** Thank you! **</strong></div>
-  <div class="center" style="color:#999;font-size:10px;margin-top:4px">Powered by POS Pro</div>
+  <div class="center" style="color:#999;font-size:10px;margin-top:4px">Powered by VPos</div>
 </body>
 </html>`;
   };

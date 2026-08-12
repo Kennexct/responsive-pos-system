@@ -267,7 +267,7 @@ export default function App() {
             <Menu size={20} />
           </button>
           <span className={`text-sm font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-            {VIEW_TITLE[view] ?? 'POS Pro'}
+            {VIEW_TITLE[view] ?? 'VPos'}
           </span>
           <div className="w-8" />
         </header>

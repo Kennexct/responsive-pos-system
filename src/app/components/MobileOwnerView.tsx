@@ -39,7 +39,7 @@ export function MobileOwnerView({ orders, products, darkMode }: Props) {
       <div className={`px-4 pt-6 pb-8 ${dm ? 'bg-slate-800 border-b border-slate-700' : 'bg-white border-b border-slate-200 shadow-sm'}`}>
         <p className={`text-xs mb-1 ${t2}`}>{dynamicDate}</p>
         <h1 className={`text-xl font-bold ${t1}`}>{greeting} 👋</h1>
-        <p className={`text-sm mt-0.5 ${t2}`}>POS Pro Dashboard</p>
+        <p className={`text-sm mt-0.5 ${t2}`}>VPos Dashboard</p>
       </div>
 
       <div className="px-4 -mt-4 space-y-4">
