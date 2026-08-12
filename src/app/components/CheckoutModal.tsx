@@ -3,6 +3,7 @@ import { X, Banknote, Smartphone, CreditCard, Building2, Printer, Delete, CheckC
 import { motion, AnimatePresence } from 'motion/react';
 import type { CartItem, OrderType, PaymentMethod, DiscountSettings, PromoCode, Customer, LoyaltySettings, PaymentMethodEntry } from './mockData';
 import { formatIDR } from './mockData';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface CheckoutModalProps {
   cart: CartItem[];
@@ -49,6 +50,8 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const [isSplit, setIsSplit] = useState(false);
   const [method2, setMethod2] = useState<PaymentMethod>(availableMethods.length > 1 ? availableMethods[1].id : availableMethods[0]?.id || 'cash');
   const [splitAmount, setSplitAmount] = useState<string>('');
+
+  const [confirmCancelModal, setConfirmCancelModal] = useState(false);
 
   const applyPromo = () => {
     setPromoError('');
@@ -297,11 +300,8 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   }
 
   return (
-    <ModalShell onClose={() => {
-      if (window.confirm("Cancel payment and return to cart?")) {
-        onClose();
-      }
-    }} darkMode={dm}>
+    <>
+      <ModalShell onClose={() => setConfirmCancelModal(true)} darkMode={dm}>
       <h2 className={`font-bold mb-4 ${t1}`}>Checkout</h2>
 
       {/* Order summary */}
@@ -537,8 +537,21 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
         ].join(' ')}
       >
         Confirm Payment · {formatIDR(total)}
-      </button>
-    </ModalShell>
+      <ConfirmationModal
+        isOpen={confirmCancelModal}
+        title="Cancel Checkout?"
+        message="Are you sure you want to cancel payment and return to cart?"
+        confirmText="Cancel Checkout"
+        cancelText="Continue Payment"
+        isDestructive={true}
+        darkMode={dm}
+        onCancel={() => setConfirmCancelModal(false)}
+        onConfirm={() => {
+          setConfirmCancelModal(false);
+          onClose();
+        }}
+      />
+    </>
   );
 }
 

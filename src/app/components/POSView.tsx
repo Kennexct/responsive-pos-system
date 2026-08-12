@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import type { BusinessType, CartItem, HeldOrder, OrderType, PaymentMethod, Product, User, Category, DiscountSettings, ProductVariant, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './mockData';
 import { formatIDR } from './mockData';
 import { CheckoutModal } from './CheckoutModal';
+import { ConfirmationModal } from './ConfirmationModal';
+import { useToast } from '../contexts/ToastContext';
 
 interface POSViewProps {
   businessType: BusinessType;
@@ -111,12 +113,13 @@ export function POSView({ businessType, products, categories, discountSettings, 
       return i;
     }));
 
+  const { addToast } = useToast();
+  const [clearCartModalOpen, setClearCartModalOpen] = useState(false);
+
   const removeItem = (id: string) => setCart(prev => prev.filter(i => i.id !== id));
   const clearCart  = () => {
     if (cart.length === 0) return;
-    if (window.confirm("Are you sure you want to clear the cart?")) {
-      setCart([]);
-    }
+    setClearCartModalOpen(true);
   };
 
   const { subtotal, tierDiscountAmt, tax, exclusiveTax, total } = useMemo(() => {
@@ -231,13 +234,13 @@ export function POSView({ businessType, products, categories, discountSettings, 
               const p = products.find(p => (p.barcode?.toLowerCase() === q || p.sku?.toLowerCase() === q || p.name.toLowerCase() === q));
               if (p) {
                 if (p.trackInventory && p.stock === 0) {
-                  alert('Product out of stock!');
+                  addToast('Product out of stock!', 'error');
                 } else {
                   handleProductClick(p);
                   setSearch('');
                 }
               } else {
-                alert('Product not found!');
+                addToast('Product not found!', 'error');
               }
             }} className="w-full max-w-md relative">
               <input
@@ -882,7 +885,21 @@ function CartPanel({
             </div>
           </div>
         </div>
-      )}
+      <ConfirmationModal
+        isOpen={clearCartModalOpen}
+        title="Clear Cart?"
+        message="Are you sure you want to remove all items from the current order?"
+        confirmText="Clear Cart"
+        cancelText="Cancel"
+        isDestructive={true}
+        darkMode={dm}
+        onCancel={() => setClearCartModalOpen(false)}
+        onConfirm={() => {
+          setCart([]);
+          setTableNote('');
+          setClearCartModalOpen(false);
+        }}
+      />
     </>
   );
 }

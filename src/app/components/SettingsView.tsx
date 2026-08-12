@@ -2,6 +2,7 @@ import { useState, type ElementType } from 'react';
 import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Tag, AlertTriangle } from 'lucide-react';
 import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
+import { useToast } from '../contexts/ToastContext';
 
 interface SettingsViewProps {
   currentUser?: User;
@@ -103,6 +104,13 @@ export function SettingsView({
     }, 1500);
   };
   
+  const { addToast } = useToast();
+
+  // Delete User Confirmation State
+  const [deleteUserTarget, setDeleteUserTarget] = useState<User | null>(null);
+  // Delete Category Confirmation State
+  const [deleteCategoryTarget, setDeleteCategoryTarget] = useState<Category | null>(null);
+
   // Currency state
   const [displayCurrency, setDisplayCurrency] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
@@ -150,7 +158,7 @@ export function SettingsView({
   const handleSave = () => {
     if (currentUser?.role !== 'owner') {
       setConfirmSave(false);
-      return alert("Only owners can modify settings.");
+      return addToast("Only owners can modify settings.", "error");
     }
     setConfirmSave(false);
     setSaved(true);
@@ -181,10 +189,10 @@ export function SettingsView({
   const savePromo = () => {
     if (!newPromoCode || !newPromoValue) return;
     if (newPromoType === 'percent' && Number(newPromoValue) > 100) {
-      return alert("Discount percentage cannot exceed 100%");
+      return addToast("Discount percentage cannot exceed 100%", "error");
     }
     const isDuplicate = discountSettings.promoCodes.some(p => p.code === newPromoCode.toUpperCase() && p.id !== editingPromoCodeId);
-    if (isDuplicate) return alert("Promo code already exists.");
+    if (isDuplicate) return addToast("Promo code already exists.", "error");
     if (editingPromoCodeId) {
       setDiscountSettings(prev => ({
         ...prev,
@@ -228,12 +236,12 @@ export function SettingsView({
 
   const saveUser = () => {
     if (!newUser.name || !newUser.pin) return;
-    if (newUser.pin.length !== 4) return alert("PIN Code must be exactly 4 numbers.");
+    if (newUser.pin.length !== 4) return addToast("PIN Code must be exactly 4 numbers.", "error");
     if (editingUserId) {
       const existingUser = users.find(u => u.id === editingUserId);
       if (existingUser?.role === 'owner' && newUser.role !== 'owner') {
         const ownerCount = users.filter(u => u.role === 'owner').length;
-        if (ownerCount <= 1) return alert("Cannot change role of the last owner.");
+        if (ownerCount <= 1) return addToast("Cannot change role of the last owner.", "error");
       }
       setUsers(users.map(u => u.id === editingUserId ? { ...u, ...newUser } as User : u));
     } else {
@@ -243,14 +251,14 @@ export function SettingsView({
   };
 
   const deleteUser = (id: string) => {
-    if (users.length <= 1) return alert('Cannot delete the last user.');
+    if (users.length <= 1) return addToast('Cannot delete the last user.', 'error');
     const userToDelete = users.find(u => u.id === id);
     if (userToDelete?.role === 'owner') {
       const ownerCount = users.filter(u => u.role === 'owner').length;
-      if (ownerCount <= 1) return alert("Cannot delete the last owner account.");
+      if (ownerCount <= 1) return addToast("Cannot delete the last owner account.", "error");
     }
-    if (window.confirm(`Are you sure you want to delete ${userToDelete?.name}?`)) {
-      setUsers(users.filter(u => u.id !== id));
+    if (userToDelete) {
+      setDeleteUserTarget(userToDelete);
     }
   };
 
@@ -597,10 +605,8 @@ export function SettingsView({
                                 setCategoryDeleteError(`Cannot delete category "${c.name}" because it is linked to ${count} product(s). Reassign them first.`);
                                 return;
                               }
-                              if (confirm('Are you sure you want to delete this category?')) {
-                                setCategories(prev => prev.filter(cat => cat.id !== c.id));
-                                setCategoryDeleteError('');
-                              }
+                              setCategoryDeleteError('');
+                              setDeleteCategoryTarget(c);
                             }} className={`px-3 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50`}>
                               Delete
                             </button>
@@ -850,6 +856,42 @@ export function SettingsView({
           </form>
         </Modal>
       )}
+
+      <ConfirmationModal
+        isOpen={Boolean(deleteUserTarget)}
+        title="Delete User Account?"
+        message={`Are you sure you want to delete ${deleteUserTarget?.name}? This user will lose access to VPos.`}
+        confirmText="Delete User"
+        cancelText="Cancel"
+        isDestructive={true}
+        darkMode={dm}
+        onCancel={() => setDeleteUserTarget(null)}
+        onConfirm={() => {
+          if (deleteUserTarget) {
+            setUsers(users.filter(u => u.id !== deleteUserTarget.id));
+            addToast(`User ${deleteUserTarget.name} has been deleted.`, 'info');
+          }
+          setDeleteUserTarget(null);
+        }}
+      />
+
+      <ConfirmationModal
+        isOpen={Boolean(deleteCategoryTarget)}
+        title="Delete Category?"
+        message={`Are you sure you want to delete category "${deleteCategoryTarget?.name}"?`}
+        confirmText="Delete Category"
+        cancelText="Cancel"
+        isDestructive={true}
+        darkMode={dm}
+        onCancel={() => setDeleteCategoryTarget(null)}
+        onConfirm={() => {
+          if (deleteCategoryTarget) {
+            setCategories(prev => prev.filter(cat => cat.id !== deleteCategoryTarget.id));
+            addToast(`Category "${deleteCategoryTarget.name}" deleted.`, 'info');
+          }
+          setDeleteCategoryTarget(null);
+        }}
+      />
     </div>
   );
 }
