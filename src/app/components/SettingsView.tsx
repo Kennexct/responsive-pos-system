@@ -1,5 +1,5 @@
 import { useState, type ElementType } from 'react';
-import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Award, Tag } from 'lucide-react';
+import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Tag } from 'lucide-react';
 import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 
@@ -18,8 +18,8 @@ interface SettingsViewProps {
   setDiscountSettings: React.Dispatch<React.SetStateAction<DiscountSettings>>;
   refundSettings: RefundSettings;
   setRefundSettings: React.Dispatch<React.SetStateAction<RefundSettings>>;
-  loyaltySettings: LoyaltySettings;
-  setLoyaltySettings: React.Dispatch<React.SetStateAction<LoyaltySettings>>;
+  loyaltySettings?: LoyaltySettings;
+  setLoyaltySettings?: React.Dispatch<React.SetStateAction<LoyaltySettings>>;
   darkMode: boolean;
   onToggleDark: () => void;
   taxRules?: TaxRule[];
@@ -34,7 +34,7 @@ interface SettingsViewProps {
   bizEmail: string;   setBizEmail: (v: string) => void;
 }
 
-type SettingsTab = 'business' | 'currency' | 'tax' | 'discounts' | 'loyalty' | 'refunds' | 'payments' | 'users' | 'categories';
+type SettingsTab = 'business' | 'currency' | 'tax' | 'discounts' | 'refunds' | 'payments' | 'users' | 'categories';
 
 const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
   { id: 'business',  label: 'Business Profile', icon: Store      },
@@ -44,7 +44,6 @@ const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
   { id: 'tax',       label: 'Taxes',            icon: Receipt    },
   { id: 'currency',  label: 'Currency',         icon: DollarSign },
   { id: 'discounts', label: 'Promos & Discounts', icon: Percent    },
-  { id: 'loyalty',   label: 'Loyalty Program',  icon: Award      },
   { id: 'refunds',   label: 'Refunds & Voids',  icon: RefreshCcw },
 ];
 
@@ -117,10 +116,6 @@ export function SettingsView({
     if (currentUser?.role !== 'owner') {
       setConfirmSave(false);
       return alert("Only owners can modify settings.");
-    }
-    if (loyaltySettings.enabled && loyaltySettings.earnRateSpend <= 0) {
-      setConfirmSave(false);
-      return alert("Earn Rate Spend must be greater than 0.");
     }
     setConfirmSave(false);
     setSaved(true);
@@ -461,96 +456,6 @@ export function SettingsView({
                       </div>
                     ))
                   }
-                </div>
-                <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
-              </div>
-            )}
-
-            {/* ── Loyalty ── */}
-            {tab === 'loyalty' && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className={t1}>Loyalty Program</h3>
-                  <p className={`text-sm mb-4 ${t2}`}>Configure points earning and redemption rules.</p>
-                  
-                  <div className={`flex items-center justify-between border rounded-xl px-4 py-3 mb-4 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-                    <div>
-                      <span className={`text-sm font-medium block ${t1}`}>Enable Loyalty Program</span>
-                      <span className={`text-xs ${t2}`}>Allow customers to earn and redeem points.</span>
-                    </div>
-                    <Toggle darkMode={darkMode} checked={loyaltySettings.enabled} onChange={() => setLoyaltySettings(prev => ({...prev, enabled: !prev.enabled}))} />
-                  </div>
-
-                  {loyaltySettings.enabled && (
-                    <div className="space-y-4">
-                      <div>
-                        <label className={`text-sm block mb-1 font-medium ${t1}`}>Earn Rate</label>
-                        <div className="flex items-center gap-3">
-                          <span className={`text-sm ${t2}`}>Spend Rp</span>
-                          <input type="number" value={loyaltySettings.earnRateSpend} onChange={e => setLoyaltySettings(prev => ({...prev, earnRateSpend: Number(e.target.value)}))} className={`w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`} />
-                          <span className={`text-sm ${t2}`}>=</span>
-                          <input type="number" value={loyaltySettings.earnRatePoints} onChange={e => setLoyaltySettings(prev => ({...prev, earnRatePoints: Number(e.target.value)}))} className={`w-20 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`} />
-                          <span className={`text-sm ${t2}`}>Points</span>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className={`text-sm block mb-1 font-medium ${t1}`}>Redemption Value</label>
-                        <div className="flex items-center gap-3">
-                          <span className={`text-sm ${t2}`}>1 Point = Rp</span>
-                          <input type="number" value={loyaltySettings.redemptionValue} onChange={e => setLoyaltySettings(prev => ({...prev, redemptionValue: Number(e.target.value)}))} className={`w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`} />
-                        </div>
-                      </div>
-
-                      <div className={`mt-6 pt-6 border-t ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h4 className={`font-semibold ${t1}`}>Membership Tiers</h4>
-                            <p className={`text-sm ${t2}`}>Configure tiers based on customer's total spend.</p>
-                          </div>
-                          <button onClick={() => setLoyaltySettings(prev => ({...prev, tiers: [...(prev.tiers || []), {id: Date.now().toString(), name: 'New Tier', minSpend: 0, discountPercent: 0}]}))} className={`flex items-center gap-1.5 text-sm text-blue-600 border px-3 py-1.5 rounded-lg transition-colors font-medium ${dm ? 'border-blue-800 hover:bg-blue-900/20' : 'border-blue-200 hover:bg-blue-50'}`}>
-                            <Plus size={14} /> Add Tier
-                          </button>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          {(loyaltySettings.tiers || []).map((tier, index) => (
-                            <div key={tier.id} className={`p-4 border rounded-xl flex flex-wrap gap-4 items-end ${dm ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
-                              <div className="flex-1 min-w-[120px]">
-                                <label className={`text-xs block mb-1 font-medium ${t2}`}>Tier Name</label>
-                                <input type="text" value={tier.name} onChange={e => {
-                                  const newTiers = [...(loyaltySettings.tiers || [])];
-                                  newTiers[index].name = e.target.value;
-                                  setLoyaltySettings(prev => ({...prev, tiers: newTiers}));
-                                }} className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`} />
-                              </div>
-                              <div className="flex-1 min-w-[120px]">
-                                <label className={`text-xs block mb-1 font-medium ${t2}`}>Min. Spend (Rp)</label>
-                                <input type="number" value={tier.minSpend} onChange={e => {
-                                  const newTiers = [...(loyaltySettings.tiers || [])];
-                                  newTiers[index].minSpend = Number(e.target.value);
-                                  setLoyaltySettings(prev => ({...prev, tiers: newTiers}));
-                                }} className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`} />
-                              </div>
-                              <div className="w-24">
-                                <label className={`text-xs block mb-1 font-medium ${t2}`}>Discount %</label>
-                                <input type="number" value={tier.discountPercent} onChange={e => {
-                                  const newTiers = [...(loyaltySettings.tiers || [])];
-                                  newTiers[index].discountPercent = Number(e.target.value);
-                                  setLoyaltySettings(prev => ({...prev, tiers: newTiers}));
-                                }} className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`} />
-                              </div>
-                              <button onClick={() => {
-                                setLoyaltySettings(prev => ({...prev, tiers: (prev.tiers || []).filter((_, i) => i !== index)}));
-                              }} className={`mb-1 transition-colors ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-400 hover:text-red-600'}`}>
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
               </div>

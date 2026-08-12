@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Store, Mail, Lock, User as UserIcon, ChevronRight } from 'lucide-react';
-import type { User } from './mockData';
+import { Store, Mail, Lock, User as UserIcon, ChevronRight, KeyRound } from 'lucide-react';
+import type { User, Role } from './mockData';
 
 interface AuthViewProps {
   users: User[];
@@ -17,13 +17,16 @@ const DEMO_ACCOUNTS = [
 ];
 
 export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [name,     setName]     = useState('');
-  const [role,     setRole]     = useState<Role>('cashier');
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [isLogin,    setIsLogin]    = useState(true);
+  const [loginMode,  setLoginMode]  = useState<'email' | 'pin'>('email');
+  const [email,      setEmail]      = useState('');
+  const [password,   setPassword]   = useState('');
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [pinInput,   setPinInput]   = useState('');
+  const [name,       setName]       = useState('');
+  const [role,       setRole]       = useState<Role>('cashier');
+  const [error,      setError]      = useState('');
+  const [loading,    setLoading]    = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,11 +35,32 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
     await new Promise(r => setTimeout(r, 400)); // fake async for UX feel
 
     if (isLogin) {
-      const user = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
-      if (!user) { setError('Email not found. Try a demo account below.'); setLoading(false); return; }
-      if (!password) { setError('Password/PIN is required.'); setLoading(false); return; }
-      if (user.pin !== password) { setError('Incorrect password/PIN.'); setLoading(false); return; }
-      onLogin(user);
+      if (loginMode === 'email') {
+        const user = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+        if (!user) { setError('Email not found. Try a demo account below.'); setLoading(false); return; }
+        if (!password) { setError('Password/PIN is required.'); setLoading(false); return; }
+        if (user.pin !== password) { setError('Incorrect password/PIN.'); setLoading(false); return; }
+        onLogin(user);
+      } else {
+        if (!pinInput) { setError('PIN Code is required.'); setLoading(false); return; }
+        let user: User | undefined;
+        if (selectedUserId) {
+          user = users.find(u => u.id === selectedUserId);
+          if (!user || user.pin !== pinInput) {
+            setError(`Incorrect PIN code for ${user?.name || 'selected staff'}.`);
+            setLoading(false);
+            return;
+          }
+        } else {
+          user = users.find(u => u.pin === pinInput);
+          if (!user) {
+            setError('No staff account found with this PIN code.');
+            setLoading(false);
+            return;
+          }
+        }
+        onLogin(user);
+      }
     } else {
       if (!name.trim() || !email.trim() || !password) { setError('All fields are required.'); setLoading(false); return; }
       if (users.some(u => u.email.toLowerCase() === email.trim().toLowerCase())) { setError('Email is already registered.'); setLoading(false); return; }
@@ -97,12 +121,12 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
           <h2 className={`text-2xl font-bold mb-1 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
             {isLogin ? 'Welcome back' : 'Create account'}
           </h2>
-          <p className={`text-sm mb-8 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+          <p className={`text-sm mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
             {isLogin ? 'Sign in to your POS dashboard' : 'Set up your business account'}
           </p>
 
-          {/* Tab toggle */}
-          <div className={`flex rounded-xl p-1 mb-6 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+          {/* Main Auth Tab toggle (Sign In / Sign Up) */}
+          <div className={`flex rounded-xl p-1 mb-4 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
             {['Sign In', 'Sign Up'].map((t, i) => {
               const active = isLogin ? i === 0 : i === 1;
               return (
@@ -120,6 +144,36 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
               );
             })}
           </div>
+
+          {/* Sub-toggle for Sign In Method (Email vs Staff PIN) */}
+          {isLogin && (
+            <div className="flex gap-2 mb-6">
+              <button
+                type="button"
+                onClick={() => { setLoginMode('email'); setError(''); }}
+                className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg border transition-colors flex items-center justify-center gap-1.5 ${
+                  loginMode === 'email'
+                    ? darkMode ? 'bg-blue-600/20 border-blue-500 text-blue-400' : 'bg-blue-50 border-blue-600 text-blue-700'
+                    : darkMode ? 'border-slate-800 text-slate-400 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                <Mail size={13} />
+                Email & Password
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLoginMode('pin'); setError(''); }}
+                className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg border transition-colors flex items-center justify-center gap-1.5 ${
+                  loginMode === 'pin'
+                    ? darkMode ? 'bg-blue-600/20 border-blue-500 text-blue-400' : 'bg-blue-50 border-blue-600 text-blue-700'
+                    : darkMode ? 'border-slate-800 text-slate-400 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                <KeyRound size={13} />
+                Staff PIN Code
+              </button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <AnimatePresence mode="popLayout">
@@ -161,21 +215,67 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
               )}
             </AnimatePresence>
 
-            <div>
-              <label className={labelCls}>Email Address</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input type="email" placeholder="you@business.com" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
-              </div>
-            </div>
+            {/* Fields for Email Login or Sign Up */}
+            {(!isLogin || loginMode === 'email') && (
+              <>
+                <div>
+                  <label className={labelCls}>Email Address</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="email" placeholder="you@business.com" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
+                  </div>
+                </div>
 
-            <div>
-              <label className={labelCls}>Password</label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} />
-              </div>
-            </div>
+                <div>
+                  <label className={labelCls}>Password / PIN</label>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Fields for Staff PIN Login */}
+            {isLogin && loginMode === 'pin' && (
+              <>
+                <div>
+                  <label className={labelCls}>Staff Member</label>
+                  <div className="relative">
+                    <UserIcon size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <select
+                      value={selectedUserId}
+                      onChange={e => setSelectedUserId(e.target.value)}
+                      className={inputCls}
+                    >
+                      <option value="">-- Any Staff (Auto-detect by PIN) --</option>
+                      {users.map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.role.toUpperCase()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelCls}>4-Digit PIN Code</label>
+                  <div className="relative">
+                    <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="password"
+                      maxLength={4}
+                      pattern="[0-9]*"
+                      inputMode="numeric"
+                      placeholder="Enter 4-digit PIN"
+                      value={pinInput}
+                      onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
+                      className={`${inputCls} font-mono tracking-widest text-base`}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <button
               type="submit"
@@ -188,7 +288,7 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                 </svg>
               ) : null}
-              {loading ? 'Please wait…' : isLogin ? 'Sign In' : 'Create Account'}
+              {loading ? 'Please wait…' : isLogin ? (loginMode === 'pin' ? 'Sign In with PIN' : 'Sign In') : 'Create Account'}
             </button>
           </form>
 
@@ -198,24 +298,33 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
                 DEMO ACCOUNTS
               </p>
               <div className="space-y-2">
-                {DEMO_ACCOUNTS.map(acc => (
-                  <button
-                    key={acc.email}
-                    onClick={() => { setEmail(acc.email); setPassword(acc.pin); setError(''); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left border transition-all hover:scale-[1.01] active:scale-[0.99] ${
-                      darkMode ? 'border-slate-700 hover:border-slate-600 bg-slate-800/50' : 'border-slate-100 hover:border-slate-200 bg-slate-50 hover:bg-white'
-                    } ${email === acc.email ? 'ring-2 ring-blue-500' : ''}`}
-                  >
-                    <div>
-                      <p className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>{acc.email}</p>
-                      <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{acc.role}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${darkMode ? acc.colorDark : acc.colorLight}`}>{acc.label}</span>
-                      <ChevronRight size={14} className="text-slate-400" />
-                    </div>
-                  </button>
-                ))}
+                {DEMO_ACCOUNTS.map(acc => {
+                  const demoUser = users.find(u => u.email.toLowerCase() === acc.email.toLowerCase());
+                  return (
+                    <button
+                      key={acc.email}
+                      onClick={() => {
+                        setEmail(acc.email);
+                        setPassword(acc.pin);
+                        setPinInput(acc.pin);
+                        if (demoUser) setSelectedUserId(demoUser.id);
+                        setError('');
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left border transition-all hover:scale-[1.01] active:scale-[0.99] ${
+                        darkMode ? 'border-slate-700 hover:border-slate-600 bg-slate-800/50' : 'border-slate-100 hover:border-slate-200 bg-slate-50 hover:bg-white'
+                      } ${(loginMode === 'email' && email === acc.email) || (loginMode === 'pin' && pinInput === acc.pin) ? 'ring-2 ring-blue-500' : ''}`}
+                    >
+                      <div>
+                        <p className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>{acc.email}</p>
+                        <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{acc.role} • PIN: {acc.pin}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${darkMode ? acc.colorDark : acc.colorLight}`}>{acc.label}</span>
+                        <ChevronRight size={14} className="text-slate-400" />
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -224,3 +333,4 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
     </div>
   );
 }
+
