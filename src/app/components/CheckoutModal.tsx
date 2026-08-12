@@ -537,6 +537,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
         ].join(' ')}
       >
         Confirm Payment · {formatIDR(total)}
+      </button>
       <ConfirmationModal
         isOpen={confirmCancelModal}
         title="Cancel Checkout?"

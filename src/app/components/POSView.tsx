@@ -885,6 +885,7 @@ function CartPanel({
             </div>
           </div>
         </div>
+      )}
       <ConfirmationModal
         isOpen={clearCartModalOpen}
         title="Clear Cart?"
