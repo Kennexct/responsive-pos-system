@@ -30,9 +30,7 @@ export const DEFAULT_PERMISSIONS: RolePermissions = {
 };
 
 export const INITIAL_USERS: User[] = [
-  { id: '1', name: 'Budi Santoso', email: 'budi@warkop.id',  role: 'owner',   pin: '9999' },
-  { id: '2', name: 'Ani Wijaya',   email: 'ani@warkop.id',   role: 'cashier', pin: '1234' },
-  { id: '3', name: 'Citra Dewi',   email: 'citra@warkop.id', role: 'cashier', pin: '5678' },
+  { id: '1', name: 'Owner', email: 'owner@vpos.app', role: 'owner', pin: '9999' },
 ];
 
 export interface Customer {
@@ -54,10 +52,7 @@ export interface Customer {
   favoriteCategory?: string;
 }
 
-export const INITIAL_CUSTOMERS: Customer[] = [
-  { id: 'c1', name: 'Andi Pratama', phone: '081234567890', pointsBalance: 1500, totalSpend: 250000, registrationDate: '2023-11-10T10:00:00Z', tierId: 'silver', totalTransactions: 5, averageTransactionValue: 50000, lastPurchaseDate: '2024-05-12T10:00:00Z', marketingConsent: true },
-  { id: 'c2', name: 'Rina Wijaya', phone: '081987654321', pointsBalance: 0, totalSpend: 45000, registrationDate: '2024-01-15T14:30:00Z', tierId: 'bronze', totalTransactions: 1, averageTransactionValue: 45000, lastPurchaseDate: '2024-01-15T14:30:00Z', tags: ['VIP'] },
-];
+export const INITIAL_CUSTOMERS: Customer[] = [];
 
 export interface LoyaltyTier {
   id: string;
@@ -218,63 +213,13 @@ export const INITIAL_TAX_RULES: TaxRule[] = [
   { id: 'tax-pb1', name: 'PB1 / PPN', rate: 11, isInclusive: false, order: 2 }
 ];
 
-export const PRODUCTS: Product[] = [
-  { id: '1',  name: 'Americano',         price: 28000, costPrice: 8000,  category: 'Coffee',  stock: 50,  emoji: '☕', lowStockThreshold: 10, trackInventory: true, allowDiscount: true, sku: 'COF-AME-01', variants: [{id: 'v1', name: 'Large', priceModifier: 5000, sku: 'COF-AME-01-L'}] },
-  { id: '2',  name: 'Cappuccino',         price: 35000, costPrice: 12000, category: 'Coffee',  stock: 45,  emoji: '☕', lowStockThreshold: 10, trackInventory: true, allowDiscount: true, sku: 'COF-CAP-01' },
-  { id: '3',  name: 'Caramel Latte',      price: 40000, costPrice: 14000, category: 'Coffee',  stock: 38,  emoji: '🥛', lowStockThreshold: 10, trackInventory: true, allowDiscount: true, sku: 'COF-CAR-01' },
-  { id: '4',  name: 'Cold Brew',          price: 42000, costPrice: 15000, category: 'Coffee',  stock: 8,   emoji: '🧊', lowStockThreshold: 10, trackInventory: true, allowDiscount: true },
-  { id: '5',  name: 'Matcha Latte',       price: 42000, costPrice: 16000, category: 'Tea',     stock: 30,  emoji: '🍵', lowStockThreshold: 8,  trackInventory: true, allowDiscount: true },
-  { id: '6',  name: 'Teh Tarik',          price: 18000, costPrice: 6000,  category: 'Tea',     stock: 60,  emoji: '🍵', lowStockThreshold: 10, trackInventory: true, allowDiscount: true },
-  { id: '7',  name: 'Chamomile Tea',      price: 30000, costPrice: 8000,  category: 'Tea',     stock: 25,  emoji: '🫖', lowStockThreshold: 8,  trackInventory: true, allowDiscount: true },
-  { id: '8',  name: 'Nasi Goreng',        price: 38000, costPrice: 15000, category: 'Food',    stock: 15,  emoji: '🍳', lowStockThreshold: 5,  trackInventory: true, allowDiscount: false }, // No discount on food
-  { id: '9',  name: 'Mie Goreng',         price: 35000, costPrice: 14000, category: 'Food',    stock: 12,  emoji: '🍜', lowStockThreshold: 5,  trackInventory: true, allowDiscount: true },
-  { id: '10', name: 'Club Sandwich',      price: 45000, costPrice: 18000, category: 'Food',    stock: 10,  emoji: '🥪', lowStockThreshold: 5,  trackInventory: true, allowDiscount: true },
-  { id: '11', name: 'Avocado Toast',      price: 48000, costPrice: 20000, category: 'Food',    stock: 4,   emoji: '🥑', lowStockThreshold: 5,  trackInventory: true, allowDiscount: true },
-  { id: '12', name: 'Pisang Goreng',      price: 18000, costPrice: 6000,  category: 'Snacks',  stock: 30,  emoji: '🍌', lowStockThreshold: 10, trackInventory: true, allowDiscount: true },
-  { id: '13', name: 'Risoles',            price: 12000, costPrice: 4000,  category: 'Snacks',  stock: 40,  emoji: '🥟', lowStockThreshold: 10, trackInventory: true, allowDiscount: true },
-  { id: '14', name: 'Croissant',          price: 28000, costPrice: 10000, category: 'Snacks',  stock: 15,  emoji: '🥐', lowStockThreshold: 8,  trackInventory: true, allowDiscount: true },
-  { id: '15', name: 'Brownies Slice',     price: 25000, costPrice: 8000,  category: 'Dessert', stock: 20,  emoji: '🍫', lowStockThreshold: 8,  trackInventory: true, allowDiscount: true },
-  { id: '16', name: 'Cheesecake',         price: 48000, costPrice: 16000, category: 'Dessert', stock: 5,   emoji: '🍰', lowStockThreshold: 8,  trackInventory: true, allowDiscount: true },
-  { id: '17', name: 'Tiramisu',           price: 52000, costPrice: 18000, category: 'Dessert', stock: 8,   emoji: '🍮', lowStockThreshold: 8,  trackInventory: true, allowDiscount: true },
-  { id: '18', name: 'Avocado Juice',      price: 32000, costPrice: 12000, category: 'Juice',   stock: 28,  emoji: '🥑', lowStockThreshold: 8,  trackInventory: true, allowDiscount: true },
-  { id: '19', name: 'Orange Juice',       price: 25000, costPrice: 8000,  category: 'Juice',   stock: 35,  emoji: '🍊', lowStockThreshold: 8,  trackInventory: true, allowDiscount: true },
-  { id: '20', name: 'Strawberry Smoothie',price: 38000, costPrice: 14000, category: 'Juice',   stock: 22,  emoji: '🍓', lowStockThreshold: 8,  trackInventory: true, allowDiscount: true },
-  { id: '21', name: 'Mineral Water',      price: 8000,  costPrice: 2000,  category: 'Others',  stock: 100, emoji: '💧', lowStockThreshold: 20, trackInventory: true, allowDiscount: false },
-  { id: '22', name: 'Sparkling Water',    price: 15000, costPrice: 4000,  category: 'Others',  stock: 3,   emoji: '💦', lowStockThreshold: 15, trackInventory: true, allowDiscount: false },
-];
+export const PRODUCTS: Product[] = [];
 
-export const RECENT_ORDERS: RecentOrder[] = [
-  { id: '1',  orderNumber: 'INV-001241', itemCount: 3, subtotalBeforeDiscount: 101000, discountTotal: 0, subtotal: 101000, tax: 11110, total: 112110, totalCost: 35000, paymentMethod: 'qris',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T11:42:00', cashier: 'Budi'   },
-  { id: '2',  orderNumber: 'INV-001240', itemCount: 2, subtotalBeforeDiscount: 63000,  discountTotal: 0, subtotal: 63000,  tax: 6930,  total: 69930,  totalCost: 20000, paymentMethod: 'cash',          orderType: 'takeaway', status: 'completed', createdAt: '2026-07-01T11:28:00', cashier: 'Ani'    },
-  { id: '3',  orderNumber: 'INV-001239', itemCount: 5, subtotalBeforeDiscount: 175000, discountTotal: 0, subtotal: 175000, tax: 19250, total: 194250, totalCost: 65000, paymentMethod: 'card',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T10:55:00', cashier: 'Budi'   },
-  { id: '4',  orderNumber: 'INV-001238', itemCount: 1, subtotalBeforeDiscount: 28000,  discountTotal: 0, subtotal: 28000,  tax: 3080,  total: 31080,  totalCost: 8000,  paymentMethod: 'cash',          orderType: 'takeaway', status: 'completed', createdAt: '2026-07-01T10:33:00', cashier: 'Ani'    },
-  { id: '5',  orderNumber: 'INV-001237', itemCount: 4, subtotalBeforeDiscount: 133000, discountTotal: 0, subtotal: 133000, tax: 14630, total: 147630, totalCost: 45000, paymentMethod: 'bank-transfer', orderType: 'delivery', status: 'completed', createdAt: '2026-07-01T10:10:00', cashier: 'Budi'   },
-  { id: '6',  orderNumber: 'INV-001236', itemCount: 2, subtotalBeforeDiscount: 70000,  discountTotal: 0, subtotal: 70000,  tax: 7700,  total: 77700,  totalCost: 25000, paymentMethod: 'qris',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T09:48:00', cashier: 'Citra'  },
-  { id: '7',  orderNumber: 'INV-001235', itemCount: 3, subtotalBeforeDiscount: 93000,  discountTotal: 0, subtotal: 93000,  tax: 10230, total: 103230, totalCost: 30000, paymentMethod: 'cash',          orderType: 'dine-in',  status: 'completed', createdAt: '2026-07-01T09:22:00', cashier: 'Citra'  },
-  { id: '8',  orderNumber: 'INV-001234', itemCount: 2, subtotalBeforeDiscount: 56000,  discountTotal: 0, subtotal: 56000,  tax: 6160,  total: 62160,  totalCost: 18000, paymentMethod: 'qris',          orderType: 'takeaway', status: 'completed', createdAt: '2026-07-01T09:05:00', cashier: 'Budi'   },
-];
+export const RECENT_ORDERS: RecentOrder[] = [];
 
-export const WEEKLY_SALES = [
-  { day: 'Mon', sales: 1820000 },
-  { day: 'Tue', sales: 2150000 },
-  { day: 'Wed', sales: 1950000 },
-  { day: 'Thu', sales: 2480000 },
-  { day: 'Fri', sales: 3100000 },
-  { day: 'Sat', sales: 3750000 },
-  { day: 'Sun', sales: 2890000 },
-];
+export const WEEKLY_SALES: { day: string; sales: number }[] = [];
 
-export const TOP_PRODUCTS = [
-  { name: 'Americano',    sold: 87, revenue: 2436000 },
-  { name: 'Cappuccino',   sold: 72, revenue: 2520000 },
-  { name: 'Caramel Latte',sold: 58, revenue: 2320000 },
-  { name: 'Nasi Goreng',  sold: 54, revenue: 2052000 },
-  { name: 'Matcha Latte', sold: 49, revenue: 2058000 },
-];
+export const TOP_PRODUCTS: { name: string; sold: number; revenue: number }[] = [];
 
-export const PAYMENT_BREAKDOWN = [
-  { name: 'Cash',          value: 35, color: '#22C55E' },
-  { name: 'QRIS',          value: 40, color: '#3B82F6' },
-  { name: 'Card',          value: 18, color: '#A855F7' },
-  { name: 'Bank Transfer', value: 7,  color: '#F59E0B' },
-];
+export const PAYMENT_BREAKDOWN: { name: string; value: number; color: string }[] = [];
+

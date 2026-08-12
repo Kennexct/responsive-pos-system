@@ -12,9 +12,7 @@ interface AuthViewProps {
 }
 
 const DEMO_ACCOUNTS = [
-  { email: 'budi@warkop.id',  label: 'Owner',   role: 'Full access',         pin: '9999', colorLight: 'text-violet-600 bg-violet-50', colorDark: 'bg-violet-900/30 text-violet-400' },
-  { email: 'ani@warkop.id',   label: 'Cashier', role: 'POS only',            pin: '1234', colorLight: 'text-blue-600 bg-blue-50', colorDark: 'bg-blue-900/30 text-blue-400' },
-  { email: 'citra@warkop.id', label: 'Cashier', role: 'POS only',            pin: '5678', colorLight: 'text-sky-600 bg-sky-50', colorDark: 'bg-sky-900/30 text-sky-400' },
+  { email: 'owner@vpos.app', label: 'Owner', role: 'Full access', pin: '9999', colorLight: 'text-violet-600 bg-violet-50', colorDark: 'bg-violet-900/30 text-violet-400' },
 ];
 
 export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) {

@@ -34,8 +34,8 @@ export function Dashboard({ orders, products, customers, loyaltySettings, darkMo
   const sessionSales  = orders.filter(o => o.status === 'completed').reduce((s, o) => s + o.total, 0);
   const sessionOrders = orders.filter(o => o.status === 'completed').length;
 
-  const todaySales    = 2847500 + sessionSales;
-  const todayOrders   = 38 + sessionOrders;
+  const todaySales    = sessionSales;
+  const todayOrders   = sessionOrders;
   const avgOrderValue = Math.round(todaySales / (todayOrders || 1));
 
   const bg        = dm ? 'bg-slate-900' : 'bg-slate-50';
