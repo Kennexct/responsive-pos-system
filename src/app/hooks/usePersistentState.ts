@@ -8,7 +8,8 @@ localforage.config({
   storeName: 'pos_data'
 });
 
-export function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>, boolean] {
+export function usePersistentState<T>(key: string, initialValue: T, merchantId?: string): [T, React.Dispatch<React.SetStateAction<T>>, boolean] {
+  const storageKey = merchantId ? `${key}_${merchantId}` : key;
   const [state, setState] = useState<T>(initialValue);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -19,21 +20,21 @@ export function usePersistentState<T>(key: string, initialValue: T): [T, React.D
     async function init() {
       // 1. Fast local load
       try {
-        const localVal = await localforage.getItem<T>(key);
+        const localVal = await localforage.getItem<T>(storageKey);
         if (isMounted && localVal !== null) {
           setState(localVal);
         }
       } catch (err) {
-        console.error(`Failed to load ${key} from localforage:`, err);
+        console.error(`Failed to load ${storageKey} from localforage:`, err);
       }
 
       // 2. Cloud Supabase sync
       if (isSupabaseConfigured) {
         try {
-          const remoteVal = await loadFromSupabase<T>(key);
+          const remoteVal = await loadFromSupabase<T>(key, merchantId);
           if (isMounted && remoteVal !== null) {
             setState(remoteVal);
-            await localforage.setItem(key, remoteVal);
+            await localforage.setItem(storageKey, remoteVal);
           }
         } catch (err) {
           console.warn(`Supabase sync failed for ${key}:`, err);
@@ -47,22 +48,22 @@ export function usePersistentState<T>(key: string, initialValue: T): [T, React.D
 
     init();
     return () => { isMounted = false; };
-  }, [key]);
+  }, [key, storageKey, merchantId]);
 
   // Save data on change (both localforage & Supabase)
   useEffect(() => {
     if (isLoaded) {
-      localforage.setItem(key, state).catch(err => {
-        console.error(`Failed to save ${key} to localforage:`, err);
+      localforage.setItem(storageKey, state).catch(err => {
+        console.error(`Failed to save ${storageKey} to localforage:`, err);
       });
 
       if (isSupabaseConfigured) {
-        saveToSupabase(key, state).catch(err => {
+        saveToSupabase(key, state, merchantId).catch(err => {
           console.warn(`Failed to save ${key} to Supabase:`, err);
         });
       }
     }
-  }, [key, state, isLoaded]);
+  }, [key, storageKey, state, isLoaded, merchantId]);
 
   return [state, setState, isLoaded];
 }

@@ -13,13 +13,17 @@ const KEY_TO_TABLE: Record<string, string> = {
   'pos-loyalty': 'loyalty_settings',
 };
 
-export async function loadFromSupabase<T>(key: string): Promise<T | null> {
+export async function loadFromSupabase<T>(key: string, merchantId?: string): Promise<T | null> {
   if (!isSupabaseConfigured) return null;
   const table = KEY_TO_TABLE[key];
   if (!table) return null;
 
   try {
-    const { data, error } = await supabase.from(table).select('*');
+    let query = supabase.from(table).select('*');
+    if (merchantId) {
+      query = query.eq('merchant_id', merchantId);
+    }
+    const { data, error } = await query;
     if (error) {
       console.warn(`Supabase load error for ${table}:`, error.message);
       return null;
@@ -127,16 +131,18 @@ export async function loadFromSupabase<T>(key: string): Promise<T | null> {
   }
 }
 
-export async function saveToSupabase<T>(key: string, value: T): Promise<void> {
+export async function saveToSupabase<T>(key: string, value: T, merchantId?: string): Promise<void> {
   if (!isSupabaseConfigured) return;
   const table = KEY_TO_TABLE[key];
   if (!table) return;
+  const mId = merchantId || 'm_default';
 
   try {
     if (Array.isArray(value)) {
       if (key === 'pos-orders') {
         const rows = value.map((o: any) => ({
           id: String(o.id),
+          merchant_id: mId,
           order_number: o.orderNumber,
           item_count: o.itemCount,
           subtotal_before_discount: o.subtotalBeforeDiscount,
@@ -164,6 +170,7 @@ export async function saveToSupabase<T>(key: string, value: T): Promise<void> {
       } else if (key === 'pos-products') {
         const rows = value.map((p: any) => ({
           id: String(p.id),
+          merchant_id: mId,
           name: p.name,
           price: p.price,
           cost_price: p.costPrice || 0,
@@ -181,6 +188,7 @@ export async function saveToSupabase<T>(key: string, value: T): Promise<void> {
       } else if (key === 'pos-customers') {
         const rows = value.map((c: any) => ({
           id: String(c.id),
+          merchant_id: mId,
           name: c.name,
           phone: c.phone,
           email: c.email || null,
@@ -201,6 +209,7 @@ export async function saveToSupabase<T>(key: string, value: T): Promise<void> {
       } else if (key === 'pos-categories') {
         const rows = value.map((c: any) => ({
           id: String(c.id),
+          merchant_id: mId,
           name: c.name,
           is_taxable: c.isTaxable ?? true,
           is_discountable: c.isDiscountable ?? true,
@@ -209,6 +218,7 @@ export async function saveToSupabase<T>(key: string, value: T): Promise<void> {
       } else if (key === 'pos-users') {
         const rows = value.map((u: any) => ({
           id: String(u.id),
+          merchant_id: mId,
           name: u.name,
           email: u.email,
           role: u.role,
@@ -218,6 +228,7 @@ export async function saveToSupabase<T>(key: string, value: T): Promise<void> {
       } else if (key === 'pos-payments') {
         const rows = value.map((p: any) => ({
           id: p.id,
+          merchant_id: mId,
           label: p.label,
           enabled: p.enabled,
         }));

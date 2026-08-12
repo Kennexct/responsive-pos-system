@@ -23,6 +23,7 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
   const [selectedUserId, setSelectedUserId] = useState('');
   const [pinInput,   setPinInput]   = useState('');
   const [name,       setName]       = useState('');
+  const [businessNameInput, setBusinessNameInput] = useState('');
   const [role,       setRole]       = useState<Role>('cashier');
   const [error,      setError]      = useState('');
   const [loading,    setLoading]    = useState(false);
@@ -36,7 +37,7 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
     if (isLogin) {
       if (loginMode === 'email') {
         const user = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
-        if (!user) { setError('Email not found. Try a demo account below.'); setLoading(false); return; }
+        if (!user) { setError('Email not found.'); setLoading(false); return; }
         if (!password) { setError('Password/PIN is required.'); setLoading(false); return; }
         if (user.pin !== password) { setError('Incorrect password/PIN.'); setLoading(false); return; }
         onLogin(user);
@@ -61,9 +62,26 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
         onLogin(user);
       }
     } else {
-      if (!name.trim() || !email.trim() || !password) { setError('All fields are required.'); setLoading(false); return; }
-      if (users.some(u => u.email.toLowerCase() === email.trim().toLowerCase())) { setError('Email is already registered.'); setLoading(false); return; }
-      const newUser: User = { id: Date.now().toString(), name: name.trim(), email: email.trim(), role: 'owner', pin: password };
+      if (!name.trim() || !email.trim() || !password || !businessNameInput.trim()) {
+        setError('All fields are required (including Business Name).');
+        setLoading(false);
+        return;
+      }
+      if (users.some(u => u.email.toLowerCase() === email.trim().toLowerCase())) {
+        setError('Email is already registered.');
+        setLoading(false);
+        return;
+      }
+      const merchId = `m_${Date.now()}`;
+      const newUser: User = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        email: email.trim(),
+        role: 'owner',
+        pin: password,
+        merchantId: merchId,
+        businessName: businessNameInput.trim()
+      };
       onSignup(newUser);
     }
     setLoading(false);
@@ -193,10 +211,17 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
                   className="space-y-4"
                 >
                   <div>
-                    <label className={labelCls}>Full Name</label>
+                    <label className={labelCls}>Store / Business Name</label>
+                    <div className="relative">
+                      <Store size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input type="text" placeholder="e.g. Kopi Santai Studio" value={businessNameInput} onChange={e => setBusinessNameInput(e.target.value)} className={inputCls} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Full Name (Owner)</label>
                     <div className="relative">
                       <UserIcon size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input type="text" placeholder="Owner Name" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+                      <input type="text" placeholder="e.g. Budi Santoso" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
                     </div>
                   </div>
                 </motion.div>

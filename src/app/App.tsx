@@ -54,37 +54,45 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // ─── Business Info (Persistent) ──────────────────────────────────────────
-  const [bizName, setBizName, bnLoaded] = usePersistentState('pos-bizname', 'Warung Kopi Santai');
-  const [bizPhone, setBizPhone, bpLoaded] = usePersistentState('pos-bizphone', '+62 812 3456 7890');
-  const [bizEmail, setBizEmail, beLoaded] = usePersistentState('pos-bizemail', 'hello@warkop.id');
-  const [bizAddress, setBizAddress, baLoaded] = usePersistentState('pos-bizaddress', 'Jl. Sudirman No. 123, Jakarta');
-
   // ─── Auth ──────────────────────────────────────────────────────────────────
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
-  const [users, setUsers, usersLoaded] = usePersistentState<User[]>('pos-users', [...INITIAL_USERS]);
-  const [permissions, setPermissions, permsLoaded] = usePersistentState<RolePermissions>('pos-perms', DEFAULT_PERMISSIONS);
+  const activeMerchantId = currentUser?.merchantId || 'm_default';
+
+  // ─── Business Info (Persistent) ──────────────────────────────────────────
+  const [bizName, setBizName, bnLoaded] = usePersistentState('pos-bizname', 'Warung Kopi Santai', activeMerchantId);
+  const [bizPhone, setBizPhone, bpLoaded] = usePersistentState('pos-bizphone', '+62 812 3456 7890', activeMerchantId);
+  const [bizEmail, setBizEmail, beLoaded] = usePersistentState('pos-bizemail', 'hello@warkop.id', activeMerchantId);
+  const [bizAddress, setBizAddress, baLoaded] = usePersistentState('pos-bizaddress', 'Jl. Sudirman No. 123, Jakarta', activeMerchantId);
+
+  useEffect(() => {
+    if (currentUser?.businessName) {
+      setBizName(currentUser.businessName);
+    }
+  }, [currentUser, setBizName]);
+
+  const [users, setUsers, usersLoaded] = usePersistentState<User[]>('pos-users', [...INITIAL_USERS], activeMerchantId);
+  const [permissions, setPermissions, permsLoaded] = usePersistentState<RolePermissions>('pos-perms', DEFAULT_PERMISSIONS, activeMerchantId);
 
   // ─── Data State (Persistent) ─────────────────────────────────────────────
-  const [categories, setCategories, catLoaded] = usePersistentState<Category[]>('pos-categories', [...CATEGORIES]);
-  const [products, setProducts, prodLoaded] = usePersistentState<Product[]>('pos-products', [...PRODUCTS]);
-  const [orders, setOrders, ordersLoaded] = usePersistentState<RecentOrder[]>('pos-orders', [...RECENT_ORDERS]);
-  const [paymentMethods, setPaymentMethods, pmLoaded] = usePersistentState<PaymentMethodEntry[]>('pos-payments', INITIAL_PAYMENTS);
-  const [customers, setCustomers, custLoaded] = usePersistentState<Customer[]>('pos-customers', [...INITIAL_CUSTOMERS]);
+  const [categories, setCategories, catLoaded] = usePersistentState<Category[]>('pos-categories', [...CATEGORIES], activeMerchantId);
+  const [products, setProducts, prodLoaded] = usePersistentState<Product[]>('pos-products', [...PRODUCTS], activeMerchantId);
+  const [orders, setOrders, ordersLoaded] = usePersistentState<RecentOrder[]>('pos-orders', [...RECENT_ORDERS], activeMerchantId);
+  const [paymentMethods, setPaymentMethods, pmLoaded] = usePersistentState<PaymentMethodEntry[]>('pos-payments', INITIAL_PAYMENTS, activeMerchantId);
+  const [customers, setCustomers, custLoaded] = usePersistentState<Customer[]>('pos-customers', [...INITIAL_CUSTOMERS], activeMerchantId);
   
   // ─── Taxes & Discounts (Persistent) ──────────────────────────────────────
   const [discountSettings, setDiscountSettings, dsLoaded] = usePersistentState<DiscountSettings>('pos-discounts', {
     enabled: true,
     allowItemDiscount: true,
     promoCodes: [{ id: '1', code: 'PROMO10', type: 'percent', value: 10, active: true }]
-  });
+  }, activeMerchantId);
   const [refundSettings, setRefundSettings, rsLoaded] = usePersistentState<RefundSettings>('pos-refunds', {
     managerPinRequired: true
-  });
-  const [loyaltySettings, setLoyaltySettings, lsLoaded] = usePersistentState<LoyaltySettings>('pos-loyalty', { ...INITIAL_LOYALTY_SETTINGS });
-  const [taxRules, setTaxRules, trLoaded] = usePersistentState<TaxRule[]>('pos-taxrules', INITIAL_TAX_RULES);
-  const [terminalViewMode, setTerminalViewMode, tvmLoaded] = usePersistentState<TerminalViewMode>('pos-terminalview', 'grid');
+  }, activeMerchantId);
+  const [loyaltySettings, setLoyaltySettings, lsLoaded] = usePersistentState<LoyaltySettings>('pos-loyalty', { ...INITIAL_LOYALTY_SETTINGS }, activeMerchantId);
+  const [taxRules, setTaxRules, trLoaded] = usePersistentState<TaxRule[]>('pos-taxrules', INITIAL_TAX_RULES, activeMerchantId);
+  const [terminalViewMode, setTerminalViewMode, tvmLoaded] = usePersistentState<TerminalViewMode>('pos-terminalview', 'grid', activeMerchantId);
 
   const handleRefund = (orderId: string, reason: string) => {
     const orderToRefund = orders.find(o => o.id === orderId);

@@ -19,6 +19,8 @@ export interface User {
   email: string;
   role: Role;
   pin: string;
+  merchantId?: string;
+  businessName?: string;
 }
 
 export type RolePermissions = Record<Role, ViewType[]>;
