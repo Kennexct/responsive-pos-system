@@ -5,13 +5,7 @@ import type { Product, Category, ProductVariant } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 import { resizeImage } from './utils';
 
-const STOCK_LOG_INITIAL = [
-  { id: '1', product: 'Americano',    type: 'in',  qty: 50, note: 'Restocked beans',   date: '2026-07-01 08:00' },
-  { id: '2', product: 'Matcha Latte', type: 'out', qty: 5,  note: 'Morning sales',      date: '2026-07-01 10:30' },
-  { id: '3', product: 'Cheesecake',   type: 'in',  qty: 10, note: 'New delivery',       date: '2026-06-30 15:00' },
-  { id: '4', product: 'Cold Brew',    type: 'out', qty: 12, note: 'Yesterday sales',    date: '2026-06-30 20:00' },
-  { id: '5', product: 'Croissant',    type: 'in',  qty: 20, note: 'Morning batch',      date: '2026-06-30 07:00' },
-];
+const STOCK_LOG_INITIAL: StockLogEntry[] = [];
 
 const PRODUCT_EMOJIS = ['☕','🥛','🍵','🧊','🫖','🍳','🍜','🥪','🥑','🍌','🥟','🥐','🍫','🍰','🍮','🍊','🍓','💧','💦','🥤','🍋','🥗'];
 

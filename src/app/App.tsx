@@ -12,6 +12,7 @@ import { MobileOwnerView } from './components/MobileOwnerView';
 import { AuthView } from './components/AuthView';
 import { DailySalesView } from './components/DailySalesView';
 import { CustomersView } from './components/CustomersView';
+import { OnboardingWalkthroughModal } from './components/OnboardingWalkthroughModal';
 import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './components/mockData';
 import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS, INITIAL_TAX_RULES, INITIAL_PAYMENTS } from './components/mockData';
 import localforage from 'localforage';
@@ -61,6 +62,7 @@ export default function App() {
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [users, setUsers, usersLoaded] = usePersistentState<User[]>('pos-users', [...INITIAL_USERS]);
   const [permissions, setPermissions, permsLoaded] = usePersistentState<RolePermissions>('pos-perms', DEFAULT_PERMISSIONS);
 
@@ -243,7 +245,12 @@ export default function App() {
           users={users}
           darkMode={darkMode}
           onLogin={(u) => { setCurrentUser(u); setIsAuthenticated(true); }}
-          onSignup={(u) => { setUsers(prev => [...prev, u]); setCurrentUser(u); setIsAuthenticated(true); }}
+          onSignup={(u) => {
+            setUsers(prev => [...prev, u]);
+            setCurrentUser(u);
+            setIsAuthenticated(true);
+            setShowWalkthrough(true);
+          }}
         />
       </div>
     );
@@ -474,6 +481,12 @@ export default function App() {
       </div>
       </div>
     </div>
+    <OnboardingWalkthroughModal
+      isOpen={showWalkthrough}
+      onClose={() => setShowWalkthrough(false)}
+      darkMode={darkMode}
+      merchantName={currentUser?.name}
+    />
     </ToastProvider>
   );
 }

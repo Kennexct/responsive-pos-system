@@ -63,7 +63,7 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
     } else {
       if (!name.trim() || !email.trim() || !password) { setError('All fields are required.'); setLoading(false); return; }
       if (users.some(u => u.email.toLowerCase() === email.trim().toLowerCase())) { setError('Email is already registered.'); setLoading(false); return; }
-      const newUser: User = { id: Date.now().toString(), name: name.trim(), email: email.trim(), role: role, pin: password };
+      const newUser: User = { id: Date.now().toString(), name: name.trim(), email: email.trim(), role: 'owner', pin: password };
       onSignup(newUser);
     }
     setLoading(false);
@@ -196,16 +196,8 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
                     <label className={labelCls}>Full Name</label>
                     <div className="relative">
                       <UserIcon size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input type="text" placeholder="Budi Santoso" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+                      <input type="text" placeholder="Owner Name" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
                     </div>
-                  </div>
-                  <div>
-                    <label className={labelCls}>Role</label>
-                    <select value={role} onChange={e => setRole(e.target.value as Role)} className={inputCls}>
-                      <option value="owner">Owner</option>
-                      <option value="manager">Manager</option>
-                      <option value="cashier">Cashier</option>
-                    </select>
                   </div>
                 </motion.div>
               )}
@@ -223,7 +215,7 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
                 </div>
 
                 <div>
-                  <label className={labelCls}>Password / PIN</label>
+                  <label className={labelCls}>{!isLogin ? 'Password' : 'Password / PIN'}</label>
                   <div className="relative">
                     <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} />
@@ -287,43 +279,6 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
               {loading ? 'Please wait…' : isLogin ? (loginMode === 'pin' ? 'Sign In with PIN' : 'Sign In') : 'Create Account'}
             </button>
           </form>
-
-          {isLogin && (
-            <div className={`mt-6 rounded-2xl p-4 border ${darkMode ? 'bg-slate-800/60 border-slate-700' : 'bg-white border-slate-100 shadow-sm'}`}>
-              <p className={`text-xs font-semibold mb-3 ${darkMode ? 'text-slate-400' : 'text-slate-400'}`}>
-                DEMO ACCOUNTS
-              </p>
-              <div className="space-y-2">
-                {DEMO_ACCOUNTS.map(acc => {
-                  const demoUser = users.find(u => u.email.toLowerCase() === acc.email.toLowerCase());
-                  return (
-                    <button
-                      key={acc.email}
-                      onClick={() => {
-                        setEmail(acc.email);
-                        setPassword(acc.pin);
-                        setPinInput(acc.pin);
-                        if (demoUser) setSelectedUserId(demoUser.id);
-                        setError('');
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left border transition-all hover:scale-[1.01] active:scale-[0.99] ${
-                        darkMode ? 'border-slate-700 hover:border-slate-600 bg-slate-800/50' : 'border-slate-100 hover:border-slate-200 bg-slate-50 hover:bg-white'
-                      } ${(loginMode === 'email' && email === acc.email) || (loginMode === 'pin' && pinInput === acc.pin) ? 'ring-2 ring-blue-500' : ''}`}
-                    >
-                      <div>
-                        <p className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>{acc.email}</p>
-                        <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{acc.role} • PIN: {acc.pin}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${darkMode ? acc.colorDark : acc.colorLight}`}>{acc.label}</span>
-                        <ChevronRight size={14} className="text-slate-400" />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </motion.div>
       </div>
     </div>
