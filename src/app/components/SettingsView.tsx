@@ -193,6 +193,7 @@ export function SettingsView({
 
   const saveUser = () => {
     if (!newUser.name || !newUser.pin) return;
+    if (newUser.pin.length !== 4) return alert("PIN Code must be exactly 4 numbers.");
     if (editingUserId) {
       const existingUser = users.find(u => u.id === editingUserId);
       if (existingUser?.role === 'owner' && newUser.role !== 'owner') {
@@ -735,8 +736,18 @@ export function SettingsView({
               <option value="cashier">Cashier</option>
             </select>
           </div>
-          <Field label="PIN Code" value={newUser.pin || ''} onChange={v => setNewUser({ ...newUser, pin: v })} placeholder="e.g. 1234" type="password" darkMode={dm} />
-          <button onClick={saveUser} disabled={!newUser.name || !newUser.pin} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700 disabled:opacity-50 mt-2">
+          <Field
+            label="PIN Code"
+            value={newUser.pin || ''}
+            onChange={v => setNewUser({ ...newUser, pin: v.replace(/\D/g, '').slice(0, 4) })}
+            placeholder="Requires 4 numbers (e.g. 1234)"
+            type="password"
+            maxLength={4}
+            pattern="[0-9]*"
+            inputMode="numeric"
+            darkMode={dm}
+          />
+          <button onClick={saveUser} disabled={!newUser.name || !newUser.pin || newUser.pin.length !== 4} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700 disabled:opacity-50 mt-2">
             {editingUserId ? 'Save Changes' : 'Add User'}
           </button>
         </Modal>
@@ -745,12 +756,13 @@ export function SettingsView({
   );
 }
 
-function Field({ label, value, onChange, placeholder, type = 'text', darkMode }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; darkMode: boolean; }) {
+function Field({ label, value, onChange, placeholder, type = 'text', maxLength, pattern, inputMode, darkMode }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; maxLength?: number; pattern?: string; inputMode?: string; darkMode: boolean; }) {
   return (
     <div className="mb-4">
       <label className={`text-sm block mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{label}</label>
       <input
         type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        maxLength={maxLength} pattern={pattern} inputMode={inputMode as any}
         className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-colors ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800 placeholder-slate-400'}`}
       />
     </div>
