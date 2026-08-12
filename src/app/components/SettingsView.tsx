@@ -1,5 +1,5 @@
 import { useState, type ElementType } from 'react';
-import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Tag } from 'lucide-react';
+import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Tag, AlertTriangle } from 'lucide-react';
 import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 
@@ -32,6 +32,7 @@ interface SettingsViewProps {
   bizPhone: string;   setBizPhone: (v: string) => void;
   bizAddress: string; setBizAddress: (v: string) => void;
   bizEmail: string;   setBizEmail: (v: string) => void;
+  onPurgeAllData?: (ownerPin: string) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
 }
 
 type SettingsTab = 'business' | 'currency' | 'tax' | 'discounts' | 'refunds' | 'payments' | 'users' | 'categories';
@@ -50,6 +51,7 @@ const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
 interface TaxRate            { id: string; name: string; rate: number; inclusive: boolean; isDefault: boolean; }
 
 export function SettingsView({
+  currentUser,
   businessType, onBusinessTypeChange,
   users, setUsers,
   permissions, setPermissions,
@@ -63,10 +65,43 @@ export function SettingsView({
   terminalViewMode = 'grid', setTerminalViewMode,
   darkMode, onToggleDark,
   bizName, setBizName, bizPhone, setBizPhone, bizAddress, setBizAddress, bizEmail, setBizEmail,
+  onPurgeAllData,
 }: SettingsViewProps) {
   const [tab,      setTab]      = useState<SettingsTab>('business');
   const [saved,    setSaved]    = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
+  
+  // Data Purge State
+  const [purgeModal, setPurgeModal] = useState(false);
+  const [purgePin, setPurgePin] = useState('');
+  const [purgeError, setPurgeError] = useState('');
+  const [purgeLoading, setPurgeLoading] = useState(false);
+  const [purgeSuccess, setPurgeSuccess] = useState(false);
+
+  const handlePurgeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPurgeError('');
+    if (!purgePin) {
+      setPurgeError('Owner Password / PIN is required.');
+      return;
+    }
+    setPurgeLoading(true);
+    if (onPurgeAllData) {
+      const res = await onPurgeAllData(purgePin);
+      if (!res.success) {
+        setPurgeError(res.error || 'Failed to purge data.');
+        setPurgeLoading(false);
+        return;
+      }
+    }
+    setPurgeLoading(false);
+    setPurgeSuccess(true);
+    setTimeout(() => {
+      setPurgeSuccess(false);
+      setPurgeModal(false);
+      setPurgePin('');
+    }, 1500);
+  };
   
   // Currency state
   const [displayCurrency, setDisplayCurrency] = useState('');
@@ -306,6 +341,28 @@ export function SettingsView({
                 <Field label="Email"          value={bizEmail}   onChange={setBizEmail}   darkMode={dm} type="email" />
                 <Field label="Address"        value={bizAddress} onChange={setBizAddress} darkMode={dm} />
                 <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
+
+                {/* Danger Zone */}
+                <div className={`mt-8 p-5 border rounded-2xl ${dm ? 'bg-red-950/20 border-red-900/40' : 'bg-red-50/60 border-red-200'}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                        <AlertTriangle size={18} />
+                        Danger Zone — Delete All Data
+                      </h4>
+                      <p className={`text-xs mt-1 ${t2}`}>
+                        Permanently wipe all store data (sales history, orders, products, customer records). Requires Owner verification.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { setPurgeModal(true); setPurgeError(''); setPurgePin(''); }}
+                      className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-xl transition-colors shrink-0 flex items-center justify-center gap-2"
+                    >
+                      <Trash2 size={14} />
+                      Delete All Data
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -750,6 +807,47 @@ export function SettingsView({
           <button onClick={saveUser} disabled={!newUser.name || !newUser.pin || newUser.pin.length !== 4} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700 disabled:opacity-50 mt-2">
             {editingUserId ? 'Save Changes' : 'Add User'}
           </button>
+        </Modal>
+      )}
+
+      {purgeModal && (
+        <Modal title="Confirm Data Deletion" onClose={() => setPurgeModal(false)} darkMode={dm}>
+          <form onSubmit={handlePurgeSubmit} className="space-y-4">
+            <div className={`p-3.5 rounded-xl border text-xs leading-relaxed ${dm ? 'bg-red-950/30 border-red-900/40 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
+              <strong className="block mb-0.5">⚠️ Warning: Irreversible Action</strong>
+              This will permanently delete all products, transaction logs, order records, and customer profiles. Please enter your <strong>Owner PIN / Password</strong> to authorize.
+            </div>
+
+            {purgeError && (
+              <div className="p-3 text-xs rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 font-medium">
+                {purgeError}
+              </div>
+            )}
+
+            {purgeSuccess ? (
+              <div className="p-3 text-xs text-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold">
+                ✓ All store data has been deleted!
+              </div>
+            ) : (
+              <>
+                <Field
+                  label="Owner Password / PIN Code"
+                  value={purgePin}
+                  onChange={v => setPurgePin(v)}
+                  placeholder="Enter Owner PIN / Password"
+                  type="password"
+                  darkMode={dm}
+                />
+                <button
+                  type="submit"
+                  disabled={purgeLoading || !purgePin}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl py-3 font-semibold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {purgeLoading ? 'Deleting data…' : 'Wipe All Store Data'}
+                </button>
+              </>
+            )}
+          </form>
         </Modal>
       )}
     </div>

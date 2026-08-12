@@ -228,3 +228,15 @@ export async function saveToSupabase<T>(key: string, value: T): Promise<void> {
     console.warn(`Supabase save error for ${key}:`, e);
   }
 }
+
+export async function purgeAllSupabaseData(): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    await supabase.from('orders').delete().neq('id', '0');
+    await supabase.from('products').delete().neq('id', '0');
+    await supabase.from('customers').delete().neq('id', '0');
+    await supabase.from('categories').delete().neq('id', '0');
+  } catch (e) {
+    console.error('Failed to purge Supabase data:', e);
+  }
+}

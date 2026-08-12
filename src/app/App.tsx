@@ -14,6 +14,9 @@ import { DailySalesView } from './components/DailySalesView';
 import { CustomersView } from './components/CustomersView';
 import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './components/mockData';
 import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS, INITIAL_TAX_RULES, INITIAL_PAYMENTS } from './components/mockData';
+import localforage from 'localforage';
+import { purgeAllSupabaseData } from './services/supabaseSync';
+import { isSupabaseConfigured } from './lib/supabase';
 
 const MOBILE_NAV: { id: ViewType; label: string; icon: ElementType }[] = [
   { id: 'pos',         label: 'POS',          icon: Monitor         },
@@ -98,6 +101,27 @@ export default function App() {
 
   const handleVoid = (orderId: string, reason: string) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'voided', refundReason: reason } : o));
+  };
+
+  const handlePurgeAllData = async (ownerPin: string) => {
+    const owner = users.find(u => u.role === 'owner' && u.pin === ownerPin);
+    if (!owner && currentUser?.pin !== ownerPin) {
+      return { success: false, error: 'Incorrect Owner Password / PIN Code.' };
+    }
+
+    try {
+      await localforage.clear();
+      if (isSupabaseConfigured) {
+        await purgeAllSupabaseData();
+      }
+      setOrders([]);
+      setProducts([]);
+      setCustomers([]);
+      setCategories(CATEGORIES);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Failed to purge data.' };
+    }
   };
 
   const handleOrderComplete = (
@@ -344,6 +368,7 @@ export default function App() {
                 bizPhone={bizPhone} setBizPhone={setBizPhone}
                 bizAddress={bizAddress} setBizAddress={setBizAddress}
                 bizEmail={bizEmail}   setBizEmail={setBizEmail}
+                onPurgeAllData={handlePurgeAllData}
               />
             )}
           </div>
@@ -419,6 +444,7 @@ export default function App() {
                 bizPhone={bizPhone} setBizPhone={setBizPhone}
                 bizAddress={bizAddress} setBizAddress={setBizAddress}
                 bizEmail={bizEmail}   setBizEmail={setBizEmail}
+                onPurgeAllData={handlePurgeAllData}
               />
             )}
           </div>
