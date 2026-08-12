@@ -70,9 +70,7 @@ export function OnboardingWalkthroughModal({
   const [currentStep, setCurrentStep] = useState(0);
   const dm = darkMode;
 
-  if (!isOpen) return null;
-
-  const step = STEPS[currentStep];
+  const step = STEPS[currentStep] || STEPS[0];
   const IconComponent = step.icon;
   const isLastStep = currentStep === STEPS.length - 1;
 
@@ -92,7 +90,8 @@ export function OnboardingWalkthroughModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -222,6 +221,7 @@ export function OnboardingWalkthroughModal({
           </div>
         </motion.div>
       </div>
+      )}
     </AnimatePresence>
   );
 }

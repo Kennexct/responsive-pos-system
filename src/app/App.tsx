@@ -256,7 +256,7 @@ export default function App() {
     );
   }
 
-  const allowedViews = currentUser ? permissions[currentUser.role] || [] : [];
+  const allowedViews = currentUser ? (permissions[currentUser.role] || DEFAULT_PERMISSIONS[currentUser.role] || DEFAULT_PERMISSIONS.owner) : [];
 
   const VIEW_TITLE: Record<ViewType, string> = {
     pos: 'POS Terminal', dashboard: 'Dashboard',
