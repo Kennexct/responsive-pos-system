@@ -1,7 +1,7 @@
 import { useState, type ElementType } from 'react';
 import {
   ShoppingCart, LayoutDashboard, Package, BarChart2, Settings,
-  ChevronLeft, ChevronRight, X, Coffee, ShoppingBag, LogOut, Moon, Sun, Users, Receipt, PieChart
+  ChevronLeft, ChevronRight, X, Coffee, ShoppingBag, LogOut, Moon, Sun, Users, Receipt, PieChart, ShieldCheck
 } from 'lucide-react';
 import type { BusinessType, ViewType, User } from './mockData';
 
@@ -21,6 +21,7 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS: { id: ViewType; label: string; icon: ElementType }[] = [
+  { id: 'superadmin',  label: 'Super Admin',  icon: ShieldCheck     },
   { id: 'pos',         label: 'POS Terminal', icon: ShoppingCart    },
   { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
   { id: 'daily-sales', label: 'Daily Sales',  icon: Receipt         },

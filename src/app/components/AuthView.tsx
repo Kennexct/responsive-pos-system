@@ -13,7 +13,8 @@ interface AuthViewProps {
 }
 
 const DEMO_ACCOUNTS = [
-  { email: 'owner@vpos.app', label: 'Owner', role: 'Full access', pin: '9999', colorLight: 'text-violet-600 bg-violet-50', colorDark: 'bg-violet-900/30 text-violet-400' },
+  { email: 'owner@vpos.app', label: 'Owner', role: 'Store Owner (Budi)', pin: '9999', colorLight: 'text-violet-600 bg-violet-50', colorDark: 'bg-violet-900/30 text-violet-400' },
+  { email: 'admin@vpos.app', label: 'Super Admin', role: 'Platform Console', pin: '0000', colorLight: 'text-emerald-600 bg-emerald-50', colorDark: 'bg-emerald-900/30 text-emerald-400' },
 ];
 
 export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) {
@@ -310,6 +311,39 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
               {loading ? 'Please wait…' : isLogin ? (loginMode === 'pin' ? 'Sign In with PIN' : 'Sign In') : 'Create Account'}
             </button>
           </form>
+
+          {/* Quick Demo Accounts Helper */}
+          {isLogin && (
+            <div className="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800">
+              <p className={`text-xs font-semibold uppercase tracking-wider mb-2.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Quick Demo Access
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {DEMO_ACCOUNTS.map(acc => (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    onClick={() => {
+                      setEmail(acc.email);
+                      setPassword(acc.pin);
+                      setLoginMode('email');
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all text-xs flex flex-col justify-between ${
+                      darkMode 
+                        ? 'bg-slate-800/60 border-slate-700 hover:border-blue-500 hover:bg-slate-800' 
+                        : 'bg-white border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`font-semibold ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>{acc.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${darkMode ? acc.colorDark : acc.colorLight}`}>{acc.pin}</span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 truncate">{acc.role}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

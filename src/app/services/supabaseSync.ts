@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const KEY_TO_TABLE: Record<string, string> = {
+  'pos-platform-merchants': 'merchants',
   'pos-products': 'products',
   'pos-orders': 'orders',
   'pos-customers': 'customers',
@@ -29,6 +30,26 @@ export async function loadFromSupabase<T>(key: string, merchantId?: string): Pro
       return null;
     }
     if (!data || data.length === 0) return null;
+
+    if (key === 'pos-platform-merchants') {
+      return data.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        ownerName: row.owner_name || 'Owner',
+        email: row.email,
+        phone: row.phone || '',
+        address: row.address || '',
+        type: row.type || 'fnb',
+        ownerPin: row.owner_pin || '9999',
+        subscriptionPlan: row.subscription_plan || 'trial',
+        subscriptionStatus: row.subscription_status || 'trial',
+        subscriptionStartsAt: row.subscription_starts_at || row.created_at,
+        subscriptionExpiresAt: row.subscription_expires_at || new Date(Date.now() + 14 * 86400000).toISOString(),
+        isEnabled: row.is_enabled ?? true,
+        notes: row.notes || '',
+        createdAt: row.created_at,
+      })) as unknown as T;
+    }
 
     if (key === 'pos-orders') {
       return data.map((row: any) => ({
@@ -139,7 +160,26 @@ export async function saveToSupabase<T>(key: string, value: T, merchantId?: stri
 
   try {
     if (Array.isArray(value)) {
-      if (key === 'pos-orders') {
+      if (key === 'pos-platform-merchants') {
+        const rows = value.map((m: any) => ({
+          id: String(m.id),
+          name: m.name,
+          owner_name: m.ownerName || 'Owner',
+          email: m.email,
+          phone: m.phone || null,
+          address: m.address || null,
+          type: m.type || 'fnb',
+          owner_pin: String(m.ownerPin || '9999'),
+          subscription_plan: m.subscriptionPlan || 'trial',
+          subscription_status: m.subscriptionStatus || 'trial',
+          subscription_starts_at: m.subscriptionStartsAt || new Date().toISOString(),
+          subscription_expires_at: m.subscriptionExpiresAt || new Date(Date.now() + 14 * 86400000).toISOString(),
+          is_enabled: m.isEnabled ?? true,
+          notes: m.notes || null,
+          created_at: m.createdAt || new Date().toISOString(),
+        }));
+        await supabase.from(table).upsert(rows, { onConflict: 'id' });
+      } else if (key === 'pos-orders') {
         const rows = value.map((o: any) => ({
           id: String(o.id),
           merchant_id: mId,

@@ -1,5 +1,5 @@
 export type BusinessType = 'retail' | 'fnb';
-export type ViewType = 'pos' | 'dashboard' | 'daily-sales' | 'inventory' | 'reports' | 'customers' | 'settings';
+export type ViewType = 'pos' | 'dashboard' | 'daily-sales' | 'inventory' | 'reports' | 'customers' | 'settings' | 'superadmin';
 export type OrderType = 'dine-in' | 'takeaway' | 'delivery';
 export type PaymentMethod = 'cash' | 'qris' | 'card' | 'bank-transfer';
 
@@ -11,7 +11,65 @@ export const INITIAL_PAYMENTS: PaymentMethodEntry[] = [
   { id: 'bank-transfer', label: 'Bank Transfer',       enabled: true  },
 ];
 export type OrderStatus = 'completed' | 'held' | 'cancelled' | 'refunded' | 'voided';
-export type Role = 'owner' | 'manager' | 'cashier';
+export type Role = 'owner' | 'manager' | 'cashier' | 'superadmin';
+
+export type SubscriptionPlan = 'trial' | 'monthly' | 'yearly' | 'lifetime';
+export type SubscriptionStatus = 'trial' | 'active' | 'suspended' | 'expired';
+
+export interface MerchantAccount {
+  id: string;
+  name: string;
+  ownerName: string;
+  email: string;
+  phone: string;
+  address?: string;
+  type: BusinessType;
+  ownerPin: string;
+  subscriptionPlan: SubscriptionPlan;
+  subscriptionStatus: SubscriptionStatus;
+  subscriptionStartsAt: string;
+  subscriptionExpiresAt: string;
+  isEnabled: boolean;
+  notes?: string;
+  createdAt: string;
+}
+
+export const INITIAL_MERCHANTS: MerchantAccount[] = [
+  {
+    id: 'm_default',
+    name: 'Warung Kopi Santai',
+    ownerName: 'Budi Santoso',
+    email: 'owner@vpos.app',
+    phone: '+62 812-3456-7890',
+    address: 'Jl. Sudirman No. 123, Jakarta',
+    type: 'fnb',
+    ownerPin: '9999',
+    subscriptionPlan: 'yearly',
+    subscriptionStatus: 'active',
+    subscriptionStartsAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+    subscriptionExpiresAt: new Date(Date.now() + 335 * 86400000).toISOString(),
+    isEnabled: true,
+    notes: 'Primary Flagship Demo Store',
+    createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+  },
+  {
+    id: 'm_demo_expired',
+    name: 'Bakso Pak Joko (Expired Test)',
+    ownerName: 'Joko Widodo',
+    email: 'joko@bakso.id',
+    phone: '+62 813-9876-5432',
+    address: 'Jl. Malioboro No. 45, Yogyakarta',
+    type: 'fnb',
+    ownerPin: '1234',
+    subscriptionPlan: 'monthly',
+    subscriptionStatus: 'expired',
+    subscriptionStartsAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+    subscriptionExpiresAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    isEnabled: true,
+    notes: 'Past due monthly invoice',
+    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+  }
+];
 
 export interface User {
   id: string;
@@ -26,13 +84,15 @@ export interface User {
 export type RolePermissions = Record<Role, ViewType[]>;
 
 export const DEFAULT_PERMISSIONS: RolePermissions = {
+  superadmin: ['superadmin', 'dashboard', 'reports', 'settings'],
   owner: ['pos', 'dashboard', 'daily-sales', 'inventory', 'reports', 'customers', 'settings'],
   manager: ['pos', 'dashboard', 'daily-sales', 'inventory', 'reports', 'customers'],
   cashier: ['pos', 'daily-sales', 'customers'],
 };
 
 export const INITIAL_USERS: User[] = [
-  { id: '1', name: 'Owner', email: 'owner@vpos.app', role: 'owner', pin: '9999', merchantId: 'm_default' },
+  { id: 'sa_1', name: 'Platform Admin', email: 'admin@vpos.app', role: 'superadmin', pin: '0000', merchantId: 'platform' },
+  { id: '1', name: 'Budi Santoso', email: 'owner@vpos.app', role: 'owner', pin: '9999', merchantId: 'm_default', businessName: 'Warung Kopi Santai' },
 ];
 
 export interface Customer {

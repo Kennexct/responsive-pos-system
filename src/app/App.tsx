@@ -1,5 +1,5 @@
 import { useState, useEffect, type ElementType } from 'react';
-import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu, Monitor, Users, Receipt } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu, Monitor, Users, Receipt, ShieldCheck } from 'lucide-react';
 import { usePersistentState } from './hooks/usePersistentState';
 import { ToastProvider } from './contexts/ToastContext';
 import { Sidebar } from './components/Sidebar';
@@ -14,13 +14,15 @@ import { DailySalesView } from './components/DailySalesView';
 import { CustomersView } from './components/CustomersView';
 import { OnboardingWalkthroughModal } from './components/OnboardingWalkthroughModal';
 import { GuidedSetupModal } from './components/GuidedSetupModal';
-import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './components/mockData';
-import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS, INITIAL_TAX_RULES, INITIAL_PAYMENTS } from './components/mockData';
+import { PlatformAdminView } from './components/PlatformAdminView';
+import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry, MerchantAccount } from './components/mockData';
+import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS, INITIAL_TAX_RULES, INITIAL_PAYMENTS, INITIAL_MERCHANTS } from './components/mockData';
 import localforage from 'localforage';
 import { purgeAllSupabaseData } from './services/supabaseSync';
 import { isSupabaseConfigured } from './lib/supabase';
 
 const MOBILE_NAV: { id: ViewType; label: string; icon: ElementType }[] = [
+  { id: 'superadmin',  label: 'Admin',        icon: ShieldCheck     },
   { id: 'pos',         label: 'POS',          icon: Monitor         },
   { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
   { id: 'inventory',   label: 'Inventory',    icon: Package         },
@@ -109,6 +111,13 @@ export default function App() {
   const [users, setUsers, usersLoaded] = usePersistentState<User[]>('pos-users', defaultUsers, activeMerchantId);
   const [permissions, setPermissions, permsLoaded] = usePersistentState<RolePermissions>('pos-perms', DEFAULT_PERMISSIONS, activeMerchantId);
 
+  // ─── Multi-Tenant Merchants Registry (Platform Level) ─────────────────────
+  const [merchants, setMerchants, merchantsLoaded] = usePersistentState<MerchantAccount[]>(
+    'pos-platform-merchants',
+    INITIAL_MERCHANTS,
+    'platform'
+  );
+
   useEffect(() => {
     if (currentUser) {
       setUsers(prev => {
@@ -120,15 +129,24 @@ export default function App() {
     }
   }, [currentUser, setUsers]);
 
+  // If user is superadmin, default view to superadmin
+  useEffect(() => {
+    if (currentUser?.role === 'superadmin' && view !== 'superadmin') {
+      setView('superadmin');
+    }
+  }, [currentUser]);
+
   // ─── Data State (Persistent) ─────────────────────────────────────────────
   const defaultCategories: Category[] = isDemoMerchant
     ? [...CATEGORIES]
     : [{ id: 'cat-all', name: 'All', isTaxable: true, isDiscountable: true }];
+  const defaultProducts: Product[] = isDemoMerchant ? [...PRODUCTS] : [];
+  const defaultOrders: RecentOrder[] = isDemoMerchant ? [...RECENT_ORDERS] : [];
   const [categories, setCategories, catLoaded] = usePersistentState<Category[]>('pos-categories', defaultCategories, activeMerchantId);
-  const [products, setProducts, prodLoaded] = usePersistentState<Product[]>('pos-products', [...PRODUCTS], activeMerchantId);
-  const [orders, setOrders, ordersLoaded] = usePersistentState<RecentOrder[]>('pos-orders', [...RECENT_ORDERS], activeMerchantId);
+  const [products, setProducts, prodLoaded] = usePersistentState<Product[]>('pos-products', defaultProducts, activeMerchantId);
+  const [orders, setOrders, ordersLoaded] = usePersistentState<RecentOrder[]>('pos-orders', defaultOrders, activeMerchantId);
   const [paymentMethods, setPaymentMethods, pmLoaded] = usePersistentState<PaymentMethodEntry[]>('pos-payments', INITIAL_PAYMENTS, activeMerchantId);
-  const [customers, setCustomers, custLoaded] = usePersistentState<Customer[]>('pos-customers', [...INITIAL_CUSTOMERS], activeMerchantId);
+  const [customers, setCustomers, custLoaded] = usePersistentState<Customer[]>('pos-customers', isDemoMerchant ? [...INITIAL_CUSTOMERS] : [], activeMerchantId);
   
   // ─── Taxes & Discounts (Persistent) ──────────────────────────────────────
   const defaultDiscountSettings: DiscountSettings = isDemoMerchant
@@ -306,6 +324,25 @@ export default function App() {
           onLogin={(u) => { setCurrentUser(u); setIsAuthenticated(true); }}
           onSignup={(u) => {
             setUsers(prev => [...prev, u]);
+            // Also register in platform merchants list with a 14-day free trial
+            if (u.merchantId) {
+              const newMerchantAccount: MerchantAccount = {
+                id: u.merchantId,
+                name: u.businessName || 'My Store',
+                ownerName: u.name,
+                email: u.email,
+                phone: '',
+                type: 'fnb',
+                ownerPin: u.pin,
+                subscriptionPlan: 'trial',
+                subscriptionStatus: 'trial',
+                subscriptionStartsAt: new Date().toISOString(),
+                subscriptionExpiresAt: new Date(Date.now() + 14 * 86400000).toISOString(),
+                isEnabled: true,
+                createdAt: new Date().toISOString()
+              };
+              setMerchants(prev => [newMerchantAccount, ...prev.filter(m => m.id !== u.merchantId)]);
+            }
             setCurrentUser(u);
             setIsAuthenticated(true);
             setShowGuidedSetup(true);
@@ -321,9 +358,17 @@ export default function App() {
     return <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>Loading...</div>;
   }
 
+  // ─── Subscription Guard ──────────────────────────────────────────────────
+  // Check active merchant subscription (bypass for superadmin)
+  const currentMerchantRecord = merchants.find(m => m.id === activeMerchantId);
+  const isMerchantDisabled = currentMerchantRecord && !currentMerchantRecord.isEnabled;
+  const isMerchantExpired = currentMerchantRecord && new Date(currentMerchantRecord.subscriptionExpiresAt) < new Date();
+  const isSubscriptionBlocked = currentUser.role !== 'superadmin' && (isMerchantDisabled || isMerchantExpired);
+
   const allowedViews = currentUser ? (permissions[currentUser.role] || DEFAULT_PERMISSIONS[currentUser.role] || DEFAULT_PERMISSIONS.owner) : [];
 
   const VIEW_TITLE: Record<ViewType, string> = {
+    superadmin: 'Super Admin Platform',
     pos: 'POS Terminal', dashboard: 'Dashboard',
     inventory: 'Inventory', reports: 'Reports', settings: 'Settings',
     'daily-sales': 'Daily Sales', customers: 'Customers'
@@ -459,10 +504,62 @@ export default function App() {
                 onPurgeAllData={handlePurgeAllData}
               />
             )}
+            {view === 'superadmin' && (
+              <PlatformAdminView
+                merchants={merchants}
+                setMerchants={setMerchants}
+                orders={orders}
+                users={users}
+                setUsers={setUsers}
+                darkMode={darkMode}
+                onImpersonateMerchant={(merchId) => {
+                  const m = merchants.find(item => item.id === merchId);
+                  if (m) {
+                    const mockOwner: User = {
+                      id: `owner_${m.id}`,
+                      name: m.ownerName,
+                      email: m.email,
+                      role: 'owner',
+                      pin: m.ownerPin,
+                      merchantId: m.id,
+                      businessName: m.name
+                    };
+                    setCurrentUser(mockOwner);
+                    setView('pos');
+                  }
+                }}
+              />
+            )}
           </div>
 
           {/* Tablet / desktop */}
           <div className="hidden md:flex flex-1 overflow-hidden">
+            {view === 'superadmin' && (
+              <PlatformAdminView
+                merchants={merchants}
+                setMerchants={setMerchants}
+                orders={orders}
+                users={users}
+                setUsers={setUsers}
+                darkMode={darkMode}
+                onImpersonateMerchant={(merchId) => {
+                  const m = merchants.find(item => item.id === merchId);
+                  if (m) {
+                    const mockOwner: User = {
+                      id: `owner_${m.id}`,
+                      name: m.ownerName,
+                      email: m.email,
+                      role: 'owner',
+                      pin: m.ownerPin,
+                      merchantId: m.id,
+                      businessName: m.name
+                    };
+                    setCurrentUser(mockOwner);
+                    setView('pos');
+                  }
+                }}
+              />
+            )}
             {view === 'pos' && (
               <POSView
                 businessType={businessType}
@@ -600,6 +697,70 @@ export default function App() {
           setShowGuidedSetup(false);
         }}
       />
+    )}
+
+    {/* Subscription Expired / Suspended Paywall Modal */}
+    {isSubscriptionBlocked && (
+      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div className={`w-full max-w-lg rounded-2xl border shadow-2xl p-6 sm:p-8 text-center ${
+          darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+        }`}>
+          <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4 bg-red-500/10 text-red-500 border border-red-500/20">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+
+          <h3 className="text-xl font-bold mb-2">
+            {isMerchantDisabled ? 'Store License Disabled' : 'Subscription Expired'}
+          </h3>
+          <p className={`text-sm mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            {isMerchantDisabled
+              ? `The license for "${currentMerchantRecord?.name || 'this merchant'}" has been temporarily deactivated by the platform administration.`
+              : `The subscription plan for "${currentMerchantRecord?.name || 'this merchant'}" expired on ${new Date(currentMerchantRecord?.subscriptionExpiresAt || '').toLocaleDateString('id-ID', { dateStyle: 'long' })}. Please renew your plan to continue taking orders.`}
+          </p>
+
+          <div className={`p-4 rounded-xl border text-left text-xs mb-6 space-y-2 ${
+            darkMode ? 'bg-slate-800/60 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+          }`}>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Merchant Account ID:</span>
+              <span className="font-mono font-bold">{activeMerchantId}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Plan Type:</span>
+              <span className="font-semibold capitalize">{currentMerchantRecord?.subscriptionPlan || 'Monthly'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Owner Contact:</span>
+              <span>{currentUser.email}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => {
+                setCurrentUser(null);
+                setIsAuthenticated(false);
+                setView('pos');
+              }}
+              className={`flex-1 py-2.5 rounded-xl border font-semibold text-sm transition-colors ${
+                darkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              Sign Out
+            </button>
+            <button
+              onClick={() => {
+                alert(`Please contact your VPos representative or email admin@vpos.app with Merchant ID: ${activeMerchantId} to renew or extend your license.`);
+              }}
+              className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors shadow-lg shadow-blue-500/25"
+            >
+              Contact Support
+            </button>
+          </div>
+        </div>
+      </div>
     )}
     </ToastProvider>
   );
