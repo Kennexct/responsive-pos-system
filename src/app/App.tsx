@@ -405,7 +405,7 @@ export default function App() {
               />
             )}
             {view === 'dashboard'  && <MobileOwnerView orders={orders} products={products} darkMode={darkMode} />}
-            {view === 'inventory'  && <InventoryView products={products} onProductsChange={setProducts} categories={categories} darkMode={darkMode} />}
+            {view === 'inventory'  && <InventoryView products={products} onProductsChange={setProducts} categories={categories} setCategories={setCategories} darkMode={darkMode} />}
             {view === 'reports'    && <ReportsView orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} categories={categories} darkMode={darkMode} />}
             {view === 'daily-sales'&& (
               <DailySalesView users={users} 
@@ -482,7 +482,7 @@ export default function App() {
               />
             )}
             {view === 'dashboard' && <Dashboard orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} darkMode={darkMode} />}
-            {view === 'inventory' && <InventoryView products={products} onProductsChange={setProducts} categories={categories} darkMode={darkMode} />}
+            {view === 'inventory' && <InventoryView products={products} onProductsChange={setProducts} categories={categories} setCategories={setCategories} darkMode={darkMode} />}
             {view === 'reports'   && <ReportsView orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} categories={categories} darkMode={darkMode} />}
             {view === 'daily-sales'&& (
               <DailySalesView users={users} 

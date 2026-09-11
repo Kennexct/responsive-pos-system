@@ -57,7 +57,12 @@ export function POSView({ businessType, products, categories, discountSettings, 
     if (category !== 'All') list = list.filter(p => p.category === category);
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter(p => p.name.toLowerCase().includes(q) || (p.barcode && p.barcode.toLowerCase().includes(q)) || (p.sku && p.sku.toLowerCase().includes(q)));
+      list = list.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        (p.barcode && p.barcode.toLowerCase().includes(q)) ||
+        (p.sku && p.sku.toLowerCase().includes(q)) ||
+        (p.variants && p.variants.some(v => (v.barcode && v.barcode.toLowerCase().includes(q)) || (v.sku && v.sku.toLowerCase().includes(q)) || v.name.toLowerCase().includes(q)))
+      );
     }
     return list;
   }, [products, category, search]);
@@ -233,12 +238,33 @@ export function POSView({ businessType, products, categories, discountSettings, 
               e.preventDefault();
               if (!search.trim()) return;
               const q = search.trim().toLowerCase();
-              const p = products.find(p => (p.barcode?.toLowerCase() === q || p.sku?.toLowerCase() === q || p.name.toLowerCase() === q));
-              if (p) {
-                if (p.trackInventory && p.stock === 0) {
+              // Check exact variant match first
+              let matchedProduct: Product | undefined;
+              let matchedVariant: ProductVariant | undefined;
+
+              for (const prod of products) {
+                if (prod.variants && prod.variants.length > 0) {
+                  const v = prod.variants.find(va => (va.barcode && va.barcode.toLowerCase() === q) || (va.sku && va.sku.toLowerCase() === q));
+                  if (v) {
+                    matchedProduct = prod;
+                    matchedVariant = v;
+                    break;
+                  }
+                }
+              }
+
+              if (!matchedProduct) {
+                matchedProduct = products.find(p => (p.barcode?.toLowerCase() === q || p.sku?.toLowerCase() === q || p.name.toLowerCase() === q));
+              }
+
+              if (matchedProduct) {
+                if (matchedProduct.trackInventory && matchedProduct.stock === 0) {
                   showToast('Product out of stock!', 'error');
+                } else if (matchedVariant) {
+                  addToCart(matchedProduct, matchedVariant);
+                  setSearch('');
                 } else {
-                  handleProductClick(p);
+                  handleProductClick(matchedProduct);
                   setSearch('');
                 }
               } else {

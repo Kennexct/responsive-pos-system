@@ -13,6 +13,7 @@ interface Props {
   products: Product[];
   onProductsChange: (p: Product[]) => void;
   categories: Category[];
+  setCategories?: React.Dispatch<React.SetStateAction<Category[]>>;
   darkMode: boolean;
 }
 
@@ -27,7 +28,7 @@ interface StockLogEntry {
   date: string;
 }
 
-export function InventoryView({ products, onProductsChange, categories, darkMode }: Props) {
+export function InventoryView({ products, onProductsChange, categories, setCategories, darkMode }: Props) {
   const [search, setSearch]       = useState('');
   const [tab, setTab]             = useState<StockTab>('all');
   const [stockLog, setStockLog]   = useState<StockLogEntry[]>(STOCK_LOG_INITIAL);
@@ -52,9 +53,13 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
   const [newImage, setNewImage]   = useState<string | undefined>(undefined);
   const [newSku, setNewSku]       = useState('');
   const [newBarcode, setNewBarcode] = useState('');
-  const [newTrackInventory, setNewTrackInventory] = useState(true);
-  const [newAllowDiscount, setNewAllowDiscount] = useState(true);
+  const [newTrackInventory, setNewTrackInventory] = useState(false);
+  const [newAllowDiscount, setNewAllowDiscount] = useState(false);
   const [newVariants, setNewVariants] = useState<ProductVariant[]>([]);
+
+  // Quick Add Category Modal inside Add Product
+  const [showQuickCategoryModal, setShowQuickCategoryModal] = useState(false);
+  const [quickCategoryName, setQuickCategoryName] = useState('');
 
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
@@ -117,7 +122,7 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
   const openAddProduct = () => {
     setEditingId(null);
     setNewName(''); setNewPrice(''); setNewCostPrice(''); setNewStock(''); setNewThreshold('10'); setNewEmoji('☕'); setNewImage(undefined);
-    setNewSku(''); setNewBarcode(''); setNewTrackInventory(true); setNewAllowDiscount(true); setNewVariants([]);
+    setNewSku(''); setNewBarcode(''); setNewTrackInventory(false); setNewAllowDiscount(false); setNewVariants([]);
     setProductModal(true);
   };
 
@@ -133,7 +138,7 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
   };
 
   const addVariant = () => {
-    setNewVariants([...newVariants, { id: Date.now().toString(), name: '', priceModifier: 0 }]);
+    setNewVariants([...newVariants, { id: Date.now().toString(), name: '', priceModifier: 0, sku: '', barcode: '' }]);
   };
 
   const updateVariant = (index: number, field: keyof ProductVariant, value: string | number) => {
@@ -475,16 +480,19 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
               </div>
 
               <div>
-                <label className={`text-sm block mb-1 ${t2}`}>Product Name *</label>
+                <label className={`text-sm block mb-1 font-medium ${t2}`}>Product Name *</label>
                 <input
                   type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Espresso" autoFocus
                   className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={`text-sm block mb-1 ${t2}`}>Selling Price (IDR) *</label>
+              {/* Price & Cost Price (Aligned with matched label heights and baselines) */}
+              <div className="grid grid-cols-2 gap-3 items-start">
+                <div className="flex flex-col">
+                  <div className="h-5 flex items-center mb-1">
+                    <label className={`text-sm font-medium ${t2}`}>Selling Price (IDR) *</label>
+                  </div>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -494,8 +502,11 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
                     className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}
                   />
                 </div>
-                <div>
-                  <label className={`text-sm block mb-1 ${t2}`}>Cost Price (IDR) <span className="text-xs opacity-60">Optional</span></label>
+                <div className="flex flex-col">
+                  <div className="h-5 flex items-center justify-between mb-1">
+                    <label className={`text-sm font-medium ${t2}`}>Cost Price (IDR)</label>
+                    <span className={`text-xs ${t2} opacity-75`}>Optional</span>
+                  </div>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -517,9 +528,19 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Category & Emoji with Quick Add Category */}
+              <div className="grid grid-cols-2 gap-3 items-start">
                 <div>
-                  <label className={`text-sm block mb-1 ${t2}`}>Category *</label>
+                  <div className="h-5 flex items-center justify-between mb-1">
+                    <label className={`text-sm font-medium ${t2}`}>Category *</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickCategoryModal(true)}
+                      className="text-xs font-semibold text-blue-500 hover:text-blue-700 flex items-center gap-0.5"
+                    >
+                      <Plus size={12} /> Add New
+                    </button>
+                  </div>
                   <select value={newCat} onChange={e => setNewCat(e.target.value)}
                     className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}>
                     {categories.filter(c => c.id !== 'cat-all').map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
@@ -527,7 +548,9 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
                 </div>
                 {!newImage && (
                   <div>
-                    <label className={`text-sm block mb-1 ${t2}`}>Emoji Icon</label>
+                    <div className="h-5 flex items-center mb-1">
+                      <label className={`text-sm font-medium ${t2}`}>Emoji Icon</label>
+                    </div>
                     <select value={newEmoji} onChange={e => setNewEmoji(e.target.value)}
                       className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}>
                       {PRODUCT_EMOJIS.map(e => <option key={e} value={e}>{e}</option>)}
@@ -538,53 +561,109 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              {/* Product SKU & Barcode (Optional) */}
+              <div className="grid grid-cols-2 gap-3 items-start">
                 <div>
-                  <label className={`text-sm block mb-1 ${t2}`}>SKU (Optional)</label>
+                  <label className={`text-sm block mb-1 font-medium ${t2}`}>SKU (Optional)</label>
                   <input type="text" value={newSku} onChange={e => setNewSku(e.target.value)} placeholder="e.g. COF-ESP-01"
                     className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`} />
                 </div>
                 <div>
-                  <label className={`text-sm block mb-1 ${t2}`}>Barcode (Optional)</label>
+                  <label className={`text-sm block mb-1 font-medium ${t2}`}>Barcode (Optional)</label>
                   <input type="text" value={newBarcode} onChange={e => setNewBarcode(e.target.value)} placeholder="Scan barcode"
                     className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`} />
                 </div>
               </div>
 
-              {/* Variants Section - placed below SKU/Barcode */}
-              <div className={`border rounded-xl p-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+              {/* Variants Section - each variant has 4 fields: name, price modifier, SKU, barcode */}
+              <div className={`border rounded-xl p-3.5 ${dm ? 'border-slate-700 bg-slate-850' : 'border-slate-200 bg-slate-50/50'}`}>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className={`text-sm font-medium ${t1}`}>Variants (Sizes, Add-ons)</h4>
-                  <button onClick={addVariant} className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-700">
-                    <PlusCircle size={14} /> Add
+                  <div>
+                    <h4 className={`text-sm font-semibold ${t1}`}>Variants (Sizes, Add-ons)</h4>
+                    <p className={`text-[11px] ${t2}`}>Attach unique SKU & Barcode to each variant</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addVariant}
+                    className="text-xs flex items-center gap-1 font-semibold px-2.5 py-1 rounded-lg bg-blue-600/10 text-blue-600 hover:bg-blue-600/20 dark:text-blue-400"
+                  >
+                    <PlusCircle size={14} /> Add Variant
                   </button>
                 </div>
                 
                 {newVariants.length === 0 ? (
-                  <p className={`text-xs ${t2}`}>No variants added. E.g., Size Large (+Rp 5.000)</p>
+                  <p className={`text-xs ${t2} py-2`}>No variants added yet. E.g., Size Large (+Rp 5.000)</p>
                 ) : (
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                  <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                     {newVariants.map((v, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <input type="text" placeholder="Variant name" value={v.name} onChange={e => updateVariant(i, 'name', e.target.value)}
-                          className={`flex-1 border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`} />
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="Amount (+)"
-                          value={v.priceModifier ? formatNumberWithDots(v.priceModifier) : ''}
-                          onChange={e => updateVariant(i, 'priceModifier', Number(e.target.value.replace(/\D/g, '')) || 0)}
-                          className={`w-28 border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`}
-                        />
-                        <button onClick={() => removeVariant(i)} className="text-slate-400 hover:text-red-500">
-                          <X size={14} />
-                        </button>
+                      <div key={v.id || i} className={`p-3 rounded-xl border relative space-y-2 ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs font-bold text-blue-500`}>Variant #{i + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeVariant(i)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                            title="Remove variant"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        
+                        {/* Row 1: Name & Price */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className={`text-[10px] block mb-0.5 font-medium ${t2}`}>Variant Name *</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Large, Oat Milk"
+                              value={v.name}
+                              onChange={e => updateVariant(i, 'name', e.target.value)}
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`}
+                            />
+                          </div>
+                          <div>
+                            <label className={`text-[10px] block mb-0.5 font-medium ${t2}`}>Price Modifier (+ IDR)</label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="e.g. 5.000"
+                              value={v.priceModifier ? formatNumberWithDots(v.priceModifier) : ''}
+                              onChange={e => updateVariant(i, 'priceModifier', Number(e.target.value.replace(/\D/g, '')) || 0)}
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Row 2: SKU & Barcode */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className={`text-[10px] block mb-0.5 font-medium ${t2}`}>Variant SKU</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. COF-ESP-LG"
+                              value={v.sku || ''}
+                              onChange={e => updateVariant(i, 'sku', e.target.value)}
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`}
+                            />
+                          </div>
+                          <div>
+                            <label className={`text-[10px] block mb-0.5 font-medium ${t2}`}>Variant Barcode</label>
+                            <input
+                              type="text"
+                              placeholder="Scan or type barcode"
+                              value={v.barcode || ''}
+                              onChange={e => updateVariant(i, 'barcode', e.target.value)}
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`}
+                            />
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
+              {/* Track Inventory Toggle (Default OFF) */}
               <div className={`border rounded-xl p-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div>
@@ -612,6 +691,7 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
                 )}
               </div>
 
+              {/* Allow Discounts Toggle (Default OFF) */}
               <div className={`flex items-center justify-between border rounded-xl p-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                 <div>
                   <p className={`text-sm font-medium ${t1}`}>Allow Discounts</p>
@@ -630,6 +710,61 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
             >
               {editingId ? 'Save Changes' : 'Add Product'}
             </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Quick Add Category Modal */}
+      {showQuickCategoryModal && (
+        <Modal
+          title="Add New Category"
+          onClose={() => { setShowQuickCategoryModal(false); setQuickCategoryName(''); }}
+          darkMode={dm}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-xs font-medium mb-1 ${t2}`}>Category Name *</label>
+              <input
+                type="text"
+                autoFocus
+                placeholder="e.g. Pastry & Bakery"
+                value={quickCategoryName}
+                onChange={e => setQuickCategoryName(e.target.value)}
+                className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => { setShowQuickCategoryModal(false); setQuickCategoryName(''); }}
+                className={`px-3 py-2 rounded-xl text-xs font-medium transition-colors ${dm ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!quickCategoryName.trim()}
+                onClick={() => {
+                  const trimmed = quickCategoryName.trim();
+                  if (!trimmed) return;
+                  const newCatObj: Category = {
+                    id: 'cat-' + Date.now().toString(),
+                    name: trimmed,
+                    isTaxable: true,
+                    isDiscountable: true,
+                  };
+                  if (setCategories) {
+                    setCategories(prev => [...prev, newCatObj]);
+                  }
+                  setNewCat(trimmed);
+                  setShowQuickCategoryModal(false);
+                  setQuickCategoryName('');
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors"
+              >
+                Create Category
+              </button>
+            </div>
           </div>
         </Modal>
       )}

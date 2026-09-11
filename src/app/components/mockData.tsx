@@ -172,9 +172,11 @@ export interface RecentOrder {
 
 export interface PromoCode {
   id: string;
+  name?: string;
   code: string;
   type: 'nominal' | 'percent';
   value: number;
+  maxDiscountAmount?: number;
   active: boolean;
   activeDate?: string;
   expiryDate?: string;

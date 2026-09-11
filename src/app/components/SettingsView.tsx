@@ -121,9 +121,11 @@ export function SettingsView({
   // Promo code modal
   const [promoModal, setPromoModal] = useState(false);
   const [editingPromoCodeId, setEditingPromoCodeId] = useState<string | null>(null);
+  const [newPromoName, setNewPromoName] = useState('');
   const [newPromoCode, setNewPromoCode] = useState('');
   const [newPromoType, setNewPromoType] = useState<'percent'|'nominal'>('percent');
   const [newPromoValue, setNewPromoValue] = useState('');
+  const [newPromoMaxAmount, setNewPromoMaxAmount] = useState('');
   const [newPromoActiveDate, setNewPromoActiveDate] = useState('');
   const [newPromoExpiryDate, setNewPromoExpiryDate] = useState('');
   const [newPromoMinSpend, setNewPromoMinSpend] = useState('');
@@ -201,9 +203,11 @@ export function SettingsView({
         ...prev,
         promoCodes: prev.promoCodes.map(p => p.id === editingPromoCodeId ? {
           ...p,
+          name: newPromoName.trim() || undefined,
           code: newPromoCode.toUpperCase(),
           type: newPromoType,
           value: Number(newPromoValue),
+          maxDiscountAmount: newPromoType === 'percent' && newPromoMaxAmount ? Number(newPromoMaxAmount) : undefined,
           activeDate: newPromoActiveDate || undefined,
           expiryDate: newPromoExpiryDate || undefined,
           minSpend: newPromoMinSpend ? Number(newPromoMinSpend) : undefined,
@@ -214,9 +218,11 @@ export function SettingsView({
     } else {
       const newPromo: PromoCode = {
         id: Date.now().toString(),
+        name: newPromoName.trim() || undefined,
         code: newPromoCode.toUpperCase(),
         type: newPromoType,
         value: Number(newPromoValue),
+        maxDiscountAmount: newPromoType === 'percent' && newPromoMaxAmount ? Number(newPromoMaxAmount) : undefined,
         active: true,
         activeDate: newPromoActiveDate || undefined,
         expiryDate: newPromoExpiryDate || undefined,
@@ -226,7 +232,7 @@ export function SettingsView({
       };
       setDiscountSettings(prev => ({ ...prev, promoCodes: [...prev.promoCodes, newPromo] }));
     }
-    setPromoModal(false); setEditingPromoCodeId(null); setNewPromoCode(''); setNewPromoValue(''); setNewPromoActiveDate(''); setNewPromoExpiryDate(''); setNewPromoMinSpend(''); setNewPromoCategories([]); setNewPromoCannotCombine(false);
+    setPromoModal(false); setEditingPromoCodeId(null); setNewPromoName(''); setNewPromoCode(''); setNewPromoValue(''); setNewPromoMaxAmount(''); setNewPromoActiveDate(''); setNewPromoExpiryDate(''); setNewPromoMinSpend(''); setNewPromoCategories([]); setNewPromoCannotCombine(false);
   };
   const deletePromo = (id: string) => setDiscountSettings(prev => ({ ...prev, promoCodes: prev.promoCodes.filter(p => p.id !== id) }));
   const togglePromo = (id: string) => setDiscountSettings(prev => ({ ...prev, promoCodes: prev.promoCodes.map(p => p.id === id ? { ...p, active: !p.active } : p) }));
@@ -512,7 +518,23 @@ export function SettingsView({
                 <div className={`border-t pt-6 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className={t1}>Promo Codes</h3>
-                    <button onClick={() => setPromoModal(true)} className={`flex items-center gap-1.5 text-sm text-blue-600 border px-3 py-1.5 rounded-lg transition-colors font-medium ${dm ? 'border-blue-800 hover:bg-blue-900/20' : 'border-blue-200 hover:bg-blue-50'}`}>
+                    <button
+                      onClick={() => {
+                        setEditingPromoCodeId(null);
+                        setNewPromoName('');
+                        setNewPromoCode('');
+                        setNewPromoType('percent');
+                        setNewPromoValue('');
+                        setNewPromoMaxAmount('');
+                        setNewPromoActiveDate('');
+                        setNewPromoExpiryDate('');
+                        setNewPromoMinSpend('');
+                        setNewPromoCategories([]);
+                        setNewPromoCannotCombine(false);
+                        setPromoModal(true);
+                      }}
+                      className={`flex items-center gap-1.5 text-sm text-blue-600 border px-3 py-1.5 rounded-lg transition-colors font-medium ${dm ? 'border-blue-800 hover:bg-blue-900/20' : 'border-blue-200 hover:bg-blue-50'}`}
+                    >
                       <Plus size={14} /> Add Code
                     </button>
                   </div>
@@ -521,9 +543,17 @@ export function SettingsView({
                     : discountSettings.promoCodes.map(promo => (
                       <div key={promo.id} className={`border rounded-xl p-4 flex items-center justify-between gap-3 ${dm ? 'border-slate-700' : 'border-slate-200'} mb-2`}>
                         <div>
-                          <p className={`text-sm font-bold uppercase tracking-wider ${t1}`}>{promo.code}</p>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold uppercase tracking-wider ${t1}`}>{promo.code}</span>
+                            {promo.name && (
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${dm ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
+                                {promo.name}
+                              </span>
+                            )}
+                          </div>
                           <p className={`text-xs mt-0.5 ${t2}`}>
                             {promo.type === 'percent' ? `${promo.value}% Off Total` : `Rp ${promo.value.toLocaleString('id-ID')} Off Total`}
+                            {promo.type === 'percent' && promo.maxDiscountAmount ? ` (Max Rp ${promo.maxDiscountAmount.toLocaleString('id-ID')})` : ''}
                           </p>
                           {(promo.activeDate || promo.expiryDate || promo.minSpend) && (
                             <div className={`mt-2 flex flex-wrap gap-2 text-[10px] ${t2}`}>
@@ -537,9 +567,11 @@ export function SettingsView({
                           <Toggle darkMode={darkMode} checked={promo.active} onChange={() => togglePromo(promo.id)} />
                           <button onClick={() => {
                             setEditingPromoCodeId(promo.id);
+                            setNewPromoName(promo.name || '');
                             setNewPromoCode(promo.code);
                             setNewPromoType(promo.type);
                             setNewPromoValue(promo.value.toString());
+                            setNewPromoMaxAmount(promo.maxDiscountAmount ? promo.maxDiscountAmount.toString() : '');
                             setNewPromoActiveDate(promo.activeDate || '');
                             setNewPromoExpiryDate(promo.expiryDate || '');
                             setNewPromoMinSpend(promo.minSpend?.toString() || '');
@@ -745,6 +777,7 @@ export function SettingsView({
 
       {promoModal && (
         <Modal title={editingPromoCodeId ? "Edit Promo Code" : "Add Promo Code"} onClose={() => setPromoModal(false)} darkMode={dm}>
+          <Field label="Discount Name" value={newPromoName} onChange={setNewPromoName} placeholder="e.g. End of Month Promo" darkMode={dm} />
           <Field label="Promo Code" value={newPromoCode} onChange={e => setNewPromoCode(e.toUpperCase())} placeholder="e.g. SUMMER10" darkMode={dm} />
           <div className="mb-3">
             <label className={`text-sm block mb-1 ${t2}`}>Discount Type</label>
@@ -752,16 +785,28 @@ export function SettingsView({
               {(['percent', 'nominal'] as ('percent'|'nominal')[]).map(t => (
                 <button
                   key={t}
+                  type="button"
                   onClick={() => setNewPromoType(t)}
                   className={`flex-1 py-2.5 text-sm font-medium capitalize transition-colors ${newPromoType === t ? 'bg-blue-600 text-white' : dm ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-500 hover:bg-slate-50'}`}
                 >
-                  {t}
+                  {t === 'percent' ? 'Percentage (%)' : 'Amount (IDR)'}
                 </button>
               ))}
             </div>
           </div>
-          <Field label="Value" value={newPromoValue} onChange={setNewPromoValue} placeholder={newPromoType === 'percent' ? "e.g. 10" : "e.g. 15.000"} type="number" darkMode={dm} />
+          <Field label={newPromoType === 'percent' ? "Percentage (%)" : "Amount (IDR)"} value={newPromoValue} onChange={setNewPromoValue} placeholder={newPromoType === 'percent' ? "e.g. 10" : "e.g. 15.000"} type="number" darkMode={dm} />
           
+          {newPromoType === 'percent' && (
+            <Field
+              label="Max Discount Amount (Optional)"
+              value={newPromoMaxAmount}
+              onChange={setNewPromoMaxAmount}
+              placeholder="e.g. 25.000"
+              type="number"
+              darkMode={dm}
+            />
+          )}
+
           <div className="grid grid-cols-2 gap-3 mb-4">
             <Field label="Active Date (opt)" value={newPromoActiveDate} onChange={setNewPromoActiveDate} type="date" darkMode={dm} />
             <Field label="Expiry Date (opt)" value={newPromoExpiryDate} onChange={setNewPromoExpiryDate} type="date" darkMode={dm} />

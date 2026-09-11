@@ -1,5 +1,5 @@
 import { useState, type ElementType } from 'react';
-import { X, Banknote, Smartphone, CreditCard, Building2, Printer, Delete, CheckCircle, Ticket } from 'lucide-react';
+import { X, Banknote, Smartphone, CreditCard, Building2, Printer, Delete, CheckCircle, Ticket, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { CartItem, OrderType, PaymentMethod, DiscountSettings, PromoCode, Customer, LoyaltySettings, PaymentMethodEntry } from './mockData';
 import { formatIDR } from './mockData';
@@ -87,6 +87,36 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
     setAppliedPromo(promo);
   };
 
+  const handleSelectPromo = (promo: PromoCode) => {
+    setPromoError('');
+    if (!promo.active) {
+      setPromoError('Promo code is currently inactive');
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    if (promo.activeDate && today < promo.activeDate) {
+      setPromoError('Promo code is not yet active');
+      return;
+    }
+    if (promo.expiryDate && today > promo.expiryDate) {
+      setPromoError('Promo code has expired');
+      return;
+    }
+    if (promo.minSpend && subtotalBeforePromo < promo.minSpend) {
+      setPromoError(`Minimum spend of Rp ${promo.minSpend.toLocaleString('id-ID')} required for "${promo.name || promo.code}"`);
+      return;
+    }
+    if (promo.cannotCombine) {
+      const hasItemDiscount = cart.some(item => (item.discount || 0) > 0 || (item.itemDiscountNominal || 0) > 0);
+      if (hasItemDiscount) {
+        setPromoError('Cannot be combined with item discounts');
+        return;
+      }
+    }
+    setAppliedPromo(promo);
+    setPromoInput(promo.code);
+  };
+
   const removePromo = () => {
     setAppliedPromo(null);
     setPromoInput('');
@@ -128,7 +158,11 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
 
     if (applicableSubtotal > 0) {
       if (appliedPromo.type === 'percent') {
-        promoDiscountAmt = applicableSubtotal * (appliedPromo.value / 100);
+        let disc = applicableSubtotal * (appliedPromo.value / 100);
+        if (appliedPromo.maxDiscountAmount && appliedPromo.maxDiscountAmount > 0) {
+          disc = Math.min(disc, appliedPromo.maxDiscountAmount);
+        }
+        promoDiscountAmt = disc;
       } else {
         promoDiscountAmt = Math.min(appliedPromo.value, applicableSubtotal);
       }
@@ -364,29 +398,93 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
           </div>
         )}
 
-        {/* Promo Code Input */}
+        {/* Promo Code Input & Available Discounts */}
         {discountSettings.enabled && (
-          <div className="mt-2">
+          <div className="mt-2 space-y-2">
             {!appliedPromo ? (
               <div>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Ticket size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${t2}`} />
                     <input 
-                      type="text" placeholder="Promo code" value={promoInput} onChange={e => setPromoInput(e.target.value.toUpperCase())}
+                      type="text" placeholder="Enter promo code" value={promoInput} onChange={e => setPromoInput(e.target.value.toUpperCase())}
                       className={`w-full pl-8 pr-3 py-2 text-sm border rounded-lg focus:outline-none uppercase ${inputCls}`}
                     />
                   </div>
-                  <button onClick={applyPromo} disabled={!promoInput.trim()} className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50">Apply</button>
+                  <button onClick={applyPromo} disabled={!promoInput.trim()} className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 hover:bg-blue-700 transition-colors">Apply</button>
                 </div>
                 {promoError && <p className="text-xs text-red-500 mt-1 pl-1">{promoError}</p>}
+
+                {/* Available Discounts List */}
+                {discountSettings.promoCodes.filter(p => p.active).length > 0 && (
+                  <div className="mt-2.5">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Tag size={12} className="text-blue-500" />
+                      <span className={`text-[11px] font-semibold uppercase tracking-wider ${t2}`}>Available Discounts</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                      {discountSettings.promoCodes
+                        .filter(promo => promo.active)
+                        .map(promo => {
+                          const isEligible = !promo.minSpend || subtotalBeforePromo >= promo.minSpend;
+                          return (
+                            <button
+                              key={promo.id}
+                              type="button"
+                              onClick={() => handleSelectPromo(promo)}
+                              className={`w-full text-left p-2 rounded-lg border transition-all flex items-center justify-between gap-2 group ${
+                                dm 
+                                  ? 'bg-slate-900/60 border-slate-700 hover:border-blue-500 hover:bg-slate-800/80' 
+                                  : 'bg-white border-slate-200 hover:border-blue-400 hover:bg-blue-50/50'
+                              } ${!isEligible ? 'opacity-60' : ''}`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className={`text-xs font-semibold truncate ${t1}`}>
+                                    {promo.name || promo.code}
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                                    {promo.code}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5 text-[11px]">
+                                  <span className="text-emerald-600 font-medium">
+                                    {promo.type === 'percent' ? `${promo.value}% OFF` : `Rp ${promo.value.toLocaleString('id-ID')} OFF`}
+                                  </span>
+                                  {promo.type === 'percent' && promo.maxDiscountAmount && promo.maxDiscountAmount > 0 && (
+                                    <span className={`text-[10px] ${t2}`}>
+                                      (Max Rp {promo.maxDiscountAmount.toLocaleString('id-ID')})
+                                    </span>
+                                  )}
+                                  {promo.minSpend && promo.minSpend > 0 && (
+                                    <span className={`text-[10px] ${t2}`}>
+                                      • Min Rp {promo.minSpend.toLocaleString('id-ID')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="shrink-0 text-xs font-medium px-2 py-1 rounded bg-blue-600/10 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                Apply
+                              </span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className={`flex items-center justify-between p-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10`}>
+              <div className={`flex items-center justify-between p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10`}>
                 <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium">
-                  <Ticket size={14} /> Code {appliedPromo.code} applied!
+                  <Ticket size={16} />
+                  <div>
+                    <span className="font-bold">{appliedPromo.name || appliedPromo.code}</span>
+                    <span className="text-xs opacity-90 ml-1.5">
+                      ({appliedPromo.code} • {appliedPromo.type === 'percent' ? `${appliedPromo.value}% OFF` : `Rp ${appliedPromo.value.toLocaleString('id-ID')} OFF`}{appliedPromo.maxDiscountAmount ? `, Max Rp ${appliedPromo.maxDiscountAmount.toLocaleString('id-ID')}` : ''})
+                    </span>
+                  </div>
                 </div>
-                <button onClick={removePromo} className="text-emerald-700 hover:text-emerald-900"><X size={14} /></button>
+                <button onClick={removePromo} className="text-emerald-700 hover:text-emerald-900 p-1 rounded hover:bg-emerald-500/20"><X size={15} /></button>
               </div>
             )}
           </div>
