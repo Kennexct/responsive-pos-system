@@ -13,6 +13,7 @@ import { AuthView } from './components/AuthView';
 import { DailySalesView } from './components/DailySalesView';
 import { CustomersView } from './components/CustomersView';
 import { OnboardingWalkthroughModal } from './components/OnboardingWalkthroughModal';
+import { GuidedSetupModal } from './components/GuidedSetupModal';
 import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './components/mockData';
 import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS, INITIAL_TAX_RULES, INITIAL_PAYMENTS } from './components/mockData';
 import localforage from 'localforage';
@@ -57,19 +58,54 @@ export default function App() {
   // ─── Auth ──────────────────────────────────────────────────────────────────
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [showGuidedSetup, setShowGuidedSetup] = useState(false);
   const activeMerchantId = currentUser?.merchantId || 'm_default';
+  const isDemoMerchant = activeMerchantId === 'm_default';
 
   // ─── Business Info (Persistent) ──────────────────────────────────────────
-  const [bizName, setBizName, bnLoaded] = usePersistentState('pos-bizname', 'Warung Kopi Santai', activeMerchantId);
-  const [bizPhone, setBizPhone, bpLoaded] = usePersistentState('pos-bizphone', '+62 812 3456 7890', activeMerchantId);
-  const [bizEmail, setBizEmail, beLoaded] = usePersistentState('pos-bizemail', 'hello@warkop.id', activeMerchantId);
-  const [bizAddress, setBizAddress, baLoaded] = usePersistentState('pos-bizaddress', 'Jl. Sudirman No. 123, Jakarta', activeMerchantId);
+  const [bizName, setBizName, bnLoaded] = usePersistentState(
+    'pos-bizname',
+    isDemoMerchant ? 'Warung Kopi Santai' : (currentUser?.businessName || ''),
+    activeMerchantId
+  );
+  const [bizPhone, setBizPhone, bpLoaded] = usePersistentState(
+    'pos-bizphone',
+    isDemoMerchant ? '+62 812 3456 7890' : '',
+    activeMerchantId
+  );
+  const [bizEmail, setBizEmail, beLoaded] = usePersistentState(
+    'pos-bizemail',
+    isDemoMerchant ? 'hello@warkop.id' : (currentUser?.email || ''),
+    activeMerchantId
+  );
+  const [bizAddress, setBizAddress, baLoaded] = usePersistentState(
+    'pos-bizaddress',
+    isDemoMerchant ? 'Jl. Sudirman No. 123, Jakarta' : '',
+    activeMerchantId
+  );
+  const [businessType, setBusinessType, btLoaded] = usePersistentState<BusinessType>(
+    'pos-biztype',
+    'fnb',
+    activeMerchantId
+  );
+  const [hasCompletedOnboarding, setHasCompletedOnboarding, obLoaded] = usePersistentState<boolean>(
+    'pos-onboarded',
+    isDemoMerchant,
+    activeMerchantId
+  );
 
   useEffect(() => {
-    if (currentUser?.businessName) {
-      setBizName(currentUser.businessName);
+    if (currentUser?.businessName && !isDemoMerchant) {
+      setBizName(prev => prev || currentUser.businessName || '');
     }
-  }, [currentUser, setBizName]);
+  }, [currentUser, isDemoMerchant, setBizName]);
+
+  useEffect(() => {
+    if (isAuthenticated && currentUser && activeMerchantId !== 'm_default' && !hasCompletedOnboarding) {
+      setShowGuidedSetup(true);
+    }
+  }, [isAuthenticated, currentUser, activeMerchantId, hasCompletedOnboarding]);
+
   const defaultUsers = currentUser ? [currentUser] : INITIAL_USERS;
   const [users, setUsers, usersLoaded] = usePersistentState<User[]>('pos-users', defaultUsers, activeMerchantId);
   const [permissions, setPermissions, permsLoaded] = usePersistentState<RolePermissions>('pos-perms', DEFAULT_PERMISSIONS, activeMerchantId);
@@ -86,23 +122,34 @@ export default function App() {
   }, [currentUser, setUsers]);
 
   // ─── Data State (Persistent) ─────────────────────────────────────────────
-  const [categories, setCategories, catLoaded] = usePersistentState<Category[]>('pos-categories', [...CATEGORIES], activeMerchantId);
+  const defaultCategories: Category[] = isDemoMerchant
+    ? [...CATEGORIES]
+    : [{ id: 'cat-all', name: 'All', isTaxable: true, isDiscountable: true }];
+  const [categories, setCategories, catLoaded] = usePersistentState<Category[]>('pos-categories', defaultCategories, activeMerchantId);
   const [products, setProducts, prodLoaded] = usePersistentState<Product[]>('pos-products', [...PRODUCTS], activeMerchantId);
   const [orders, setOrders, ordersLoaded] = usePersistentState<RecentOrder[]>('pos-orders', [...RECENT_ORDERS], activeMerchantId);
   const [paymentMethods, setPaymentMethods, pmLoaded] = usePersistentState<PaymentMethodEntry[]>('pos-payments', INITIAL_PAYMENTS, activeMerchantId);
   const [customers, setCustomers, custLoaded] = usePersistentState<Customer[]>('pos-customers', [...INITIAL_CUSTOMERS], activeMerchantId);
   
   // ─── Taxes & Discounts (Persistent) ──────────────────────────────────────
-  const [discountSettings, setDiscountSettings, dsLoaded] = usePersistentState<DiscountSettings>('pos-discounts', {
-    enabled: true,
-    allowItemDiscount: true,
-    promoCodes: [{ id: '1', code: 'PROMO10', type: 'percent', value: 10, active: true }]
-  }, activeMerchantId);
+  const defaultDiscountSettings: DiscountSettings = isDemoMerchant
+    ? {
+        enabled: true,
+        allowItemDiscount: true,
+        promoCodes: [{ id: '1', code: 'PROMO10', type: 'percent', value: 10, active: true }]
+      }
+    : {
+        enabled: false,
+        allowItemDiscount: false,
+        promoCodes: []
+      };
+  const [discountSettings, setDiscountSettings, dsLoaded] = usePersistentState<DiscountSettings>('pos-discounts', defaultDiscountSettings, activeMerchantId);
   const [refundSettings, setRefundSettings, rsLoaded] = usePersistentState<RefundSettings>('pos-refunds', {
     managerPinRequired: true
   }, activeMerchantId);
   const [loyaltySettings, setLoyaltySettings, lsLoaded] = usePersistentState<LoyaltySettings>('pos-loyalty', { ...INITIAL_LOYALTY_SETTINGS }, activeMerchantId);
-  const [taxRules, setTaxRules, trLoaded] = usePersistentState<TaxRule[]>('pos-taxrules', INITIAL_TAX_RULES, activeMerchantId);
+  const defaultTaxRules: TaxRule[] = isDemoMerchant ? INITIAL_TAX_RULES : [];
+  const [taxRules, setTaxRules, trLoaded] = usePersistentState<TaxRule[]>('pos-taxrules', defaultTaxRules, activeMerchantId);
   const [terminalViewMode, setTerminalViewMode, tvmLoaded] = usePersistentState<TerminalViewMode>('pos-terminalview', 'grid', activeMerchantId);
 
   const handleRefund = (orderId: string, reason: string) => {
@@ -262,14 +309,14 @@ export default function App() {
             setUsers(prev => [...prev, u]);
             setCurrentUser(u);
             setIsAuthenticated(true);
-            setShowWalkthrough(true);
+            setShowGuidedSetup(true);
           }}
         />
       </div>
     );
   }
 
-  const isFullyLoaded = catLoaded && prodLoaded && ordersLoaded && pmLoaded && dsLoaded && rsLoaded && lsLoaded && trLoaded && tvmLoaded && bnLoaded && bpLoaded && beLoaded && baLoaded && usersLoaded && permsLoaded && custLoaded;
+  const isFullyLoaded = catLoaded && prodLoaded && ordersLoaded && pmLoaded && dsLoaded && rsLoaded && lsLoaded && trLoaded && tvmLoaded && bnLoaded && bpLoaded && beLoaded && baLoaded && usersLoaded && permsLoaded && custLoaded && btLoaded && obLoaded;
 
   if (!isFullyLoaded) {
     return <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>Loading...</div>;
@@ -321,6 +368,21 @@ export default function App() {
           </span>
           <div className="w-8" />
         </header>
+
+        {!hasCompletedOnboarding && activeMerchantId !== 'm_default' && (
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-white text-xs sm:text-sm flex items-center justify-between shadow-md shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="font-bold">Store Setup Incomplete:</span>
+              <span className="opacity-90 hidden sm:inline">Configure your store profile, categories, payments, tax, and promos.</span>
+            </div>
+            <button
+              onClick={() => setShowGuidedSetup(true)}
+              className="px-3 py-1 bg-white text-blue-700 font-bold rounded-lg text-xs hover:bg-blue-50 transition-colors shrink-0 shadow-sm"
+            >
+              Setup Guide →
+            </button>
+          </div>
+        )}
 
         <main className="flex-1 overflow-hidden flex">
           {/* Mobile */}
@@ -394,6 +456,7 @@ export default function App() {
                 bizPhone={bizPhone} setBizPhone={setBizPhone}
                 bizAddress={bizAddress} setBizAddress={setBizAddress}
                 bizEmail={bizEmail}   setBizEmail={setBizEmail}
+                onOpenSetupGuide={() => setShowGuidedSetup(true)}
                 onPurgeAllData={handlePurgeAllData}
               />
             )}
@@ -470,6 +533,7 @@ export default function App() {
                 bizPhone={bizPhone} setBizPhone={setBizPhone}
                 bizAddress={bizAddress} setBizAddress={setBizAddress}
                 bizEmail={bizEmail}   setBizEmail={setBizEmail}
+                onOpenSetupGuide={() => setShowGuidedSetup(true)}
                 onPurgeAllData={handlePurgeAllData}
               />
             )}
@@ -506,6 +570,38 @@ export default function App() {
       darkMode={darkMode}
       merchantName={currentUser?.name}
     />
+    {currentUser && (
+      <GuidedSetupModal
+        isOpen={showGuidedSetup}
+        onClose={() => setShowGuidedSetup(false)}
+        darkMode={darkMode}
+        currentUser={currentUser}
+        initialData={{
+          bizName,
+          bizPhone,
+          bizEmail,
+          bizAddress,
+          businessType,
+          categories,
+          paymentMethods,
+          taxRules,
+          discountSettings,
+        }}
+        onSaveSetup={(data) => {
+          setBizName(data.bizName);
+          setBizPhone(data.bizPhone);
+          setBizEmail(data.bizEmail);
+          setBizAddress(data.bizAddress);
+          setBusinessType(data.businessType);
+          setCategories(data.categories);
+          setPaymentMethods(data.paymentMethods);
+          setTaxRules(data.taxRules);
+          setDiscountSettings(data.discountSettings);
+          setHasCompletedOnboarding(true);
+          setShowGuidedSetup(false);
+        }}
+      />
+    )}
     </ToastProvider>
   );
 }

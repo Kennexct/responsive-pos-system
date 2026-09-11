@@ -33,6 +33,7 @@ interface SettingsViewProps {
   bizPhone: string;   setBizPhone: (v: string) => void;
   bizAddress: string; setBizAddress: (v: string) => void;
   bizEmail: string;   setBizEmail: (v: string) => void;
+  onOpenSetupGuide?: () => void;
   onPurgeAllData?: (ownerPin: string) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
 }
 
@@ -66,6 +67,7 @@ export function SettingsView({
   terminalViewMode = 'grid', setTerminalViewMode,
   darkMode, onToggleDark,
   bizName, setBizName, bizPhone, setBizPhone, bizAddress, setBizAddress, bizEmail, setBizEmail,
+  onOpenSetupGuide,
   onPurgeAllData,
 }: SettingsViewProps) {
   const [tab,      setTab]      = useState<SettingsTab>('business');
@@ -344,6 +346,30 @@ export function SettingsView({
                     Scanner mode hides the visual product grid for faster barcode checkout.
                   </p>
                 </div>
+
+                {onOpenSetupGuide && (
+                  <div className={`border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                    dm ? 'bg-blue-950/20 border-blue-800/40 text-blue-200' : 'bg-blue-50/80 border-blue-200 text-blue-900'
+                  }`}>
+                    <div>
+                      <h4 className="text-sm font-bold flex items-center gap-2">
+                        <Store size={16} className="text-blue-500" />
+                        Guided Store Setup Wizard
+                      </h4>
+                      <p className={`text-xs mt-0.5 ${dm ? 'text-slate-400' : 'text-slate-600'}`}>
+                        Configure your profile, categories, payments, tax, and promos with the step-by-step wizard.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onOpenSetupGuide}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shrink-0 transition-colors shadow-sm"
+                    >
+                      Launch Setup Wizard
+                    </button>
+                  </div>
+                )}
+
                 <Field label="Business Name"  value={bizName}    onChange={setBizName}    darkMode={dm} />
                 <Field label="Phone"          value={bizPhone}   onChange={setBizPhone}   darkMode={dm} type="tel" />
                 <Field label="Email"          value={bizEmail}   onChange={setBizEmail}   darkMode={dm} type="email" />
