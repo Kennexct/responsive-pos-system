@@ -1,6 +1,7 @@
 import { useState, type ElementType } from 'react';
 import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Tag, AlertTriangle } from 'lucide-react';
 import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './mockData';
+import { formatIndonesianPhone } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 import { useToast } from '../contexts/ToastContext';
 
@@ -370,10 +371,17 @@ export function SettingsView({
                   </div>
                 )}
 
-                <Field label="Business Name"  value={bizName}    onChange={setBizName}    darkMode={dm} />
-                <Field label="Phone"          value={bizPhone}   onChange={setBizPhone}   darkMode={dm} type="tel" />
-                <Field label="Email"          value={bizEmail}   onChange={setBizEmail}   darkMode={dm} type="email" />
-                <Field label="Address"        value={bizAddress} onChange={setBizAddress} darkMode={dm} />
+                <Field label="Business Name"  value={bizName}    onChange={setBizName}    placeholder="e.g. Kedai Kopi Kenangan" darkMode={dm} />
+                <Field
+                  label="Phone"
+                  value={bizPhone}
+                  onChange={v => setBizPhone(formatIndonesianPhone(v))}
+                  placeholder="+62 812-3456-7890"
+                  darkMode={dm}
+                  type="tel"
+                />
+                <Field label="Email"          value={bizEmail}   onChange={setBizEmail}   placeholder="contact@business.com" darkMode={dm} type="email" />
+                <Field label="Address"        value={bizAddress} onChange={setBizAddress} placeholder="Jl. Sudirman No. 1, Jakarta" darkMode={dm} />
                 <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
 
                 {/* Danger Zone */}

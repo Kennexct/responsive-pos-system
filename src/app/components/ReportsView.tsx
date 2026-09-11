@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Download, TrendingUp, Users, ShoppingBag, DollarSign, Activity, AlertCircle } from 'lucide-react';
+import { Download, TrendingUp, Users, ShoppingBag, DollarSign, Activity, AlertCircle, LayoutGrid, Table2 } from 'lucide-react';
 import { formatIDR } from './mockData';
 import type { RecentOrder, Category, Product, Customer, LoyaltySettings } from './mockData';
 
@@ -14,6 +14,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 type ReportTab = 'sales' | 'crm' | 'inventory' | 'staff' | 'financial';
+type ViewMode = 'visual' | 'classic';
 
 interface Props {
   orders: RecentOrder[];
@@ -27,6 +28,7 @@ interface Props {
 export function ReportsView({ orders, products, customers, loyaltySettings, categories, darkMode }: Props) {
   const [reportTab, setReportTab] = useState<ReportTab>('sales');
   const [dateRange, setDateRange] = useState<'all' | 'today' | '7days' | '30days'>('30days');
+  const [viewMode, setViewMode] = useState<ViewMode>('visual');
   
   const dm = darkMode;
   
@@ -195,6 +197,32 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                 </button>
               ))}
             </div>
+            <div className={`flex items-center gap-1 p-1 rounded-xl border w-fit ${dm ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+              <button
+                type="button"
+                onClick={() => setViewMode('visual')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                  viewMode === 'visual'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <LayoutGrid size={14} />
+                <span>Visual</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('classic')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                  viewMode === 'classic'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <Table2 size={14} />
+                <span>Classic</span>
+              </button>
+            </div>
             <button
               onClick={exportCSV}
               className={`flex items-center gap-2 border rounded-xl px-4 py-2 text-sm font-medium transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50 bg-white'}`}
@@ -246,22 +274,131 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className={`p-5 rounded-2xl border ${surface}`}>
-                  <h3 className={`font-semibold mb-6 ${t1}`}>Sales by Payment Method</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={paymentBreakdown} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={5} dataKey="value">
-                          {paymentBreakdown.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                        </Pie>
-                        <Tooltip contentStyle={tooltipStyle} formatter={(val: number) => formatIDR(val)} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
+              {viewMode === 'visual' ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className={`p-5 rounded-2xl border ${surface}`}>
+                    <h3 className={`font-semibold mb-6 ${t1}`}>Sales by Payment Method</h3>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={paymentBreakdown} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={5} dataKey="value">
+                            {paymentBreakdown.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} formatter={(val: number) => formatIDR(val)} />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className={`p-5 rounded-2xl border ${surface}`}>
+                    <h3 className={`font-semibold mb-6 ${t1}`}>Revenue Volume Breakdown</h3>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={paymentBreakdown} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={dm ? '#334155' : '#e2e8f0'} vertical={false} />
+                          <XAxis dataKey="name" stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} />
+                          <YAxis stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={(val: number) => formatIDR(val)} />
+                          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                            {paymentBreakdown.map((entry, index) => (
+                              <Cell key={`bar-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Classic Table: Payment Methods Breakdown */}
+                  <div className={`rounded-2xl border overflow-hidden ${surface}`}>
+                    <div className="px-6 py-4 border-b border-inherit">
+                      <h3 className={`font-semibold text-base ${t1}`}>Payment Method Breakdown (Classic View)</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                          <tr>
+                            <th className="px-6 py-3.5 font-semibold">Payment Method</th>
+                            <th className="px-6 py-3.5 font-semibold">Total Revenue</th>
+                            <th className="px-6 py-3.5 font-semibold">% Share</th>
+                            <th className="px-6 py-3.5 font-semibold">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y ${divider}`}>
+                          {paymentBreakdown.map(p => {
+                            const share = totalSales > 0 ? Math.round((p.value / totalSales) * 100) : 0;
+                            return (
+                              <tr key={p.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                                <td className={`px-6 py-3.5 font-medium flex items-center gap-2 ${t1}`}>
+                                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color }} />
+                                  {p.name}
+                                </td>
+                                <td className={`px-6 py-3.5 font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(p.value)}</td>
+                                <td className={`px-6 py-3.5 ${t1}`}>{share}%</td>
+                                <td className="px-6 py-3.5">
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                    Settled
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {paymentBreakdown.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className={`px-6 py-8 text-center ${t2}`}>No payment data available in this period.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Classic Table: Recent Completed Orders */}
+                  <div className={`rounded-2xl border overflow-hidden ${surface}`}>
+                    <div className="px-6 py-4 border-b border-inherit">
+                      <h3 className={`font-semibold text-base ${t1}`}>Completed Transactions Audit Log</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                          <tr>
+                            <th className="px-6 py-3.5 font-semibold">Order #</th>
+                            <th className="px-6 py-3.5 font-semibold">Date & Time</th>
+                            <th className="px-6 py-3.5 font-semibold">Cashier</th>
+                            <th className="px-6 py-3.5 font-semibold">Payment</th>
+                            <th className="px-6 py-3.5 font-semibold text-right">Items</th>
+                            <th className="px-6 py-3.5 font-semibold text-right">Subtotal</th>
+                            <th className="px-6 py-3.5 font-semibold text-right">Tax</th>
+                            <th className="px-6 py-3.5 font-semibold text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y ${divider}`}>
+                          {completedOrders.slice(0, 10).map(o => (
+                            <tr key={o.id} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                              <td className={`px-6 py-3.5 font-mono font-medium ${t1}`}>{o.orderNumber}</td>
+                              <td className={`px-6 py-3.5 text-xs ${t2}`}>{new Date(o.createdAt).toLocaleString('id-ID')}</td>
+                              <td className={`px-6 py-3.5 ${t1}`}>{o.cashier}</td>
+                              <td className={`px-6 py-3.5 capitalize ${t1}`}>{PAYMENT_LABELS[o.paymentMethod] || o.paymentMethod}</td>
+                              <td className={`px-6 py-3.5 text-right ${t1}`}>{o.items.reduce((s, i) => s + i.qty, 0)}</td>
+                              <td className={`px-6 py-3.5 text-right ${t1}`}>{formatIDR(o.subtotal)}</td>
+                              <td className={`px-6 py-3.5 text-right text-xs ${t2}`}>{formatIDR(o.tax)}</td>
+                              <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(o.total)}</td>
+                            </tr>
+                          ))}
+                          {completedOrders.length === 0 && (
+                            <tr>
+                              <td colSpan={8} className={`px-6 py-8 text-center ${t2}`}>No completed transactions in this period.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -287,140 +424,388 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className={`p-5 rounded-2xl border ${surface}`}>
-                  <h3 className={`font-semibold mb-6 ${t1}`}>Loyalty Tier Distribution</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={tierDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                          {tierDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                        </Pie>
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
+              {viewMode === 'visual' ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className={`p-5 rounded-2xl border ${surface}`}>
+                    <h3 className={`font-semibold mb-6 ${t1}`}>Loyalty Tier Distribution</h3>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={tierDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                            {tierDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className={`p-5 rounded-2xl border ${surface}`}>
+                    <h3 className={`font-semibold mb-6 ${t1}`}>Customer Count by Tier</h3>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={tierDistribution} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={dm ? '#334155' : '#e2e8f0'} vertical={false} />
+                          <XAxis dataKey="name" stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} />
+                          <YAxis stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} allowDecimals={false} />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                            {tierDistribution.map((entry, index) => (
+                              <Cell key={`tier-bar-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Classic Table: Loyalty Tier Membership */}
+                  <div className={`rounded-2xl border overflow-hidden ${surface}`}>
+                    <div className="px-6 py-4 border-b border-inherit">
+                      <h3 className={`font-semibold text-base ${t1}`}>Loyalty Tier Membership (Classic View)</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                          <tr>
+                            <th className="px-6 py-3.5 font-semibold">Tier Level</th>
+                            <th className="px-6 py-3.5 font-semibold">Members Count</th>
+                            <th className="px-6 py-3.5 font-semibold">% of Base</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y ${divider}`}>
+                          {tierDistribution.map(t => {
+                            const pct = customers.length > 0 ? Math.round((t.value / customers.length) * 100) : 0;
+                            return (
+                              <tr key={t.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                                <td className={`px-6 py-3.5 font-medium flex items-center gap-2 ${t1}`}>
+                                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: t.color }} />
+                                  {t.name}
+                                </td>
+                                <td className={`px-6 py-3.5 font-semibold ${t1}`}>{t.value} members</td>
+                                <td className={`px-6 py-3.5 ${t2}`}>{pct}%</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Classic Table: Top VIP Customers */}
+                  <div className={`rounded-2xl border overflow-hidden ${surface}`}>
+                    <div className="px-6 py-4 border-b border-inherit">
+                      <h3 className={`font-semibold text-base ${t1}`}>Top Customers by Spending</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                          <tr>
+                            <th className="px-6 py-3.5 font-semibold">Customer Name</th>
+                            <th className="px-6 py-3.5 font-semibold">Phone</th>
+                            <th className="px-6 py-3.5 font-semibold">Points Balance</th>
+                            <th className="px-6 py-3.5 font-semibold">Total Transactions</th>
+                            <th className="px-6 py-3.5 font-semibold text-right">Total Spend</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y ${divider}`}>
+                          {[...customers].sort((a, b) => b.totalSpend - a.totalSpend).slice(0, 10).map(c => (
+                            <tr key={c.id} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                              <td className={`px-6 py-3.5 font-medium ${t1}`}>{c.name}</td>
+                              <td className={`px-6 py-3.5 ${t2}`}>{c.phone || '-'}</td>
+                              <td className={`px-6 py-3.5 font-medium text-amber-500`}>{c.pointsBalance} pts</td>
+                              <td className={`px-6 py-3.5 ${t1}`}>{c.totalTransactions}</td>
+                              <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(c.totalSpend)}</td>
+                            </tr>
+                          ))}
+                          {customers.length === 0 && (
+                            <tr>
+                              <td colSpan={5} className={`px-6 py-8 text-center ${t2}`}>No customer records available.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
           {/* INVENTORY TAB */}
           {reportTab === 'inventory' && (
             <>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className={`p-5 rounded-2xl border ${surface}`}>
-                  <h3 className={`font-semibold mb-4 ${t1}`}>Top Selling Products (Revenue)</h3>
-                  <div className="space-y-4">
-                    {topProducts.map((p, i) => (
-                      <div key={i} className="flex justify-between items-center">
-                        <div>
-                          <p className={`font-medium ${t1}`}>{p.name}</p>
-                          <p className={`text-xs ${t2}`}>{p.qty} units sold</p>
+              {viewMode === 'visual' ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className={`p-5 rounded-2xl border ${surface}`}>
+                    <h3 className={`font-semibold mb-4 ${t1}`}>Top Selling Products (Revenue)</h3>
+                    <div className="space-y-4">
+                      {topProducts.map((p, i) => (
+                        <div key={i} className="flex justify-between items-center">
+                          <div>
+                            <p className={`font-medium ${t1}`}>{p.name}</p>
+                            <p className={`text-xs ${t2}`}>{p.qty} units sold</p>
+                          </div>
+                          <p className={`font-semibold text-emerald-500`}>{formatIDR(p.revenue)}</p>
                         </div>
-                        <p className={`font-semibold text-emerald-500`}>{formatIDR(p.revenue)}</p>
-                      </div>
-                    ))}
-                    {topProducts.length === 0 && <p className={t2}>No sales data available.</p>}
+                      ))}
+                      {topProducts.length === 0 && <p className={t2}>No sales data available.</p>}
+                    </div>
                   </div>
-                </div>
 
-                <div className={`p-5 rounded-2xl border ${surface}`}>
-                  <h3 className={`font-semibold mb-6 ${t1}`}>Category Contribution</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={categoryContribution} cx="50%" cy="50%" innerRadius={50} outerRadius={72} paddingAngle={5} dataKey="value">
-                          {categoryContribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                        </Pie>
-                        <Tooltip contentStyle={tooltipStyle} formatter={(val: number) => formatIDR(val)} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  <div className={`p-5 rounded-2xl border ${surface}`}>
+                    <h3 className={`font-semibold mb-6 ${t1}`}>Category Contribution</h3>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={categoryContribution} cx="50%" cy="50%" innerRadius={50} outerRadius={72} paddingAngle={5} dataKey="value">
+                            {categoryContribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} formatter={(val: number) => formatIDR(val)} />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Classic Table: All Products Performance Ranking */}
+                  <div className={`rounded-2xl border overflow-hidden ${surface}`}>
+                    <div className="px-6 py-4 border-b border-inherit">
+                      <h3 className={`font-semibold text-base ${t1}`}>Product Sales Performance (Classic View)</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                          <tr>
+                            <th className="px-6 py-3.5 font-semibold">Rank</th>
+                            <th className="px-6 py-3.5 font-semibold">Product Name</th>
+                            <th className="px-6 py-3.5 font-semibold text-right">Units Sold</th>
+                            <th className="px-6 py-3.5 font-semibold text-right">Total Revenue</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y ${divider}`}>
+                          {productPerformance.map((p, idx) => (
+                            <tr key={p.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                              <td className={`px-6 py-3.5 font-bold ${idx < 3 ? 'text-blue-500' : t2}`}>#{idx + 1}</td>
+                              <td className={`px-6 py-3.5 font-medium ${t1}`}>{p.name}</td>
+                              <td className={`px-6 py-3.5 text-right ${t1}`}>{p.qty}</td>
+                              <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(p.revenue)}</td>
+                            </tr>
+                          ))}
+                          {productPerformance.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className={`px-6 py-8 text-center ${t2}`}>No product sales records in this period.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Classic Table: Category Breakdown */}
+                  <div className={`rounded-2xl border overflow-hidden ${surface}`}>
+                    <div className="px-6 py-4 border-b border-inherit">
+                      <h3 className={`font-semibold text-base ${t1}`}>Category Revenue Breakdown</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                          <tr>
+                            <th className="px-6 py-3.5 font-semibold">Category</th>
+                            <th className="px-6 py-3.5 font-semibold text-right">Revenue</th>
+                            <th className="px-6 py-3.5 font-semibold text-right">% Contribution</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y ${divider}`}>
+                          {categoryContribution.map(cat => {
+                            const totalCatRevenue = categoryContribution.reduce((s, c) => s + c.value, 0);
+                            const share = totalCatRevenue > 0 ? Math.round((cat.value / totalCatRevenue) * 100) : 0;
+                            return (
+                              <tr key={cat.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                                <td className={`px-6 py-3.5 font-medium flex items-center gap-2 ${t1}`}>
+                                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                                  {cat.name}
+                                </td>
+                                <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(cat.value)}</td>
+                                <td className={`px-6 py-3.5 text-right ${t2}`}>{share}%</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
           {/* STAFF TAB */}
           {reportTab === 'staff' && (
-            <div className={`rounded-2xl border overflow-hidden ${surface}`}>
-              <table className="w-full text-sm text-left">
-                <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-                  <tr>
-                    <th className="px-6 py-4 font-semibold">Cashier Name</th>
-                    <th className="px-6 py-4 font-semibold">Total Revenue</th>
-                    <th className="px-6 py-4 font-semibold">Transactions</th>
-                    <th className="px-6 py-4 font-semibold">Average Transaction Value (ATV)</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${divider}`}>
-                  {staffPerformance.map(staff => (
-                    <tr key={staff.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
-                      <td className={`px-6 py-4 font-medium ${t1}`}>{staff.name}</td>
-                      <td className={`px-6 py-4 font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(staff.sales)}</td>
-                      <td className={`px-6 py-4 ${t1}`}>{staff.txns}</td>
-                      <td className={`px-6 py-4 ${t1}`}>{formatIDR(staff.atv)}</td>
-                    </tr>
-                  ))}
-                  {staffPerformance.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className={`px-6 py-8 text-center ${t2}`}>No staff sales data available.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <div className="space-y-6">
+              {viewMode === 'visual' && staffPerformance.length > 0 && (
+                <div className={`p-5 rounded-2xl border ${surface}`}>
+                  <h3 className={`font-semibold mb-6 ${t1}`}>Staff Revenue Comparison</h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={staffPerformance} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={dm ? '#334155' : '#e2e8f0'} vertical={false} />
+                        <XAxis dataKey="name" stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} />
+                        <YAxis stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+                        <Tooltip contentStyle={tooltipStyle} formatter={(val: number) => formatIDR(val)} />
+                        <Bar dataKey="sales" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              <div className={`rounded-2xl border overflow-hidden ${surface}`}>
+                <div className="px-6 py-4 border-b border-inherit">
+                  <h3 className={`font-semibold text-base ${t1}`}>Cashier Performance Leaderboard</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                      <tr>
+                        <th className="px-6 py-4 font-semibold">Cashier Name</th>
+                        <th className="px-6 py-4 font-semibold">Total Revenue</th>
+                        <th className="px-6 py-4 font-semibold">Transactions</th>
+                        <th className="px-6 py-4 font-semibold">Average Transaction Value (ATV)</th>
+                      </tr>
+                    </thead>
+                    <tbody className={`divide-y ${divider}`}>
+                      {staffPerformance.map(staff => (
+                        <tr key={staff.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                          <td className={`px-6 py-4 font-medium ${t1}`}>{staff.name}</td>
+                          <td className={`px-6 py-4 font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(staff.sales)}</td>
+                          <td className={`px-6 py-4 ${t1}`}>{staff.txns}</td>
+                          <td className={`px-6 py-4 ${t1}`}>{formatIDR(staff.atv)}</td>
+                        </tr>
+                      ))}
+                      {staffPerformance.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className={`px-6 py-8 text-center ${t2}`}>No staff sales data available.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 
           {/* FINANCIAL TAB */}
           {reportTab === 'financial' && (
-            <div className="max-w-3xl space-y-6">
-              <div className={`p-6 rounded-2xl border ${surface}`}>
-                <h3 className={`font-semibold mb-6 text-lg ${t1}`}>Estimated P&L Snapshot</h3>
-                <div className="space-y-4 text-sm">
-                  <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-                    <span className={t2}>Gross Sales (Excl. Tax)</span>
-                    <span className={t1}>{formatIDR(totalSales - totalTax + discountLeakage)}</span>
-                  </div>
-                  <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-                    <span className={t2}>Discounts & Promos</span>
-                    <span className="text-red-500">-{formatIDR(discountLeakage)}</span>
-                  </div>
-                  <div className={`flex justify-between pb-2 border-b font-medium ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-                    <span className={t1}>Net Sales</span>
-                    <span className={t1}>{formatIDR(totalSales - totalTax)}</span>
-                  </div>
-                  <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-                    <span className={t2}>Cost of Goods Sold (COGS)</span>
-                    <span className="text-red-500">-{formatIDR(totalCost)}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 text-lg font-bold">
-                    <span className={t1}>Gross Profit</span>
-                    <span className="text-emerald-500">{formatIDR(grossProfit)}</span>
-                  </div>
-                  <div className="flex justify-end">
-                    <span className={`text-xs px-2 py-1 rounded-full ${profitMargin >= 30 ? (dm ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700') : (dm ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700')}`}>
-                      {profitMargin}% Margin
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={`p-6 rounded-2xl border ${surface}`}>
-                <h3 className={`font-semibold mb-6 text-lg ${t1}`}>Tax & Compliance</h3>
-                <div className="space-y-4 text-sm">
-                  <div className={`flex justify-between items-center pb-3 border-b ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-                    <div>
-                      <p className={`font-medium ${t1}`}>Total Tax Collected</p>
-                      <p className={`text-xs mt-0.5 ${t2}`}>To be remitted to tax authorities</p>
+            <div className="space-y-6">
+              {viewMode === 'visual' ? (
+                <div className="max-w-3xl space-y-6">
+                  <div className={`p-6 rounded-2xl border ${surface}`}>
+                    <h3 className={`font-semibold mb-6 text-lg ${t1}`}>Estimated P&L Snapshot</h3>
+                    <div className="space-y-4 text-sm">
+                      <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <span className={t2}>Gross Sales (Excl. Tax)</span>
+                        <span className={t1}>{formatIDR(totalSales - totalTax + discountLeakage)}</span>
+                      </div>
+                      <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <span className={t2}>Discounts & Promos</span>
+                        <span className="text-red-500">-{formatIDR(discountLeakage)}</span>
+                      </div>
+                      <div className={`flex justify-between pb-2 border-b font-medium ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <span className={t1}>Net Sales</span>
+                        <span className={t1}>{formatIDR(totalSales - totalTax)}</span>
+                      </div>
+                      <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <span className={t2}>Cost of Goods Sold (COGS)</span>
+                        <span className="text-red-500">-{formatIDR(totalCost)}</span>
+                      </div>
+                      <div className="flex justify-between pt-2 text-lg font-bold">
+                        <span className={t1}>Gross Profit</span>
+                        <span className="text-emerald-500">{formatIDR(grossProfit)}</span>
+                      </div>
+                      <div className="flex justify-end">
+                        <span className={`text-xs px-2 py-1 rounded-full ${profitMargin >= 30 ? (dm ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700') : (dm ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700')}`}>
+                          {profitMargin}% Margin
+                        </span>
+                      </div>
                     </div>
-                    <span className={`text-xl font-bold ${t1}`}>{formatIDR(totalTax)}</span>
+                  </div>
+
+                  <div className={`p-6 rounded-2xl border ${surface}`}>
+                    <h3 className={`font-semibold mb-6 text-lg ${t1}`}>Tax & Compliance</h3>
+                    <div className="space-y-4 text-sm">
+                      <div className={`flex justify-between items-center pb-3 border-b ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <div>
+                          <p className={`font-medium ${t1}`}>Total Tax Collected</p>
+                          <p className={`text-xs mt-0.5 ${t2}`}>To be remitted to tax authorities</p>
+                        </div>
+                        <span className={`text-xl font-bold ${t1}`}>{formatIDR(totalTax)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className={`rounded-2xl border overflow-hidden ${surface}`}>
+                  <div className="px-6 py-4 border-b border-inherit">
+                    <h3 className={`font-semibold text-base ${t1}`}>Financial Statement & Tax Audit (Classic Ledger View)</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                        <tr>
+                          <th className="px-6 py-3.5 font-semibold">Account / Metric</th>
+                          <th className="px-6 py-3.5 font-semibold text-right">Amount (IDR)</th>
+                          <th className="px-6 py-3.5 font-semibold">Classification</th>
+                          <th className="px-6 py-3.5 font-semibold">Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y ${divider}`}>
+                        <tr className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                          <td className={`px-6 py-3.5 font-medium ${t1}`}>Gross Sales (Catalog Price)</td>
+                          <td className={`px-6 py-3.5 text-right font-medium ${t1}`}>{formatIDR(totalSales - totalTax + discountLeakage)}</td>
+                          <td className={`px-6 py-3.5 ${t2}`}>Revenue</td>
+                          <td className={`px-6 py-3.5 text-xs ${t2}`}>Before discounts and promos</td>
+                        </tr>
+                        <tr className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                          <td className={`px-6 py-3.5 font-medium text-red-500`}>Discount & Points Leakage</td>
+                          <td className={`px-6 py-3.5 text-right font-semibold text-red-500`}>-{formatIDR(discountLeakage)}</td>
+                          <td className={`px-6 py-3.5 ${t2}`}>Contra Revenue</td>
+                          <td className={`px-6 py-3.5 text-xs ${t2}`}>Promos & loyalty redemption</td>
+                        </tr>
+                        <tr className={`transition-colors font-medium ${dm ? 'bg-slate-800/30' : 'bg-slate-50/50'}`}>
+                          <td className={`px-6 py-3.5 ${t1}`}>Net Sales Revenue</td>
+                          <td className={`px-6 py-3.5 text-right font-bold ${t1}`}>{formatIDR(totalSales - totalTax)}</td>
+                          <td className={`px-6 py-3.5 ${t2}`}>Net Revenue</td>
+                          <td className={`px-6 py-3.5 text-xs ${t2}`}>Recognized turnover excluding tax</td>
+                        </tr>
+                        <tr className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                          <td className={`px-6 py-3.5 font-medium text-amber-500`}>Cost of Goods Sold (COGS)</td>
+                          <td className={`px-6 py-3.5 text-right font-semibold text-amber-500`}>-{formatIDR(totalCost)}</td>
+                          <td className={`px-6 py-3.5 ${t2}`}>Expense / Cost</td>
+                          <td className={`px-6 py-3.5 text-xs ${t2}`}>Direct product cost</td>
+                        </tr>
+                        <tr className={`transition-colors font-bold ${dm ? 'bg-blue-900/10' : 'bg-blue-50/50'}`}>
+                          <td className={`px-6 py-3.5 text-base ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>Gross Profit</td>
+                          <td className={`px-6 py-3.5 text-right text-base font-bold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(grossProfit)}</td>
+                          <td className={`px-6 py-3.5 ${t1}`}>{profitMargin}% Margin</td>
+                          <td className={`px-6 py-3.5 text-xs ${t2}`}>Net Sales minus COGS</td>
+                        </tr>
+                        <tr className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                          <td className={`px-6 py-3.5 font-medium ${t1}`}>Tax Remittance (PB1 / PPN)</td>
+                          <td className={`px-6 py-3.5 text-right font-semibold ${t1}`}>{formatIDR(totalTax)}</td>
+                          <td className={`px-6 py-3.5 ${t2}`}>Liability</td>
+                          <td className={`px-6 py-3.5 text-xs ${t2}`}>Collected on behalf of tax office</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           

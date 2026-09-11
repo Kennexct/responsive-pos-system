@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { BusinessType, CartItem, HeldOrder, OrderType, PaymentMethod, Product, User, Category, DiscountSettings, ProductVariant, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './mockData';
-import { formatIDR, formatNumberWithDots } from './mockData';
+import { formatIDR, formatNumberWithDots, formatIndonesianPhone } from './mockData';
 import { CheckoutModal } from './CheckoutModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { useToast } from '../contexts/ToastContext';
@@ -430,6 +430,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
         darkMode={darkMode}
         discountSettings={discountSettings}
         customers={customers}
+        setCustomers={setCustomers}
         selectedCustomerId={selectedCustomerId}
         onSelectCustomer={setSelectedCustomerId}
         onOrderTypeChange={setOrderType}
@@ -583,6 +584,7 @@ interface CartPanelProps {
   darkMode: boolean;
   discountSettings: DiscountSettings;
   customers: Customer[];
+  setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
   selectedCustomerId: string | null;
   onSelectCustomer: (id: string | null) => void;
   onOrderTypeChange: (t: OrderType) => void;
@@ -604,7 +606,7 @@ interface CartPanelProps {
 
 function CartPanel({
   cart, orderType, businessType, darkMode, discountSettings,
-  customers, selectedCustomerId, onSelectCustomer,
+  customers, setCustomers, selectedCustomerId, onSelectCustomer,
   onOrderTypeChange, onUpdateQty, onSetDiscount, onRemoveItem, onClearCart, onHoldOrder, onCheckout,
   tableNote, onTableNoteChange, subtotal, tierDiscountAmt, tax, total, isOpen, onClose,
 }: CartPanelProps) {
@@ -612,9 +614,10 @@ function CartPanel({
   const [discountVal, setDiscountVal] = useState('');
   const [discountType, setDiscountType] = useState<'percent'|'nominal'>('percent');
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [customerModalTab, setCustomerModalTab] = useState<'search' | 'add'>('search');
   const [customerSearch, setCustomerSearch] = useState('');
   const [quickAddName, setQuickAddName] = useState('');
-  const [quickAddPhone, setQuickAddPhone] = useState('');
+  const [quickAddPhone, setQuickAddPhone] = useState('+62 ');
   
   const itemCount = cart.reduce((s, i) => s + i.qty, 0);
 
@@ -672,7 +675,7 @@ function CartPanel({
           </div>
         ) : (
           <button onClick={() => setShowCustomerModal(true)} className={`w-full flex items-center justify-center gap-2 py-2 border border-dashed rounded-xl transition-colors text-sm font-medium ${dm ? 'border-slate-600 text-slate-400 hover:text-slate-200 hover:border-slate-400 hover:bg-slate-700/50' : 'border-slate-300 text-slate-500 hover:text-slate-700 hover:border-slate-400 hover:bg-slate-50'}`}>
-            <UserPlus size={16} /> Attach Customer
+            <UserPlus size={16} /> Add Customer
           </button>
         )}
       </div>
@@ -852,53 +855,134 @@ function CartPanel({
 
       {showCustomerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className={`w-full max-w-sm rounded-2xl p-5 shadow-2xl ${dm ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}>
+          <div className={`w-full max-w-md rounded-2xl p-5 shadow-2xl ${dm ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={`font-semibold ${t1}`}>Select Customer</h3>
+              <h3 className={`font-semibold ${t1}`}>Add Customer to Order</h3>
               <button onClick={() => setShowCustomerModal(false)} className={t2}><X size={18} /></button>
             </div>
-            <input 
-              value={customerSearch} 
-              onChange={e => setCustomerSearch(e.target.value)} 
-              placeholder="Search name or phone..." 
-              className={`w-full p-2 mb-4 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`}
-            />
-            <div className="max-h-60 overflow-y-auto space-y-2">
-              {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).map(c => (
+
+            {/* Mode Tabs */}
+            <div className={`flex rounded-xl p-1 mb-4 ${dm ? 'bg-slate-900' : 'bg-slate-100'}`}>
+              <button
+                type="button"
+                onClick={() => setCustomerModalTab('search')}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${customerModalTab === 'search' ? (dm ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : t2}`}
+              >
+                Existing Customer
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomerModalTab('add');
+                  if (!quickAddPhone) setQuickAddPhone('+62 ');
+                }}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${customerModalTab === 'add' ? (dm ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : t2}`}
+              >
+                + New Customer
+              </button>
+            </div>
+
+            {customerModalTab === 'search' ? (
+              <>
+                <input 
+                  value={customerSearch} 
+                  onChange={e => setCustomerSearch(e.target.value)} 
+                  placeholder="Search customer name or phone number..." 
+                  className={`w-full p-2.5 mb-3 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-blue-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-blue-400 text-slate-800'}`}
+                />
+                <div className="max-h-60 overflow-y-auto space-y-2">
+                  {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => { onSelectCustomer(c.id); setShowCustomerModal(false); }}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-colors ${dm ? 'border-slate-700 hover:bg-slate-700/60' : 'border-slate-100 hover:bg-slate-50'}`}
+                    >
+                      <div>
+                        <p className={`text-sm font-semibold ${t1}`}>{c.name}</p>
+                        <p className={`text-xs ${t2}`}>{c.phone || 'No phone'}</p>
+                      </div>
+                      <div className={`text-xs font-medium px-2 py-1 rounded-lg ${dm ? 'bg-slate-900 text-amber-400' : 'bg-amber-100 text-amber-700'}`}>
+                        {c.pointsBalance} pts
+                      </div>
+                    </button>
+                  ))}
+                  {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).length === 0 && (
+                    <div className="text-center py-6">
+                      <p className={`text-sm ${t2} mb-3`}>No customer found matching "{customerSearch}"</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuickAddName(customerSearch);
+                          setCustomerModalTab('add');
+                          if (!quickAddPhone) setQuickAddPhone('+62 ');
+                        }}
+                        className="text-xs text-blue-600 font-medium hover:underline"
+                      >
+                        Create new customer "{customerSearch}" →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${t2}`}>Customer Name *</label>
+                  <input
+                    type="text"
+                    value={quickAddName}
+                    onChange={e => setQuickAddName(e.target.value)}
+                    placeholder="e.g. Budi Santoso"
+                    className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200 focus:border-blue-500' : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-blue-400'}`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${t2}`}>Phone Number *</label>
+                  <input
+                    type="tel"
+                    value={quickAddPhone}
+                    onChange={e => setQuickAddPhone(formatIndonesianPhone(e.target.value))}
+                    onFocus={() => {
+                      if (!quickAddPhone) setQuickAddPhone('+62 ');
+                    }}
+                    placeholder="+62 812-3456-7890"
+                    className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200 focus:border-blue-500' : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-blue-400'}`}
+                  />
+                </div>
                 <button
-                  key={c.id}
-                  onClick={() => { onSelectCustomer(c.id); setShowCustomerModal(false); }}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-colors ${dm ? 'border-slate-700 hover:bg-slate-700' : 'border-slate-100 hover:bg-slate-50'}`}
-                >
-                  <div>
-                    <p className={`text-sm font-semibold ${t1}`}>{c.name}</p>
-                    <p className={`text-xs ${t2}`}>{c.phone}</p>
-                  </div>
-                  <div className={`text-xs font-medium px-2 py-1 rounded-lg ${dm ? 'bg-slate-900 text-amber-400' : 'bg-amber-100 text-amber-700'}`}>
-                    {c.pointsBalance} pts
-                  </div>
-                </button>
-              ))}
-              {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).length === 0 && (
-                <div className="p-3 border rounded-xl border-dashed border-slate-300 dark:border-slate-700">
-                  <p className={`text-xs ${t2} mb-2`}>No customer found. Add quick customer:</p>
-                  <input value={quickAddName} onChange={e => setQuickAddName(e.target.value)} placeholder="Name" className={`w-full p-2 mb-2 rounded-lg border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
-                  <input value={quickAddPhone} onChange={e => setQuickAddPhone(e.target.value)} placeholder="Phone" className={`w-full p-2 mb-2 rounded-lg border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
-                  <button onClick={() => {
-                    if (!quickAddName || !quickAddPhone) return;
+                  type="button"
+                  disabled={!quickAddName.trim() || quickAddPhone.trim().length <= 4}
+                  onClick={() => {
+                    if (!quickAddName.trim()) return;
                     const newId = Date.now().toString();
-                    setCustomers(prev => [...prev, {
-                      id: newId, name: quickAddName, phone: quickAddPhone, email: '', birthday: '', tags: [], pointsBalance: 0, totalSpend: 0, totalTransactions: 0, averageTransactionValue: 0, marketingConsent: true, createdAt: new Date().toISOString()
-                    }]);
+                    const newCust: Customer = {
+                      id: newId,
+                      name: quickAddName.trim(),
+                      phone: quickAddPhone.trim(),
+                      email: '',
+                      birthday: '',
+                      tags: [],
+                      pointsBalance: 0,
+                      totalSpend: 0,
+                      totalTransactions: 0,
+                      averageTransactionValue: 0,
+                      marketingConsent: true,
+                      createdAt: new Date().toISOString()
+                    };
+                    setCustomers(prev => [...prev, newCust]);
                     onSelectCustomer(newId);
                     setShowCustomerModal(false);
                     setCustomerSearch('');
                     setQuickAddName('');
-                    setQuickAddPhone('');
-                  }} className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg">Add & Select</button>
-                </div>
-              )}
-            </div>
+                    setQuickAddPhone('+62 ');
+                    setCustomerModalTab('search');
+                  }}
+                  className="w-full py-2.5 mt-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
+                >
+                  Add & Select
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

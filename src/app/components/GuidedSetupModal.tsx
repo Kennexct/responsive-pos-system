@@ -9,6 +9,7 @@ import type {
   BusinessType, Category, PaymentMethodEntry, TaxRule, DiscountSettings,
   User, PromoCode, PaymentMethod
 } from './mockData';
+import { formatIndonesianPhone } from './mockData';
 import { VPosLogo } from './VPosLogo';
 
 interface SetupData {
@@ -391,7 +392,8 @@ export function GuidedSetupModal({
                     <input
                       type="tel"
                       value={bizPhone}
-                      onChange={e => setBizPhone(e.target.value)}
+                      onChange={e => setBizPhone(formatIndonesianPhone(e.target.value))}
+                      onFocus={() => { if (!bizPhone) setBizPhone('+62 '); }}
                       placeholder="+62 812-3456-7890"
                       className={inputCls}
                     />

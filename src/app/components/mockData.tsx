@@ -260,6 +260,18 @@ export const parseNumberWithDots = (val: string): number => {
   return clean ? Number(clean) : 0;
 };
 
+export const formatIndonesianPhone = (val: string): string => {
+  if (!val) return '+62 ';
+  if (!val.startsWith('+62')) {
+    let digits = val.replace(/\D/g, '');
+    if (digits.startsWith('0')) digits = digits.slice(1);
+    if (digits.startsWith('62')) digits = digits.slice(2);
+    return `+62 ${digits}`;
+  }
+  const rest = val.slice(3).replace(/\D/g, '');
+  return `+62 ${rest}`;
+};
+
 export interface TaxRule {
   id: string;
   name: string;

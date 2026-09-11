@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, User, Phone, Mail, Award, CreditCard, Calendar, MessageCircle, X, ChevronRight, Tag, Users, CheckCircle, ArrowUpDown } from 'lucide-react';
 import type { Customer, LoyaltySettings, RecentOrder } from './mockData';
-import { formatIDR } from './mockData';
+import { formatIDR, formatIndonesianPhone } from './mockData';
 
 interface CustomersViewProps {
   customers: Customer[];
@@ -383,15 +383,21 @@ function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClos
               <div className="w-full space-y-3 text-left">
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${t2}`}>Name</label>
-                  <input value={name} onChange={e => setName(e.target.value)} className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Customer name" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${t2}`}>Phone</label>
-                  <input value={phone} onChange={e => setPhone(e.target.value)} className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                  <input
+                    value={phone}
+                    onChange={e => setPhone(formatIndonesianPhone(e.target.value))}
+                    onFocus={() => { if (!phone) setPhone('+62 '); }}
+                    placeholder="+62 812-3456-7890"
+                    className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                  />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${t2}`}>Email</label>
-                  <input value={email} onChange={e => setEmail(e.target.value)} className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                  <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="customer@example.com" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${t2}`}>Birthday</label>
@@ -519,7 +525,7 @@ function CampaignModal({ darkMode, customersCount, onClose }: { darkMode: boolea
 
 function AddCustomerModal({ darkMode, onClose, setCustomers }: { darkMode: boolean, onClose: () => void, setCustomers: React.Dispatch<React.SetStateAction<Customer[]>> }) {
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+62 ');
   const [email, setEmail] = useState('');
   const [birthday, setBirthday] = useState('');
   const [tags, setTags] = useState('');
@@ -530,12 +536,12 @@ function AddCustomerModal({ darkMode, onClose, setCustomers }: { darkMode: boole
   const t2 = dm ? 'text-slate-400' : 'text-slate-500';
 
   const handleSave = () => {
-    if (!name || !phone) return;
+    if (!name.trim() || phone.trim().length <= 4) return;
     const newCustomer: Customer = {
       id: Date.now().toString(),
-      name,
-      phone,
-      email,
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
       birthday,
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
       pointsBalance: 0,
@@ -561,15 +567,22 @@ function AddCustomerModal({ darkMode, onClose, setCustomers }: { darkMode: boole
         <div className="p-6 space-y-4">
           <div>
             <label className={`block text-sm font-medium mb-1 ${t1}`}>Name *</label>
-            <input value={name} onChange={e => setName(e.target.value)} className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Customer full name" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
           </div>
           <div>
             <label className={`block text-sm font-medium mb-1 ${t1}`}>Phone *</label>
-            <input value={phone} onChange={e => setPhone(e.target.value)} className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(formatIndonesianPhone(e.target.value))}
+              onFocus={() => { if (!phone) setPhone('+62 '); }}
+              placeholder="+62 812-3456-7890"
+              className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`}
+            />
           </div>
           <div>
             <label className={`block text-sm font-medium mb-1 ${t1}`}>Email</label>
-            <input value={email} onChange={e => setEmail(e.target.value)} type="email" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
+            <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="customer@example.com" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
           </div>
           <div>
             <label className={`block text-sm font-medium mb-1 ${t1}`}>Birthday</label>
@@ -582,7 +595,7 @@ function AddCustomerModal({ darkMode, onClose, setCustomers }: { darkMode: boole
         </div>
         <div className={`p-4 border-t flex justify-end gap-3 ${dm ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
           <button onClick={onClose} className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${dm ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700'}`}>Cancel</button>
-          <button onClick={handleSave} disabled={!name || !phone} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-colors">Save Customer</button>
+          <button onClick={handleSave} disabled={!name.trim() || phone.trim().length <= 4} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-colors">Save Customer</button>
         </div>
       </div>
     </div>
