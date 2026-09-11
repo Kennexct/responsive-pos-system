@@ -37,7 +37,6 @@ function nextOrderNumber(): string {
 
 export default function App() {
   const [view, setView]               = useState<ViewType>('pos');
-  const [businessType, setBusinessType] = useState<BusinessType>('fnb');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
