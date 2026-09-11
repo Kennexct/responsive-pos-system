@@ -251,12 +251,6 @@ export default function App() {
     setProducts(updatedProducts);
   };
 
-  const isFullyLoaded = catLoaded && prodLoaded && ordersLoaded && pmLoaded && dsLoaded && rsLoaded && lsLoaded && trLoaded && tvmLoaded && bnLoaded && bpLoaded && beLoaded && baLoaded && usersLoaded && permsLoaded && custLoaded;
-
-  if (!isFullyLoaded) {
-    return <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>Loading...</div>;
-  }
-
   if (!isAuthenticated || !currentUser) {
     return (
       <div className={darkMode ? 'dark' : ''}>
@@ -273,6 +267,12 @@ export default function App() {
         />
       </div>
     );
+  }
+
+  const isFullyLoaded = catLoaded && prodLoaded && ordersLoaded && pmLoaded && dsLoaded && rsLoaded && lsLoaded && trLoaded && tvmLoaded && bnLoaded && bpLoaded && beLoaded && baLoaded && usersLoaded && permsLoaded && custLoaded;
+
+  if (!isFullyLoaded) {
+    return <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>Loading...</div>;
   }
 
   const allowedViews = currentUser ? (permissions[currentUser.role] || DEFAULT_PERMISSIONS[currentUser.role] || DEFAULT_PERMISSIONS.owner) : [];

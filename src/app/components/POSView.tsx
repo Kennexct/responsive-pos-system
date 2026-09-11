@@ -46,6 +46,9 @@ export function POSView({ businessType, products, categories, discountSettings, 
   const [popId, setPopId]             = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   
+  // Toast notification
+  const { showToast } = useToast();
+  
   // Variant Selection State
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
 
@@ -234,13 +237,13 @@ export function POSView({ businessType, products, categories, discountSettings, 
               const p = products.find(p => (p.barcode?.toLowerCase() === q || p.sku?.toLowerCase() === q || p.name.toLowerCase() === q));
               if (p) {
                 if (p.trackInventory && p.stock === 0) {
-                  addToast('Product out of stock!', 'error');
+                  showToast('Product out of stock!', 'error');
                 } else {
                   handleProductClick(p);
                   setSearch('');
                 }
               } else {
-                addToast('Product not found!', 'error');
+                showToast('Product not found!', 'error');
               }
             }} className="w-full max-w-md relative">
               <input
