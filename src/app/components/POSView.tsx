@@ -116,7 +116,6 @@ export function POSView({ businessType, products, categories, discountSettings, 
       return i;
     }));
 
-  const { addToast } = useToast();
   const [clearCartModalOpen, setClearCartModalOpen] = useState(false);
 
   const removeItem = (id: string) => setCart(prev => prev.filter(i => i.id !== id));
@@ -558,6 +557,22 @@ export function POSView({ businessType, products, categories, discountSettings, 
           onConfirm={handleCheckoutDone}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={clearCartModalOpen}
+        title="Clear Cart?"
+        message="Are you sure you want to remove all items from the current order?"
+        confirmText="Clear Cart"
+        cancelText="Cancel"
+        isDestructive={true}
+        darkMode={darkMode}
+        onCancel={() => setClearCartModalOpen(false)}
+        onConfirm={() => {
+          setCart([]);
+          setTableNote('');
+          setClearCartModalOpen(false);
+        }}
+      />
     </div>
   );
 }
@@ -889,21 +904,6 @@ function CartPanel({
           </div>
         </div>
       )}
-      <ConfirmationModal
-        isOpen={clearCartModalOpen}
-        title="Clear Cart?"
-        message="Are you sure you want to remove all items from the current order?"
-        confirmText="Clear Cart"
-        cancelText="Cancel"
-        isDestructive={true}
-        darkMode={dm}
-        onCancel={() => setClearCartModalOpen(false)}
-        onConfirm={() => {
-          setCart([]);
-          setTableNote('');
-          setClearCartModalOpen(false);
-        }}
-      />
     </>
   );
 }
