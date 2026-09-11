@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Store, Mail, Lock, User as UserIcon, ChevronRight, KeyRound } from 'lucide-react';
 import type { User, Role } from './mockData';
+import { INITIAL_USERS } from './mockData';
 import { VPosLogo } from './VPosLogo';
 
 interface AuthViewProps {
@@ -35,8 +36,13 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
     await new Promise(r => setTimeout(r, 400)); // fake async for UX feel
 
     if (isLogin) {
+      // Merge persisted users with INITIAL_USERS as a fallback (so default demo account always works)
+      const allUsers = [
+        ...users,
+        ...INITIAL_USERS.filter(iu => !users.some(u => u.id === iu.id))
+      ];
       if (loginMode === 'email') {
-        const user = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+        const user = allUsers.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
         if (!user) { setError('Email not found.'); setLoading(false); return; }
         if (!password) { setError('Password/PIN is required.'); setLoading(false); return; }
         if (user.pin !== password) { setError('Incorrect password/PIN.'); setLoading(false); return; }
@@ -45,14 +51,14 @@ export function AuthView({ users, darkMode, onLogin, onSignup }: AuthViewProps) 
         if (!pinInput) { setError('PIN Code is required.'); setLoading(false); return; }
         let user: User | undefined;
         if (selectedUserId) {
-          user = users.find(u => u.id === selectedUserId);
+          user = allUsers.find(u => u.id === selectedUserId);
           if (!user || user.pin !== pinInput) {
             setError(`Incorrect PIN code for ${user?.name || 'selected staff'}.`);
             setLoading(false);
             return;
           }
         } else {
-          user = users.find(u => u.pin === pinInput);
+          user = allUsers.find(u => u.pin === pinInput);
           if (!user) {
             setError('No staff account found with this PIN code.');
             setLoading(false);

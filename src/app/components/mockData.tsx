@@ -32,7 +32,7 @@ export const DEFAULT_PERMISSIONS: RolePermissions = {
 };
 
 export const INITIAL_USERS: User[] = [
-  { id: '1', name: 'Owner', email: 'owner@vpos.app', role: 'owner', pin: '9999' },
+  { id: '1', name: 'Owner', email: 'owner@vpos.app', role: 'owner', pin: '9999', merchantId: 'm_default' },
 ];
 
 export interface Customer {
