@@ -37,37 +37,20 @@ export interface MerchantAccount {
 export const INITIAL_MERCHANTS: MerchantAccount[] = [
   {
     id: 'm_default',
-    name: 'Warung Kopi Santai',
-    ownerName: 'Budi Santoso',
+    name: 'My Store',
+    ownerName: 'Store Owner',
     email: 'owner@vpos.app',
-    phone: '+62 812-3456-7890',
-    address: 'Jl. Sudirman No. 123, Jakarta',
+    phone: '',
+    address: '',
     type: 'fnb',
     ownerPin: '9999',
     subscriptionPlan: 'yearly',
     subscriptionStatus: 'active',
-    subscriptionStartsAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-    subscriptionExpiresAt: new Date(Date.now() + 335 * 86400000).toISOString(),
+    subscriptionStartsAt: new Date().toISOString(),
+    subscriptionExpiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
     isEnabled: true,
-    notes: 'Primary Flagship Demo Store',
-    createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-  },
-  {
-    id: 'm_demo_expired',
-    name: 'Bakso Pak Joko (Expired Test)',
-    ownerName: 'Joko Widodo',
-    email: 'joko@bakso.id',
-    phone: '+62 813-9876-5432',
-    address: 'Jl. Malioboro No. 45, Yogyakarta',
-    type: 'fnb',
-    ownerPin: '1234',
-    subscriptionPlan: 'monthly',
-    subscriptionStatus: 'expired',
-    subscriptionStartsAt: new Date(Date.now() - 60 * 86400000).toISOString(),
-    subscriptionExpiresAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-    isEnabled: true,
-    notes: 'Past due monthly invoice',
-    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+    notes: 'Default Store Account',
+    createdAt: new Date().toISOString(),
   }
 ];
 
@@ -92,7 +75,7 @@ export const DEFAULT_PERMISSIONS: RolePermissions = {
 
 export const INITIAL_USERS: User[] = [
   { id: 'sa_1', name: 'Platform Admin', email: 'admin@vpos.app', role: 'superadmin', pin: '0000', merchantId: 'platform' },
-  { id: '1', name: 'Budi Santoso', email: 'owner@vpos.app', role: 'owner', pin: '9999', merchantId: 'm_default', businessName: 'Warung Kopi Santai' },
+  { id: '1', name: 'Store Owner', email: 'owner@vpos.app', role: 'owner', pin: '9999', merchantId: 'm_default', businessName: 'My Store' },
 ];
 
 export interface Customer {

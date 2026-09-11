@@ -13,7 +13,7 @@ interface AuthViewProps {
 }
 
 const DEMO_ACCOUNTS = [
-  { email: 'owner@vpos.app', label: 'Owner', role: 'Store Owner (Budi)', pin: '9999', colorLight: 'text-violet-600 bg-violet-50', colorDark: 'bg-violet-900/30 text-violet-400' },
+  { email: 'owner@vpos.app', label: 'Store Owner', role: 'Default Store Owner', pin: '9999', colorLight: 'text-violet-600 bg-violet-50', colorDark: 'bg-violet-900/30 text-violet-400' },
   { email: 'admin@vpos.app', label: 'Super Admin', role: 'Platform Console', pin: '0000', colorLight: 'text-emerald-600 bg-emerald-50', colorDark: 'bg-emerald-900/30 text-emerald-400' },
 ];
 

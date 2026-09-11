@@ -66,22 +66,22 @@ export default function App() {
   // ─── Business Info (Persistent) ──────────────────────────────────────────
   const [bizName, setBizName, bnLoaded] = usePersistentState(
     'pos-bizname',
-    isDemoMerchant ? 'Warung Kopi Santai' : (currentUser?.businessName || ''),
+    isDemoMerchant ? 'My Store' : (currentUser?.businessName || ''),
     activeMerchantId
   );
   const [bizPhone, setBizPhone, bpLoaded] = usePersistentState(
     'pos-bizphone',
-    isDemoMerchant ? '+62 812 3456 7890' : '',
+    isDemoMerchant ? '' : '',
     activeMerchantId
   );
   const [bizEmail, setBizEmail, beLoaded] = usePersistentState(
     'pos-bizemail',
-    isDemoMerchant ? 'hello@warkop.id' : (currentUser?.email || ''),
+    isDemoMerchant ? 'owner@vpos.app' : (currentUser?.email || ''),
     activeMerchantId
   );
   const [bizAddress, setBizAddress, baLoaded] = usePersistentState(
     'pos-bizaddress',
-    isDemoMerchant ? 'Jl. Sudirman No. 123, Jakarta' : '',
+    isDemoMerchant ? '' : '',
     activeMerchantId
   );
   const [businessType, setBusinessType, btLoaded] = usePersistentState<BusinessType>(
