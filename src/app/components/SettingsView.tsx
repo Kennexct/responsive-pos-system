@@ -726,14 +726,14 @@ export function SettingsView({
               ))}
             </div>
           </div>
-          <Field label="Value" value={newPromoValue} onChange={setNewPromoValue} placeholder={newPromoType === 'percent' ? "e.g. 10" : "e.g. 15000"} type="number" darkMode={dm} />
+          <Field label="Value" value={newPromoValue} onChange={setNewPromoValue} placeholder={newPromoType === 'percent' ? "e.g. 10" : "e.g. 15.000"} type="number" darkMode={dm} />
           
           <div className="grid grid-cols-2 gap-3 mb-4">
             <Field label="Active Date (opt)" value={newPromoActiveDate} onChange={setNewPromoActiveDate} type="date" darkMode={dm} />
             <Field label="Expiry Date (opt)" value={newPromoExpiryDate} onChange={setNewPromoExpiryDate} type="date" darkMode={dm} />
           </div>
 
-          <Field label="Min Spend (opt)" value={newPromoMinSpend} onChange={setNewPromoMinSpend} type="number" placeholder="e.g. 100000" darkMode={dm} />
+          <Field label="Min Spend (opt)" value={newPromoMinSpend} onChange={setNewPromoMinSpend} type="number" placeholder="e.g. 100.000" darkMode={dm} />
           
           <div className="mb-4">
             <label className={`text-sm block mb-1 ${t2}`}>Applicable Categories (Empty = All)</label>

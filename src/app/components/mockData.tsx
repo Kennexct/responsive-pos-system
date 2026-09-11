@@ -193,13 +193,72 @@ export interface RefundSettings {
   managerPinRequired: boolean;
 }
 
-export const formatIDR = (amount: number): string =>
-  new Intl.NumberFormat('id-ID', {
+export const formatCurrency = (amount: number, currency: string = 'IDR'): string => {
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  const code = (currency || 'IDR').toUpperCase();
+
+  const localeMap: Record<string, string> = {
+    IDR: 'id-ID',
+    USD: 'en-US',
+    EUR: 'de-DE',
+    GBP: 'en-GB',
+    SGD: 'en-SG',
+    MYR: 'ms-MY',
+    JPY: 'ja-JP',
+    AUD: 'en-AU',
+    CAD: 'en-CA',
+    CNY: 'zh-CN',
+    THB: 'th-TH',
+    PHP: 'en-PH',
+    VND: 'vi-VN',
+    INR: 'en-IN',
+  };
+
+  const locale = localeMap[code] || 'id-ID';
+  const zeroDecimalCurrencies = ['IDR', 'JPY', 'VND', 'KRW'];
+  const hasZeroDecimals = zeroDecimalCurrencies.includes(code);
+
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: code,
+      minimumFractionDigits: hasZeroDecimals ? 0 : 2,
+      maximumFractionDigits: hasZeroDecimals ? 0 : 2,
+    }).format(safeAmount);
+  } catch {
+    const formattedNum = new Intl.NumberFormat('id-ID', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(safeAmount);
+    return `${code} ${formattedNum}`;
+  }
+};
+
+export const formatIDR = (amount: number, currency?: string): string => {
+  if (currency && currency !== 'IDR') {
+    return formatCurrency(amount, currency);
+  }
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(safeAmount);
+};
+
+export const formatNumberWithDots = (val: number | string): string => {
+  if (val === '' || val === undefined || val === null) return '';
+  const clean = String(val).replace(/\D/g, '');
+  if (!clean) return '';
+  return new Intl.NumberFormat('id-ID').format(Number(clean));
+};
+
+export const parseNumberWithDots = (val: string): number => {
+  if (!val) return 0;
+  const clean = val.replace(/\D/g, '');
+  return clean ? Number(clean) : 0;
+};
 
 export interface TaxRule {
   id: string;

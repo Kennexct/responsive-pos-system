@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { BusinessType, CartItem, HeldOrder, OrderType, PaymentMethod, Product, User, Category, DiscountSettings, ProductVariant, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './mockData';
-import { formatIDR } from './mockData';
+import { formatIDR, formatNumberWithDots } from './mockData';
 import { CheckoutModal } from './CheckoutModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { useToast } from '../contexts/ToastContext';
@@ -512,13 +512,6 @@ export function POSView({ businessType, products, categories, discountSettings, 
                 </button>
               </div>
               <div className="space-y-2">
-                <button
-                  onClick={() => addToCart(variantProduct, undefined)}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${dm ? 'bg-slate-800 border-slate-700 hover:border-blue-500' : 'bg-white border-slate-200 hover:border-blue-500 hover:shadow-sm'}`}
-                >
-                  <span className={`text-sm font-medium ${t1}`}>Regular</span>
-                  <span className={`text-sm ${t2}`}>{formatIDR(variantProduct.price)}</span>
-                </button>
                 {variantProduct.variants?.map(v => (
                   <button
                     key={v.id}
@@ -552,7 +545,11 @@ export function POSView({ businessType, products, categories, discountSettings, 
           paymentMethods={paymentMethods}
           onClose={(completed) => {
             setShowCheckout(false);
-            if (completed) clearCart();
+            if (completed) {
+              setCart([]);
+              setTableNote('');
+              setSelectedCustomerId(null);
+            }
           }}
           onConfirm={handleCheckoutDone}
         />
@@ -765,11 +762,12 @@ function CartPanel({
                     editDiscountId === item.id ? (
                       <div className="flex items-center gap-1">
                         <input
-                          type="number" min={0}
-                          value={discountVal}
-                          onChange={e => setDiscountVal(e.target.value)}
-                          placeholder="Amt"
-                          className={`w-16 border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-200' : 'border-slate-200'}`}
+                          type="text"
+                          inputMode="numeric"
+                          value={discountType === 'nominal' ? (discountVal ? formatNumberWithDots(discountVal) : '') : discountVal}
+                          onChange={e => setDiscountVal(discountType === 'nominal' ? e.target.value.replace(/\D/g, '') : e.target.value)}
+                          placeholder={discountType === 'nominal' ? "10.000" : "Amt"}
+                          className={`w-20 border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-200' : 'border-slate-200'}`}
                           autoFocus
                         />
                         <button onClick={() => setDiscountType(t => t === 'percent' ? 'nominal' : 'percent')} className={`px-1.5 py-1 text-xs border rounded ${dm ? 'border-slate-600' : 'border-slate-300'}`}>

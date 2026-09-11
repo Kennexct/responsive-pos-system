@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Search, Plus, AlertTriangle, TrendingDown, TrendingUp, X, Trash2, ImagePlus, Pencil, PlusCircle, Layers, ArrowUpDown } from 'lucide-react';
-import { formatIDR } from './mockData';
+import { formatIDR, formatNumberWithDots } from './mockData';
 import type { Product, Category, ProductVariant } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 import { resizeImage } from './utils';
@@ -147,12 +147,12 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
   };
 
   const saveProduct = () => {
-    if (!newName.trim() || !newPrice || !newCostPrice || (!editingId && newTrackInventory && !newStock)) return;
+    if (!newName.trim() || !newPrice || (!editingId && newTrackInventory && !newStock)) return;
 
     const baseProductData = {
       name: newName.trim(),
       price: Number(newPrice),
-      costPrice: Number(newCostPrice),
+      costPrice: Number(newCostPrice) || 0,
       category: newCat,
       lowStockThreshold: Number(newThreshold) || 10,
       emoji: newEmoji,
@@ -485,13 +485,25 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`text-sm block mb-1 ${t2}`}>Selling Price (IDR) *</label>
-                  <input type="number" min={0} value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="25000"
-                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={newPrice ? formatNumberWithDots(newPrice) : ''}
+                    onChange={e => setNewPrice(e.target.value.replace(/\D/g, ''))}
+                    placeholder="25.000"
+                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}
+                  />
                 </div>
                 <div>
-                  <label className={`text-sm block mb-1 ${t2}`}>Cost Price (IDR) *</label>
-                  <input type="number" min={0} value={newCostPrice} onChange={e => setNewCostPrice(e.target.value)} placeholder="10000"
-                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`} />
+                  <label className={`text-sm block mb-1 ${t2}`}>Cost Price (IDR) <span className="text-xs opacity-60">Optional</span></label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={newCostPrice ? formatNumberWithDots(newCostPrice) : ''}
+                    onChange={e => setNewCostPrice(e.target.value.replace(/\D/g, ''))}
+                    placeholder="10.000"
+                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}
+                  />
                 </div>
               </div>
 
@@ -539,6 +551,40 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
                 </div>
               </div>
 
+              {/* Variants Section - placed below SKU/Barcode */}
+              <div className={`border rounded-xl p-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className={`text-sm font-medium ${t1}`}>Variants (Sizes, Add-ons)</h4>
+                  <button onClick={addVariant} className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-700">
+                    <PlusCircle size={14} /> Add
+                  </button>
+                </div>
+                
+                {newVariants.length === 0 ? (
+                  <p className={`text-xs ${t2}`}>No variants added. E.g., Size Large (+Rp 5.000)</p>
+                ) : (
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {newVariants.map((v, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input type="text" placeholder="Variant name" value={v.name} onChange={e => updateVariant(i, 'name', e.target.value)}
+                          className={`flex-1 border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`} />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Amount (+)"
+                          value={v.priceModifier ? formatNumberWithDots(v.priceModifier) : ''}
+                          onChange={e => updateVariant(i, 'priceModifier', Number(e.target.value.replace(/\D/g, '')) || 0)}
+                          className={`w-28 border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`}
+                        />
+                        <button onClick={() => removeVariant(i)} className="text-slate-400 hover:text-red-500">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className={`border rounded-xl p-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div>
@@ -573,40 +619,12 @@ export function InventoryView({ products, onProductsChange, categories, darkMode
                 </div>
                 <Toggle darkMode={darkMode} checked={newAllowDiscount} onChange={() => setNewAllowDiscount(!newAllowDiscount)} />
               </div>
-
-              {/* Variants Section */}
-              <div className={`border rounded-xl p-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className={`text-sm font-medium ${t1}`}>Variants (Sizes, Add-ons)</h4>
-                  <button onClick={addVariant} className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-700">
-                    <PlusCircle size={14} /> Add
-                  </button>
-                </div>
-                
-                {newVariants.length === 0 ? (
-                  <p className={`text-xs ${t2}`}>No variants added. E.g., Size Large (+Rp 5.000)</p>
-                ) : (
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {newVariants.map((v, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <input type="text" placeholder="Name (e.g. Large)" value={v.name} onChange={e => updateVariant(i, 'name', e.target.value)}
-                          className={`flex-1 border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`} />
-                        <input type="number" placeholder="Price Mod (+)" value={v.priceModifier} onChange={e => updateVariant(i, 'priceModifier', Number(e.target.value))}
-                          className={`w-24 border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`} />
-                        <button onClick={() => removeVariant(i)} className="text-slate-400 hover:text-red-500">
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           </div>
 
           <div className={`mt-6 pt-4 border-t flex justify-end ${dm ? 'border-slate-700' : 'border-slate-100'}`}>
             <button
-              disabled={!newName.trim() || !newPrice || !newCostPrice || (!editingId && newTrackInventory && !newStock)}
+              disabled={!newName.trim() || !newPrice || (!editingId && newTrackInventory && !newStock)}
               onClick={saveProduct}
               className="w-full md:w-auto px-6 bg-blue-600 text-white rounded-xl py-2.5 hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
             >
