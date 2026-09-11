@@ -1,0 +1,12 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# local env files
+.env*.local
+.env
+
+# build outputs
+dist
+build
+graphify-out/

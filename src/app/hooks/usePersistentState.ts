@@ -1,0 +1,77 @@
+import { useState, useEffect } from 'react';
+import localforage from 'localforage';
+import { loadFromSupabase, saveToSupabase } from '../services/supabaseSync';
+import { isSupabaseConfigured } from '../lib/supabase';
+
+localforage.config({
+  name: 'VPos',
+  storeName: 'pos_data'
+});
+
+export function usePersistentState<T>(key: string, initialValue: T, merchantId?: string): [T, React.Dispatch<React.SetStateAction<T>>, boolean] {
+  const storageKey = merchantId ? `${key}_${merchantId}` : key;
+  const [state, setState] = useState<T>(initialValue);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load initial data (localforage first for instant render, then Supabase if configured)
+  useEffect(() => {
+    let isMounted = true;
+    // Only show the loading gate on the very first load, not on merchant key changes
+    // (avoids blank-screen flash when a new user signs up and merchantId changes)
+    setIsLoaded(prev => (prev ? prev : false));
+
+    async function init() {
+      // 1. Fast local load
+      try {
+        const localVal = await localforage.getItem<T>(storageKey);
+        if (isMounted) {
+          if (localVal !== null) {
+            setState(localVal);
+          } else {
+            setState(initialValue);
+          }
+        }
+      } catch (err) {
+        console.error(`Failed to load ${storageKey} from localforage:`, err);
+        if (isMounted) setState(initialValue);
+      }
+
+      // 2. Cloud Supabase sync
+      if (isSupabaseConfigured) {
+        try {
+          const remoteVal = await loadFromSupabase<T>(key, merchantId);
+          if (isMounted && remoteVal !== null) {
+            setState(remoteVal);
+            await localforage.setItem(storageKey, remoteVal);
+          }
+        } catch (err) {
+          console.warn(`Supabase sync failed for ${key}:`, err);
+        }
+      }
+
+      if (isMounted) {
+        setIsLoaded(true);
+      }
+    }
+
+    init();
+    return () => { isMounted = false; };
+  }, [key, storageKey, merchantId]);
+
+  // Save data on change (both localforage & Supabase)
+  useEffect(() => {
+    if (isLoaded) {
+      localforage.setItem(storageKey, state).catch(err => {
+        console.error(`Failed to save ${storageKey} to localforage:`, err);
+      });
+
+      if (isSupabaseConfigured) {
+        saveToSupabase(key, state, merchantId).catch(err => {
+          console.warn(`Failed to save ${key} to Supabase:`, err);
+        });
+      }
+    }
+  }, [key, storageKey, state, isLoaded, merchantId]);
+
+  return [state, setState, isLoaded];
+}
