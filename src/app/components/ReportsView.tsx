@@ -11,7 +11,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Cash', qris: 'QRIS', card: 'Card', 'bank-transfer': 'Bank Transfer',
 };
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+const COLORS = ['#3445AB', '#2A9161', '#E4A423', '#C7402A', '#7485DA', '#8D93A5'];
 
 type ReportTab = 'sales' | 'crm' | 'inventory' | 'staff' | 'financial';
 type ViewMode = 'visual' | 'classic';
@@ -135,15 +135,15 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
   }, [completedOrders]);
 
   // ── Styling Tokens ────────────────────────────────────────────────────────
-  const bg        = dm ? 'bg-slate-900'                  : 'bg-slate-50';
-  const surface   = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
-  const t1        = dm ? 'text-slate-100'                : 'text-slate-800';
-  const t2        = dm ? 'text-slate-400'                : 'text-slate-500';
-  const divider   = dm ? 'border-slate-700'              : 'border-slate-200';
+  const bg        = dm ? 'bg-ink-900'                  : 'bg-ink-50';
+  const surface   = dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-100';
+  const t1        = dm ? 'text-ink-100'                : 'text-ink-800';
+  const t2        = dm ? 'text-ink-400'                : 'text-ink-500';
+  const divider   = dm ? 'border-ink-700'              : 'border-ink-200';
   
   const tooltipStyle = {
     borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-    fontSize: 12, background: dm ? '#1E2330' : '#fff', color: dm ? '#F1F5F9' : '#1E293B',
+    fontSize: 12, background: dm ? '#181B25' : '#fff', color: dm ? '#ECEEF2' : '#252937',
   };
 
   const exportCSV = () => {
@@ -182,29 +182,29 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
             <p className={`text-sm mt-0.5 ${t2}`}>Insights into business performance</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`flex items-center gap-1 p-1 rounded-xl border w-fit ${dm ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <div className={`flex items-center gap-1 p-1 rounded-xl border w-fit ${dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-200'}`}>
               {(['all', 'today', '7days', '30days'] as const).map(range => (
                 <button
                   key={range}
                   onClick={() => setDateRange(range)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                     dateRange === range
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                      ? 'bg-brand-600 text-white shadow-sm'
+                      : dm ? 'text-ink-400 hover:text-ink-200 hover:bg-ink-700/50' : 'text-ink-500 hover:text-ink-700 hover:bg-ink-50'
                   }`}
                 >
                   {range === 'all' ? 'All Time' : range === 'today' ? 'Today' : range === '7days' ? '7 Days' : '30 Days'}
                 </button>
               ))}
             </div>
-            <div className={`flex items-center gap-1 p-1 rounded-xl border w-fit ${dm ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <div className={`flex items-center gap-1 p-1 rounded-xl border w-fit ${dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-200'}`}>
               <button
                 type="button"
                 onClick={() => setViewMode('visual')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   viewMode === 'visual'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : dm ? 'text-ink-400 hover:text-ink-200 hover:bg-ink-700/50' : 'text-ink-500 hover:text-ink-700 hover:bg-ink-50'
                 }`}
               >
                 <LayoutGrid size={14} />
@@ -215,8 +215,8 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                 onClick={() => setViewMode('classic')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   viewMode === 'classic'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : dm ? 'text-ink-400 hover:text-ink-200 hover:bg-ink-700/50' : 'text-ink-500 hover:text-ink-700 hover:bg-ink-50'
                 }`}
               >
                 <Table2 size={14} />
@@ -225,7 +225,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
             </div>
             <button
               onClick={exportCSV}
-              className={`flex items-center gap-2 border rounded-xl px-4 py-2 text-sm font-medium transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50 bg-white'}`}
+              className={`flex items-center gap-2 border rounded-xl px-4 py-2 text-sm font-medium transition-colors ${dm ? 'border-ink-700 text-ink-300 hover:bg-ink-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50 bg-white'}`}
             >
               <Download size={15} />
               <span className="hidden sm:inline">Export</span>
@@ -245,7 +245,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
             <button
               key={tab.id}
               onClick={() => setReportTab(tab.id as ReportTab)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap ${reportTab === tab.id ? (dm ? 'bg-blue-900/20 text-blue-400 border-b-2 border-blue-500' : 'bg-blue-50 text-blue-700 border-b-2 border-blue-600') : (dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100')}`}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap ${reportTab === tab.id ? (dm ? 'bg-brand-900/20 text-brand-400 border-b-2 border-brand-500' : 'bg-brand-50 text-brand-700 border-b-2 border-brand-600') : (dm ? 'text-ink-400 hover:text-ink-200 hover:bg-ink-800' : 'text-ink-500 hover:text-ink-700 hover:bg-ink-100')}`}
             >
               <tab.icon size={16} />
               {tab.label}
@@ -296,9 +296,9 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={paymentBreakdown} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={dm ? '#334155' : '#e2e8f0'} vertical={false} />
-                          <XAxis dataKey="name" stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} />
-                          <YAxis stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={dm ? '#373C4E' : '#DADDE5'} vertical={false} />
+                          <XAxis dataKey="name" stroke={dm ? '#8D93A5' : '#646A7E'} fontSize={12} tickLine={false} />
+                          <YAxis stroke={dm ? '#8D93A5' : '#646A7E'} fontSize={12} tickLine={false} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
                           <Tooltip contentStyle={tooltipStyle} formatter={(val: number) => formatIDR(val)} />
                           <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                             {paymentBreakdown.map((entry, index) => (
@@ -319,7 +319,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
-                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                        <thead className={`border-b ${dm ? 'bg-ink-800 border-ink-700 text-ink-400' : 'bg-ink-50 border-ink-200 text-ink-500'}`}>
                           <tr>
                             <th className="px-6 py-3.5 font-semibold">Payment Method</th>
                             <th className="px-6 py-3.5 font-semibold">Total Revenue</th>
@@ -331,15 +331,15 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                           {paymentBreakdown.map(p => {
                             const share = totalSales > 0 ? Math.round((p.value / totalSales) * 100) : 0;
                             return (
-                              <tr key={p.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                              <tr key={p.name} className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
                                 <td className={`px-6 py-3.5 font-medium flex items-center gap-2 ${t1}`}>
                                   <span className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color }} />
                                   {p.name}
                                 </td>
-                                <td className={`px-6 py-3.5 font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(p.value)}</td>
+                                <td className={`px-6 py-3.5 font-semibold ${dm ? 'text-leaf-400' : 'text-leaf-600'}`}>{formatIDR(p.value)}</td>
                                 <td className={`px-6 py-3.5 ${t1}`}>{share}%</td>
                                 <td className="px-6 py-3.5">
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-leaf-100 text-leaf-700 dark:bg-leaf-900/30 dark:text-leaf-400">
                                     Settled
                                   </span>
                                 </td>
@@ -363,7 +363,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
-                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                        <thead className={`border-b ${dm ? 'bg-ink-800 border-ink-700 text-ink-400' : 'bg-ink-50 border-ink-200 text-ink-500'}`}>
                           <tr>
                             <th className="px-6 py-3.5 font-semibold">Order #</th>
                             <th className="px-6 py-3.5 font-semibold">Date & Time</th>
@@ -377,15 +377,15 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                         </thead>
                         <tbody className={`divide-y ${divider}`}>
                           {completedOrders.slice(0, 10).map(o => (
-                            <tr key={o.id} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                            <tr key={o.id} className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
                               <td className={`px-6 py-3.5 font-mono font-medium ${t1}`}>{o.orderNumber}</td>
                               <td className={`px-6 py-3.5 text-xs ${t2}`}>{new Date(o.createdAt).toLocaleString('id-ID')}</td>
                               <td className={`px-6 py-3.5 ${t1}`}>{o.cashier}</td>
                               <td className={`px-6 py-3.5 capitalize ${t1}`}>{PAYMENT_LABELS[o.paymentMethod] || o.paymentMethod}</td>
-                              <td className={`px-6 py-3.5 text-right ${t1}`}>{o.items.reduce((s, i) => s + i.qty, 0)}</td>
+                              <td className={`px-6 py-3.5 text-right ${t1}`}>{(o.items ?? []).reduce((s, i) => s + i.qty, 0)}</td>
                               <td className={`px-6 py-3.5 text-right ${t1}`}>{formatIDR(o.subtotal)}</td>
                               <td className={`px-6 py-3.5 text-right text-xs ${t2}`}>{formatIDR(o.tax)}</td>
-                              <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(o.total)}</td>
+                              <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-leaf-400' : 'text-leaf-600'}`}>{formatIDR(o.total)}</td>
                             </tr>
                           ))}
                           {completedOrders.length === 0 && (
@@ -414,11 +414,11 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                   <div className="flex justify-between items-start">
                     <div>
                       <p className={`text-sm font-medium ${t2}`}>Total Points Liability</p>
-                      <p className={`text-2xl font-bold mt-2 text-amber-500`}>{formatIDR(totalPointsLiabilityIDR)}</p>
+                      <p className={`text-2xl font-bold mt-2 text-turmeric-500`}>{formatIDR(totalPointsLiabilityIDR)}</p>
                       <p className={`text-xs mt-1 ${t2}`}>{totalPointsLiability.toLocaleString('id-ID')} pts unredeemed</p>
                     </div>
                     {totalPointsLiabilityIDR > 500000 && (
-                      <AlertCircle className="text-red-500" size={24} />
+                      <AlertCircle className="text-chili-500" size={24} />
                     )}
                   </div>
                 </div>
@@ -446,9 +446,9 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={tierDistribution} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={dm ? '#334155' : '#e2e8f0'} vertical={false} />
-                          <XAxis dataKey="name" stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} />
-                          <YAxis stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} allowDecimals={false} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={dm ? '#373C4E' : '#DADDE5'} vertical={false} />
+                          <XAxis dataKey="name" stroke={dm ? '#8D93A5' : '#646A7E'} fontSize={12} tickLine={false} />
+                          <YAxis stroke={dm ? '#8D93A5' : '#646A7E'} fontSize={12} tickLine={false} allowDecimals={false} />
                           <Tooltip contentStyle={tooltipStyle} />
                           <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                             {tierDistribution.map((entry, index) => (
@@ -469,7 +469,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
-                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                        <thead className={`border-b ${dm ? 'bg-ink-800 border-ink-700 text-ink-400' : 'bg-ink-50 border-ink-200 text-ink-500'}`}>
                           <tr>
                             <th className="px-6 py-3.5 font-semibold">Tier Level</th>
                             <th className="px-6 py-3.5 font-semibold">Members Count</th>
@@ -480,7 +480,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                           {tierDistribution.map(t => {
                             const pct = customers.length > 0 ? Math.round((t.value / customers.length) * 100) : 0;
                             return (
-                              <tr key={t.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                              <tr key={t.name} className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
                                 <td className={`px-6 py-3.5 font-medium flex items-center gap-2 ${t1}`}>
                                   <span className="w-3 h-3 rounded-full" style={{ backgroundColor: t.color }} />
                                   {t.name}
@@ -502,7 +502,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
-                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                        <thead className={`border-b ${dm ? 'bg-ink-800 border-ink-700 text-ink-400' : 'bg-ink-50 border-ink-200 text-ink-500'}`}>
                           <tr>
                             <th className="px-6 py-3.5 font-semibold">Customer Name</th>
                             <th className="px-6 py-3.5 font-semibold">Phone</th>
@@ -513,12 +513,12 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                         </thead>
                         <tbody className={`divide-y ${divider}`}>
                           {[...customers].sort((a, b) => b.totalSpend - a.totalSpend).slice(0, 10).map(c => (
-                            <tr key={c.id} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                            <tr key={c.id} className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
                               <td className={`px-6 py-3.5 font-medium ${t1}`}>{c.name}</td>
                               <td className={`px-6 py-3.5 ${t2}`}>{c.phone || '-'}</td>
-                              <td className={`px-6 py-3.5 font-medium text-amber-500`}>{c.pointsBalance} pts</td>
+                              <td className={`px-6 py-3.5 font-medium text-turmeric-500`}>{c.pointsBalance} pts</td>
                               <td className={`px-6 py-3.5 ${t1}`}>{c.totalTransactions}</td>
-                              <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(c.totalSpend)}</td>
+                              <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-leaf-400' : 'text-leaf-600'}`}>{formatIDR(c.totalSpend)}</td>
                             </tr>
                           ))}
                           {customers.length === 0 && (
@@ -549,7 +549,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                             <p className={`font-medium ${t1}`}>{p.name}</p>
                             <p className={`text-xs ${t2}`}>{p.qty} units sold</p>
                           </div>
-                          <p className={`font-semibold text-emerald-500`}>{formatIDR(p.revenue)}</p>
+                          <p className={`font-semibold text-leaf-500`}>{formatIDR(p.revenue)}</p>
                         </div>
                       ))}
                       {topProducts.length === 0 && <p className={t2}>No sales data available.</p>}
@@ -580,7 +580,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
-                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                        <thead className={`border-b ${dm ? 'bg-ink-800 border-ink-700 text-ink-400' : 'bg-ink-50 border-ink-200 text-ink-500'}`}>
                           <tr>
                             <th className="px-6 py-3.5 font-semibold">Rank</th>
                             <th className="px-6 py-3.5 font-semibold">Product Name</th>
@@ -590,11 +590,11 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                         </thead>
                         <tbody className={`divide-y ${divider}`}>
                           {productPerformance.map((p, idx) => (
-                            <tr key={p.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
-                              <td className={`px-6 py-3.5 font-bold ${idx < 3 ? 'text-blue-500' : t2}`}>#{idx + 1}</td>
+                            <tr key={p.name} className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
+                              <td className={`px-6 py-3.5 font-bold ${idx < 3 ? 'text-brand-500' : t2}`}>#{idx + 1}</td>
                               <td className={`px-6 py-3.5 font-medium ${t1}`}>{p.name}</td>
                               <td className={`px-6 py-3.5 text-right ${t1}`}>{p.qty}</td>
-                              <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(p.revenue)}</td>
+                              <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-leaf-400' : 'text-leaf-600'}`}>{formatIDR(p.revenue)}</td>
                             </tr>
                           ))}
                           {productPerformance.length === 0 && (
@@ -614,7 +614,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
-                        <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                        <thead className={`border-b ${dm ? 'bg-ink-800 border-ink-700 text-ink-400' : 'bg-ink-50 border-ink-200 text-ink-500'}`}>
                           <tr>
                             <th className="px-6 py-3.5 font-semibold">Category</th>
                             <th className="px-6 py-3.5 font-semibold text-right">Revenue</th>
@@ -626,12 +626,12 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                             const totalCatRevenue = categoryContribution.reduce((s, c) => s + c.value, 0);
                             const share = totalCatRevenue > 0 ? Math.round((cat.value / totalCatRevenue) * 100) : 0;
                             return (
-                              <tr key={cat.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                              <tr key={cat.name} className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
                                 <td className={`px-6 py-3.5 font-medium flex items-center gap-2 ${t1}`}>
                                   <span className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
                                   {cat.name}
                                 </td>
-                                <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(cat.value)}</td>
+                                <td className={`px-6 py-3.5 text-right font-semibold ${dm ? 'text-leaf-400' : 'text-leaf-600'}`}>{formatIDR(cat.value)}</td>
                                 <td className={`px-6 py-3.5 text-right ${t2}`}>{share}%</td>
                               </tr>
                             );
@@ -654,11 +654,11 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={staffPerformance} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={dm ? '#334155' : '#e2e8f0'} vertical={false} />
-                        <XAxis dataKey="name" stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} />
-                        <YAxis stroke={dm ? '#94a3b8' : '#64748b'} fontSize={12} tickLine={false} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={dm ? '#373C4E' : '#DADDE5'} vertical={false} />
+                        <XAxis dataKey="name" stroke={dm ? '#8D93A5' : '#646A7E'} fontSize={12} tickLine={false} />
+                        <YAxis stroke={dm ? '#8D93A5' : '#646A7E'} fontSize={12} tickLine={false} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
                         <Tooltip contentStyle={tooltipStyle} formatter={(val: number) => formatIDR(val)} />
-                        <Bar dataKey="sales" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="sales" fill="#3445AB" radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -671,7 +671,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                    <thead className={`border-b ${dm ? 'bg-ink-800 border-ink-700 text-ink-400' : 'bg-ink-50 border-ink-200 text-ink-500'}`}>
                       <tr>
                         <th className="px-6 py-4 font-semibold">Cashier Name</th>
                         <th className="px-6 py-4 font-semibold">Total Revenue</th>
@@ -681,9 +681,9 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                     </thead>
                     <tbody className={`divide-y ${divider}`}>
                       {staffPerformance.map(staff => (
-                        <tr key={staff.name} className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                        <tr key={staff.name} className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
                           <td className={`px-6 py-4 font-medium ${t1}`}>{staff.name}</td>
-                          <td className={`px-6 py-4 font-semibold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(staff.sales)}</td>
+                          <td className={`px-6 py-4 font-semibold ${dm ? 'text-leaf-400' : 'text-leaf-600'}`}>{formatIDR(staff.sales)}</td>
                           <td className={`px-6 py-4 ${t1}`}>{staff.txns}</td>
                           <td className={`px-6 py-4 ${t1}`}>{formatIDR(staff.atv)}</td>
                         </tr>
@@ -708,28 +708,28 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                   <div className={`p-6 rounded-2xl border ${surface}`}>
                     <h3 className={`font-semibold mb-6 text-lg ${t1}`}>Estimated P&L Snapshot</h3>
                     <div className="space-y-4 text-sm">
-                      <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                         <span className={t2}>Gross Sales (Excl. Tax)</span>
                         <span className={t1}>{formatIDR(totalSales - totalTax + discountLeakage)}</span>
                       </div>
-                      <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                         <span className={t2}>Discounts & Promos</span>
-                        <span className="text-red-500">-{formatIDR(discountLeakage)}</span>
+                        <span className="text-chili-500">-{formatIDR(discountLeakage)}</span>
                       </div>
-                      <div className={`flex justify-between pb-2 border-b font-medium ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <div className={`flex justify-between pb-2 border-b font-medium ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                         <span className={t1}>Net Sales</span>
                         <span className={t1}>{formatIDR(totalSales - totalTax)}</span>
                       </div>
-                      <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <div className={`flex justify-between pb-2 border-b border-dashed ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                         <span className={t2}>Cost of Goods Sold (COGS)</span>
-                        <span className="text-red-500">-{formatIDR(totalCost)}</span>
+                        <span className="text-chili-500">-{formatIDR(totalCost)}</span>
                       </div>
                       <div className="flex justify-between pt-2 text-lg font-bold">
                         <span className={t1}>Gross Profit</span>
-                        <span className="text-emerald-500">{formatIDR(grossProfit)}</span>
+                        <span className="text-leaf-500">{formatIDR(grossProfit)}</span>
                       </div>
                       <div className="flex justify-end">
-                        <span className={`text-xs px-2 py-1 rounded-full ${profitMargin >= 30 ? (dm ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700') : (dm ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700')}`}>
+                        <span className={`text-xs px-2 py-1 rounded-full ${profitMargin >= 30 ? (dm ? 'bg-leaf-900/30 text-leaf-400' : 'bg-leaf-100 text-leaf-700') : (dm ? 'bg-turmeric-900/30 text-turmeric-400' : 'bg-turmeric-100 text-turmeric-700')}`}>
                           {profitMargin}% Margin
                         </span>
                       </div>
@@ -739,7 +739,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                   <div className={`p-6 rounded-2xl border ${surface}`}>
                     <h3 className={`font-semibold mb-6 text-lg ${t1}`}>Tax & Compliance</h3>
                     <div className="space-y-4 text-sm">
-                      <div className={`flex justify-between items-center pb-3 border-b ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <div className={`flex justify-between items-center pb-3 border-b ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                         <div>
                           <p className={`font-medium ${t1}`}>Total Tax Collected</p>
                           <p className={`text-xs mt-0.5 ${t2}`}>To be remitted to tax authorities</p>
@@ -756,7 +756,7 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                      <thead className={`border-b ${dm ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                      <thead className={`border-b ${dm ? 'bg-ink-800 border-ink-700 text-ink-400' : 'bg-ink-50 border-ink-200 text-ink-500'}`}>
                         <tr>
                           <th className="px-6 py-3.5 font-semibold">Account / Metric</th>
                           <th className="px-6 py-3.5 font-semibold text-right">Amount (IDR)</th>
@@ -765,37 +765,37 @@ export function ReportsView({ orders, products, customers, loyaltySettings, cate
                         </tr>
                       </thead>
                       <tbody className={`divide-y ${divider}`}>
-                        <tr className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                        <tr className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
                           <td className={`px-6 py-3.5 font-medium ${t1}`}>Gross Sales (Catalog Price)</td>
                           <td className={`px-6 py-3.5 text-right font-medium ${t1}`}>{formatIDR(totalSales - totalTax + discountLeakage)}</td>
                           <td className={`px-6 py-3.5 ${t2}`}>Revenue</td>
                           <td className={`px-6 py-3.5 text-xs ${t2}`}>Before discounts and promos</td>
                         </tr>
-                        <tr className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
-                          <td className={`px-6 py-3.5 font-medium text-red-500`}>Discount & Points Leakage</td>
-                          <td className={`px-6 py-3.5 text-right font-semibold text-red-500`}>-{formatIDR(discountLeakage)}</td>
+                        <tr className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
+                          <td className={`px-6 py-3.5 font-medium text-chili-500`}>Discount & Points Leakage</td>
+                          <td className={`px-6 py-3.5 text-right font-semibold text-chili-500`}>-{formatIDR(discountLeakage)}</td>
                           <td className={`px-6 py-3.5 ${t2}`}>Contra Revenue</td>
                           <td className={`px-6 py-3.5 text-xs ${t2}`}>Promos & loyalty redemption</td>
                         </tr>
-                        <tr className={`transition-colors font-medium ${dm ? 'bg-slate-800/30' : 'bg-slate-50/50'}`}>
+                        <tr className={`transition-colors font-medium ${dm ? 'bg-ink-800/30' : 'bg-ink-50/50'}`}>
                           <td className={`px-6 py-3.5 ${t1}`}>Net Sales Revenue</td>
                           <td className={`px-6 py-3.5 text-right font-bold ${t1}`}>{formatIDR(totalSales - totalTax)}</td>
                           <td className={`px-6 py-3.5 ${t2}`}>Net Revenue</td>
                           <td className={`px-6 py-3.5 text-xs ${t2}`}>Recognized turnover excluding tax</td>
                         </tr>
-                        <tr className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
-                          <td className={`px-6 py-3.5 font-medium text-amber-500`}>Cost of Goods Sold (COGS)</td>
-                          <td className={`px-6 py-3.5 text-right font-semibold text-amber-500`}>-{formatIDR(totalCost)}</td>
+                        <tr className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
+                          <td className={`px-6 py-3.5 font-medium text-turmeric-500`}>Cost of Goods Sold (COGS)</td>
+                          <td className={`px-6 py-3.5 text-right font-semibold text-turmeric-500`}>-{formatIDR(totalCost)}</td>
                           <td className={`px-6 py-3.5 ${t2}`}>Expense / Cost</td>
                           <td className={`px-6 py-3.5 text-xs ${t2}`}>Direct product cost</td>
                         </tr>
-                        <tr className={`transition-colors font-bold ${dm ? 'bg-blue-900/10' : 'bg-blue-50/50'}`}>
-                          <td className={`px-6 py-3.5 text-base ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>Gross Profit</td>
-                          <td className={`px-6 py-3.5 text-right text-base font-bold ${dm ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatIDR(grossProfit)}</td>
+                        <tr className={`transition-colors font-bold ${dm ? 'bg-brand-900/10' : 'bg-brand-50/50'}`}>
+                          <td className={`px-6 py-3.5 text-base ${dm ? 'text-leaf-400' : 'text-leaf-600'}`}>Gross Profit</td>
+                          <td className={`px-6 py-3.5 text-right text-base font-bold ${dm ? 'text-leaf-400' : 'text-leaf-600'}`}>{formatIDR(grossProfit)}</td>
                           <td className={`px-6 py-3.5 ${t1}`}>{profitMargin}% Margin</td>
                           <td className={`px-6 py-3.5 text-xs ${t2}`}>Net Sales minus COGS</td>
                         </tr>
-                        <tr className={`transition-colors ${dm ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
+                        <tr className={`transition-colors ${dm ? 'hover:bg-ink-700/30' : 'hover:bg-ink-50'}`}>
                           <td className={`px-6 py-3.5 font-medium ${t1}`}>Tax Remittance (PB1 / PPN)</td>
                           <td className={`px-6 py-3.5 text-right font-semibold ${t1}`}>{formatIDR(totalTax)}</td>
                           <td className={`px-6 py-3.5 ${t2}`}>Liability</td>

@@ -12,7 +12,7 @@ export function VPosLogo({ size = 32, className = '', showText = false, textClas
     <div className={`inline-flex items-center gap-2.5 ${className}`}>
       <div 
         style={{ width: size, height: size }} 
-        className="relative shrink-0 flex items-center justify-center rounded-xl overflow-hidden shadow-sm shadow-blue-500/20 bg-gradient-to-b from-[#3B66FF] via-[#2A52F3] to-[#1D40EC]"
+        className="relative shrink-0 flex items-center justify-center rounded-lg overflow-hidden bg-brand-600"
       >
         <img 
           src="/logo.png" 
@@ -46,7 +46,7 @@ export function VPosLogo({ size = 32, className = '', showText = false, textClas
       </div>
 
       {showText && (
-        <span className={`font-bold tracking-tight text-slate-900 dark:text-white ${textClassName || 'text-lg'}`}>
+        <span className={`font-bold tracking-tight text-ink-900 dark:text-ink-50 ${textClassName || 'text-lg'}`}>
           VPos
         </span>
       )}

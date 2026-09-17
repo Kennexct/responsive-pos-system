@@ -34,7 +34,7 @@ export function ConfirmationModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+            className="absolute inset-0 bg-black/60"
             onClick={onCancel}
           />
           <motion.div
@@ -43,13 +43,13 @@ export function ConfirmationModal({
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             className={`relative rounded-2xl p-6 w-full max-w-sm shadow-2xl ${
-              dm ? 'bg-slate-800 border border-slate-700 text-slate-100' : 'bg-white text-slate-800'
+              dm ? 'bg-ink-800 border border-ink-700 text-ink-100' : 'bg-white text-ink-800'
             }`}
           >
             <button
               onClick={onCancel}
               className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${
-                dm ? 'hover:bg-slate-700 text-slate-400 hover:text-slate-200' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
+                dm ? 'hover:bg-ink-700 text-ink-400 hover:text-ink-200' : 'hover:bg-ink-100 text-ink-400 hover:text-ink-600'
               }`}
             >
               <X size={18} />
@@ -58,23 +58,23 @@ export function ConfirmationModal({
             <div className="flex items-center gap-4 mb-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
                 isDestructive 
-                  ? (dm ? 'bg-red-900/40 text-red-400' : 'bg-red-50 text-red-500') 
-                  : (dm ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-50 text-blue-500')
+                  ? (dm ? 'bg-chili-900/40 text-chili-400' : 'bg-chili-50 text-chili-500') 
+                  : (dm ? 'bg-brand-900/40 text-brand-400' : 'bg-brand-50 text-brand-500')
               }`}>
                 <AlertTriangle size={24} />
               </div>
-              <h3 className={`text-lg font-semibold ${dm ? 'text-white' : 'text-slate-800'}`}>{title}</h3>
+              <h3 className={`text-lg font-semibold ${dm ? 'text-white' : 'text-ink-800'}`}>{title}</h3>
             </div>
 
-            <p className={`text-sm mb-6 ${dm ? 'text-slate-300' : 'text-slate-600'}`}>{message}</p>
+            <p className={`text-sm mb-6 ${dm ? 'text-ink-300' : 'text-ink-600'}`}>{message}</p>
 
             <div className="flex gap-3">
               <button
                 onClick={onCancel}
                 className={`flex-1 py-2.5 rounded-xl border font-medium transition-colors ${
                   dm 
-                    ? 'border-slate-700 text-slate-300 hover:bg-slate-700' 
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'border-ink-700 text-ink-300 hover:bg-ink-700' 
+                    : 'border-ink-200 text-ink-600 hover:bg-ink-50'
                 }`}
               >
                 {cancelText}
@@ -83,8 +83,8 @@ export function ConfirmationModal({
                 onClick={onConfirm}
                 className={`flex-1 py-2.5 rounded-xl text-white font-medium transition-colors ${
                   isDestructive 
-                    ? 'bg-red-600 hover:bg-red-700' 
-                    : 'bg-blue-600 hover:bg-blue-700'
+                    ? 'bg-chili-600 hover:bg-chili-700' 
+                    : 'bg-brand-600 hover:bg-brand-700'
                 }`}
               >
                 {confirmText}

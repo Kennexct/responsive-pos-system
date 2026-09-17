@@ -194,11 +194,11 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
   };
 
   const dm = darkMode;
-  const bg      = dm ? 'bg-slate-900' : 'bg-slate-50';
-  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
-  const t1      = dm ? 'text-slate-100' : 'text-slate-800';
-  const t2      = dm ? 'text-slate-400' : 'text-slate-500';
-  const inputCls = dm ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-500 focus:border-blue-400' : 'bg-white border-slate-200 text-slate-700 focus:border-blue-400';
+  const bg      = dm ? 'bg-ink-900' : 'bg-ink-50';
+  const surface = dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-100';
+  const t1      = dm ? 'text-ink-100' : 'text-ink-800';
+  const t2      = dm ? 'text-ink-400' : 'text-ink-500';
+  const inputCls = dm ? 'bg-ink-700 border-ink-600 text-ink-100 placeholder-ink-500 focus:border-brand-400' : 'bg-white border-ink-200 text-ink-700 focus:border-brand-400';
 
   return (
     <div className={`flex-1 overflow-y-auto w-full ${bg}`}>
@@ -206,11 +206,11 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
         <div className="flex items-center justify-between">
           <div>
             <h1 className={`text-xl sm:text-2xl font-bold ${t1}`}>Inventory</h1>
-            <p className={`text-sm mt-0.5 ${t2}`}>{products.length} products · {lowStockItems.length} low stock</p>
+            <p className={`text-sm mt-0.5 ${t2}`}>{products.length} products, {lowStockItems.length} running low</p>
           </div>
           <button
             onClick={openAddProduct}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors text-sm font-semibold"
+            className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-xl hover:bg-brand-700 transition-colors text-sm font-semibold"
           >
             <Plus size={16} />
             <span className="hidden sm:inline">Add Product</span>
@@ -219,9 +219,9 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
         </div>
 
         {lowStockItems.length > 0 && (
-          <div className={`border rounded-2xl p-4 flex items-center gap-3 ${dm ? 'bg-amber-900/20 border-amber-800/40' : 'bg-amber-50 border-amber-200'}`}>
-            <AlertTriangle size={18} className="text-amber-600 shrink-0" />
-            <p className={`text-sm ${dm ? 'text-amber-400' : 'text-amber-700'}`}>
+          <div className={`border rounded-2xl p-4 flex items-center gap-3 ${dm ? 'bg-turmeric-900/20 border-turmeric-800/40' : 'bg-turmeric-50 border-turmeric-200'}`}>
+            <AlertTriangle size={18} className="text-turmeric-600 shrink-0" />
+            <p className={`text-sm ${dm ? 'text-turmeric-400' : 'text-turmeric-700'}`}>
               <span className="font-semibold">{lowStockItems.length} items</span> are running low and need restocking.
             </p>
           </div>
@@ -235,12 +235,12 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
               className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none transition-colors ${inputCls}`}
             />
           </div>
-          <div className={`flex border rounded-xl overflow-hidden ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+          <div className={`flex border rounded-xl overflow-hidden ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
             {(['all', 'low'] as StockTab[]).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-2.5 text-sm font-medium transition-colors ${tab === t ? 'bg-blue-600 text-white' : dm ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                className={`px-4 py-2.5 text-sm font-medium transition-colors ${tab === t ? 'bg-brand-600 text-white' : dm ? 'text-ink-400 hover:bg-ink-700' : 'text-ink-500 hover:bg-ink-50'}`}
               >
                 {t === 'low' ? 'Low Stock' : 'All'}
               </button>
@@ -253,7 +253,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className={`text-left border-b ${dm ? 'bg-slate-700/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                <tr className={`text-left border-b ${dm ? 'bg-ink-700/50 border-ink-700' : 'bg-ink-50 border-ink-100'}`}>
                   <th className={`px-5 py-3 text-xs font-semibold ${t2} cursor-pointer select-none`} onClick={() => handleSort('name')}>
                     <div className="flex items-center gap-1">Product <ArrowUpDown size={14} className="opacity-50" /></div>
                   </th>
@@ -268,16 +268,16 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                   <th className={`px-5 py-3 text-xs font-semibold ${t2}`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${dm ? 'divide-slate-700' : 'divide-slate-50'}`}>
+              <tbody className={`divide-y ${dm ? 'divide-ink-700' : 'divide-ink-50'}`}>
                 {filtered.map(product => {
                   const isLow     = product.trackInventory && product.stock <= product.lowStockThreshold;
                   const stockPct  = product.trackInventory ? Math.min(100, (product.stock / (product.lowStockThreshold * 3)) * 100) : 100;
                   const marginPct = product.price > 0 ? Math.round(((product.price - product.costPrice) / product.price) * 100) : 0;
                   return (
-                    <tr key={product.id} className={`transition-colors ${dm ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50/80'}`}>
+                    <tr key={product.id} className={`transition-colors ${dm ? 'hover:bg-ink-700/40' : 'hover:bg-ink-50/80'}`}>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden shrink-0 ${dm ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden shrink-0 ${dm ? 'bg-ink-700' : 'bg-ink-100'}`}>
                             {product.image
                               ? <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
                               : <span className="text-lg">{product.emoji}</span>
@@ -286,7 +286,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                           <div>
                             <span className={`font-medium block ${t1}`}>{product.name}</span>
                             {product.variants && product.variants.length > 0 && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded mt-0.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-brand-500/10 text-brand-500 px-1.5 py-0.5 rounded mt-0.5">
                                 <Layers size={10} /> {product.variants.length} Variants
                               </span>
                             )}
@@ -301,15 +301,15 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                       </td>
                       <td className="px-5 py-3">
                         <span className={t1}>{formatIDR(product.price)}</span>
-                        <span className="ml-2 text-xs text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-semibold">{marginPct}%</span>
+                        <span className="ml-2 text-xs text-leaf-600 bg-leaf-500/10 px-1.5 py-0.5 rounded-full font-semibold">{marginPct}%</span>
                       </td>
                       <td className="px-5 py-3">
                         {product.trackInventory ? (
                           <div className="flex items-center gap-2">
-                            <div className={`w-16 h-1.5 rounded-full overflow-hidden ${dm ? 'bg-slate-700' : 'bg-slate-100'}`}>
-                              <div className={`h-full rounded-full ${isLow ? 'bg-red-400' : 'bg-emerald-400'}`} style={{ width: `${stockPct}%` }} />
+                            <div className={`w-16 h-1.5 rounded-full overflow-hidden ${dm ? 'bg-ink-700' : 'bg-ink-100'}`}>
+                              <div className={`h-full rounded-full ${isLow ? 'bg-chili-400' : 'bg-leaf-400'}`} style={{ width: `${stockPct}%` }} />
                             </div>
-                            <span className={`text-sm tabular-nums ${isLow ? 'text-red-500 font-semibold' : t1}`}>{product.stock}</span>
+                            <span className={`text-sm tabular-nums ${isLow ? 'text-chili-500 font-semibold' : t1}`}>{product.stock}</span>
                           </div>
                         ) : (
                           <span className={`text-xs ${t2}`}>Untracked</span>
@@ -317,8 +317,8 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                       </td>
                       <td className="px-5 py-3">
                         {product.trackInventory && isLow
-                          ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-xs font-semibold"><AlertTriangle size={10} />Low</span>
-                          : <span className="inline-flex px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-semibold">OK</span>
+                          ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-chili-500/10 text-chili-500 text-xs font-semibold"><AlertTriangle size={10} />Low</span>
+                          : <span className="inline-flex px-2 py-0.5 rounded-full bg-leaf-500/10 text-leaf-600 text-xs font-semibold">OK</span>
                         }
                       </td>
                       <td className="px-5 py-3">
@@ -326,20 +326,20 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                           {product.trackInventory && (
                             <button
                               onClick={() => openAdjust(product)}
-                              className={`text-xs px-2.5 py-1.5 border rounded-lg transition-colors font-medium ${dm ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                              className={`text-xs px-2.5 py-1.5 border rounded-lg transition-colors font-medium ${dm ? 'border-ink-600 text-ink-300 hover:bg-ink-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50'}`}
                             >
                               Adjust
                             </button>
                           )}
                           <button
                             onClick={() => openEditProduct(product)}
-                            className={`text-xs text-blue-600 hover:text-blue-800 px-2.5 py-1.5 border rounded-lg transition-colors font-medium ${dm ? 'border-blue-800 hover:bg-blue-900/20' : 'border-blue-200 hover:bg-blue-50'}`}
+                            className={`text-xs text-brand-600 hover:text-brand-800 px-2.5 py-1.5 border rounded-lg transition-colors font-medium ${dm ? 'border-brand-800 hover:bg-brand-900/20' : 'border-brand-200 hover:bg-brand-50'}`}
                           >
                             <Pencil size={12} />
                           </button>
                           <button
                             onClick={() => deleteProduct(product.id)}
-                            className="text-slate-300 hover:text-red-400 transition-colors p-1.5"
+                            className="text-ink-300 hover:text-chili-400 transition-colors p-1.5"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -360,16 +360,16 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
 
         {/* Stock movement log */}
         <div className={`rounded-2xl shadow-sm border overflow-hidden ${surface}`}>
-          <div className={`px-5 py-4 border-b ${dm ? 'border-slate-700' : 'border-slate-100'}`}>
+          <div className={`px-5 py-4 border-b ${dm ? 'border-ink-700' : 'border-ink-100'}`}>
             <h3 className={t1}>Stock Movement Log</h3>
           </div>
-          <div className="divide-y max-h-64 overflow-y-auto" style={{ borderColor: dm ? '#1E2330' : '#F8FAFC' }}>
+          <div className="divide-y max-h-64 overflow-y-auto" style={{ borderColor: dm ? '#181B25' : '#F5F6F8' }}>
             {stockLog.map(log => (
-              <div key={log.id} className={`flex items-center gap-3 px-5 py-3 ${dm ? 'divide-slate-700' : ''}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${log.type === 'in' ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+              <div key={log.id} className={`flex items-center gap-3 px-5 py-3 ${dm ? 'divide-ink-700' : ''}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${log.type === 'in' ? 'bg-leaf-500/10' : 'bg-chili-500/10'}`}>
                   {log.type === 'in'
-                    ? <TrendingUp size={14} className="text-emerald-600" />
-                    : <TrendingDown size={14} className="text-red-500" />
+                    ? <TrendingUp size={14} className="text-leaf-600" />
+                    : <TrendingDown size={14} className="text-chili-500" />
                   }
                 </div>
                 <div className="flex-1 min-w-0">
@@ -377,7 +377,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                   <p className={`text-xs ${t2}`}>{log.note}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className={`text-sm font-semibold ${log.type === 'in' ? 'text-emerald-600' : 'text-red-500'}`}>
+                  <p className={`text-sm font-semibold ${log.type === 'in' ? 'text-leaf-600' : 'text-chili-500'}`}>
                     {log.type === 'in' ? '+' : '-'}{log.qty}
                   </p>
                   <p className={`text-xs ${t2}`}>{log.date}</p>
@@ -391,16 +391,16 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
       {/* ─── Stock adjustment modal ─────────────────────────────────────────── */}
       {adjModal && selected && (
         <Modal title="Adjust Stock" onClose={() => setAdjModal(false)} darkMode={dm} maxWidth="max-w-sm">
-          <p className={`text-sm mb-4 ${t2}`}>{selected.emoji} {selected.name} · Current stock: <span className="font-semibold">{selected.stock}</span></p>
+          <p className={`text-sm mb-4 ${t2}`}>{selected.emoji} {selected.name}. In stock: <span className="font-semibold">{selected.stock}</span></p>
 
-          <div className={`flex border rounded-xl overflow-hidden mb-4 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+          <div className={`flex border rounded-xl overflow-hidden mb-4 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
             {(['in', 'out'] as ('in' | 'out')[]).map(t => (
               <button
                 key={t}
                 onClick={() => setAdjType(t)}
                 className={[
                   'flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium transition-colors capitalize',
-                  adjType === t ? (t === 'in' ? 'bg-emerald-600 text-white' : 'bg-red-500 text-white') : dm ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-500 hover:bg-slate-50',
+                  adjType === t ? (t === 'in' ? 'bg-leaf-600 text-white' : 'bg-chili-500 text-white') : dm ? 'text-ink-400 hover:bg-ink-700' : 'text-ink-500 hover:bg-ink-50',
                 ].join(' ')}
               >
                 {t === 'in' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
@@ -412,11 +412,11 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
           <label className={`text-sm block mb-1 ${t2}`}>Quantity</label>
           <input
             type="number" min={1} value={adjQty} onChange={e => setAdjQty(e.target.value)} placeholder="0" autoFocus
-            className={`w-full border rounded-xl px-4 py-3 mb-3 focus:outline-none focus:border-blue-400 ${inputCls}`}
+            className={`w-full border rounded-xl px-4 py-3 mb-3 focus:outline-none focus:border-brand-400 ${inputCls}`}
           />
 
           {adjQty && Number(adjQty) > 0 && (
-            <div className={`mb-3 px-3 py-2 rounded-xl text-sm ${adjType === 'in' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
+            <div className={`mb-3 px-3 py-2 rounded-xl text-sm ${adjType === 'in' ? 'bg-leaf-500/10 text-leaf-600' : 'bg-chili-500/10 text-chili-600'}`}>
               New stock: <span className="font-semibold">{adjType === 'in' ? selected.stock + Number(adjQty) : Math.max(0, selected.stock - Number(adjQty))}</span>
             </div>
           )}
@@ -424,13 +424,13 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
           <label className={`text-sm block mb-1 ${t2}`}>Note (optional)</label>
           <input
             type="text" value={adjNote} onChange={e => setAdjNote(e.target.value)} placeholder="e.g. Restocked from supplier"
-            className={`w-full border rounded-xl px-4 py-3 mb-4 focus:outline-none focus:border-blue-400 ${inputCls}`}
+            className={`w-full border rounded-xl px-4 py-3 mb-4 focus:outline-none focus:border-brand-400 ${inputCls}`}
           />
 
           <button
             disabled={!adjQty || Number(adjQty) <= 0}
             onClick={saveAdjustment}
-            className={`w-full py-3 rounded-xl text-white transition-colors font-semibold ${adjType === 'in' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-500 hover:bg-red-600'} disabled:opacity-40 disabled:cursor-not-allowed`}
+            className={`w-full py-3 rounded-xl text-white transition-colors font-semibold ${adjType === 'in' ? 'bg-leaf-600 hover:bg-leaf-700' : 'bg-chili-500 hover:bg-chili-600'} disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             Save Adjustment
           </button>
@@ -448,7 +448,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                 <div className="flex items-center gap-4">
                   <div
                     className={`w-20 h-20 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed cursor-pointer transition-colors ${
-                      newImage ? 'border-transparent' : dm ? 'border-slate-600 hover:border-blue-500' : 'border-slate-300 hover:border-blue-400'
+                      newImage ? 'border-transparent' : dm ? 'border-ink-600 hover:border-brand-500' : 'border-ink-300 hover:border-brand-400'
                     }`}
                     onClick={() => fileInputRef.current?.click()}
                   >
@@ -467,13 +467,13 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg border font-medium transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                      className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg border font-medium transition-colors ${dm ? 'border-ink-700 text-ink-300 hover:bg-ink-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50'}`}
                     >
                       <ImagePlus size={15} /> Upload Image
                     </button>
                     <p className={`text-xs mt-1.5 ${t2}`}>Auto-resized to 300×300 WebP</p>
                     {newImage && (
-                      <button onClick={() => setNewImage(undefined)} className="text-xs text-red-500 hover:text-red-700 mt-1">Remove image</button>
+                      <button onClick={() => setNewImage(undefined)} className="text-xs text-chili-500 hover:text-chili-700 mt-1">Remove image</button>
                     )}
                   </div>
                 </div>
@@ -483,7 +483,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                 <label className={`text-sm block mb-1 font-medium ${t2}`}>Product Name *</label>
                 <input
                   type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Espresso" autoFocus
-                  className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}
+                  className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}
                 />
               </div>
 
@@ -499,7 +499,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                     value={newPrice ? formatNumberWithDots(newPrice) : ''}
                     onChange={e => setNewPrice(e.target.value.replace(/\D/g, ''))}
                     placeholder="25.000"
-                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}
+                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}
                   />
                 </div>
                 <div className="flex flex-col">
@@ -513,15 +513,15 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                     value={newCostPrice ? formatNumberWithDots(newCostPrice) : ''}
                     onChange={e => setNewCostPrice(e.target.value.replace(/\D/g, ''))}
                     placeholder="10.000"
-                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}
+                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}
                   />
                 </div>
               </div>
 
               {/* Margin preview */}
               {newPrice && newCostPrice && Number(newPrice) > 0 && (
-                <div className="flex items-center gap-2 text-sm text-emerald-600">
-                  <span className="bg-emerald-500/10 px-2.5 py-1 rounded-full font-semibold">
+                <div className="flex items-center gap-2 text-sm text-leaf-600">
+                  <span className="bg-leaf-500/10 px-2.5 py-1 rounded-full font-semibold">
                     {Math.round(((Number(newPrice) - Number(newCostPrice)) / Number(newPrice)) * 100)}% margin
                   </span>
                   <span className={`text-xs ${t2}`}>Profit: {formatIDR(Number(newPrice) - Number(newCostPrice))} per unit</span>
@@ -536,13 +536,13 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                     <button
                       type="button"
                       onClick={() => setShowQuickCategoryModal(true)}
-                      className="text-xs font-semibold text-blue-500 hover:text-blue-700 flex items-center gap-0.5"
+                      className="text-xs font-semibold text-brand-500 hover:text-brand-700 flex items-center gap-0.5"
                     >
                       <Plus size={12} /> Add New
                     </button>
                   </div>
                   <select value={newCat} onChange={e => setNewCat(e.target.value)}
-                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}>
+                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}>
                     {categories.filter(c => c.id !== 'cat-all').map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
@@ -552,7 +552,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                       <label className={`text-sm font-medium ${t2}`}>Emoji Icon</label>
                     </div>
                     <select value={newEmoji} onChange={e => setNewEmoji(e.target.value)}
-                      className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}>
+                      className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}>
                       {PRODUCT_EMOJIS.map(e => <option key={e} value={e}>{e}</option>)}
                     </select>
                   </div>
@@ -566,17 +566,17 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                 <div>
                   <label className={`text-sm block mb-1 font-medium ${t2}`}>SKU (Optional)</label>
                   <input type="text" value={newSku} onChange={e => setNewSku(e.target.value)} placeholder="e.g. COF-ESP-01"
-                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`} />
+                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`} />
                 </div>
                 <div>
                   <label className={`text-sm block mb-1 font-medium ${t2}`}>Barcode (Optional)</label>
                   <input type="text" value={newBarcode} onChange={e => setNewBarcode(e.target.value)} placeholder="Scan barcode"
-                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`} />
+                    className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`} />
                 </div>
               </div>
 
               {/* Variants Section - each variant has 4 fields: name, price modifier, SKU, barcode */}
-              <div className={`border rounded-xl p-3.5 ${dm ? 'border-slate-700 bg-slate-850' : 'border-slate-200 bg-slate-50/50'}`}>
+              <div className={`border rounded-xl p-3.5 ${dm ? 'border-ink-700 bg-ink-850' : 'border-ink-200 bg-ink-50/50'}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h4 className={`text-sm font-semibold ${t1}`}>Variants (Sizes, Add-ons)</h4>
@@ -585,7 +585,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                   <button
                     type="button"
                     onClick={addVariant}
-                    className="text-xs flex items-center gap-1 font-semibold px-2.5 py-1 rounded-lg bg-blue-600/10 text-blue-600 hover:bg-blue-600/20 dark:text-blue-400"
+                    className="text-xs flex items-center gap-1 font-semibold px-2.5 py-1 rounded-lg bg-brand-600/10 text-brand-600 hover:bg-brand-600/20 dark:text-brand-400"
                   >
                     <PlusCircle size={14} /> Add Variant
                   </button>
@@ -596,13 +596,13 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                 ) : (
                   <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                     {newVariants.map((v, i) => (
-                      <div key={v.id || i} className={`p-3 rounded-xl border relative space-y-2 ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                      <div key={v.id || i} className={`p-3 rounded-xl border relative space-y-2 ${dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-200'}`}>
                         <div className="flex items-center justify-between">
-                          <span className={`text-xs font-bold text-blue-500`}>Variant #{i + 1}</span>
+                          <span className={`text-xs font-bold text-brand-500`}>Variant #{i + 1}</span>
                           <button
                             type="button"
                             onClick={() => removeVariant(i)}
-                            className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                            className="p-1 rounded-lg text-ink-400 hover:text-chili-500 hover:bg-chili-500/10 transition-colors"
                             title="Remove variant"
                           >
                             <X size={14} />
@@ -618,7 +618,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                               placeholder="e.g. Large, Oat Milk"
                               value={v.name}
                               onChange={e => updateVariant(i, 'name', e.target.value)}
-                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`}
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-brand-400 ${inputCls}`}
                             />
                           </div>
                           <div>
@@ -629,7 +629,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                               placeholder="e.g. 5.000"
                               value={v.priceModifier ? formatNumberWithDots(v.priceModifier) : ''}
                               onChange={e => updateVariant(i, 'priceModifier', Number(e.target.value.replace(/\D/g, '')) || 0)}
-                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`}
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-brand-400 ${inputCls}`}
                             />
                           </div>
                         </div>
@@ -643,7 +643,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                               placeholder="e.g. COF-ESP-LG"
                               value={v.sku || ''}
                               onChange={e => updateVariant(i, 'sku', e.target.value)}
-                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`}
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-brand-400 ${inputCls}`}
                             />
                           </div>
                           <div>
@@ -653,7 +653,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                               placeholder="Scan or type barcode"
                               value={v.barcode || ''}
                               onChange={e => updateVariant(i, 'barcode', e.target.value)}
-                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-400 ${inputCls}`}
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-brand-400 ${inputCls}`}
                             />
                           </div>
                         </div>
@@ -664,7 +664,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
               </div>
 
               {/* Track Inventory Toggle (Default OFF) */}
-              <div className={`border rounded-xl p-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+              <div className={`border rounded-xl p-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className={`text-sm font-medium ${t1}`}>Track Inventory</p>
@@ -674,25 +674,25 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                 </div>
                 
                 {newTrackInventory && (
-                  <div className={`grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-dashed ${dm ? 'border-slate-600' : 'border-slate-300'}`}>
+                  <div className={`grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-dashed ${dm ? 'border-ink-600' : 'border-ink-300'}`}>
                     {!editingId && (
                       <div>
                         <label className={`text-xs block mb-1 ${t2}`}>Initial Stock *</label>
                         <input type="number" min={0} value={newStock} onChange={e => setNewStock(e.target.value)} placeholder="50"
-                          className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`} />
+                          className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`} />
                       </div>
                     )}
                     <div>
                       <label className={`text-xs block mb-1 ${t2}`}>Low Stock Alert</label>
                       <input type="number" min={1} value={newThreshold} onChange={e => setNewThreshold(e.target.value)} placeholder="10"
-                        className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`} />
+                        className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`} />
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Allow Discounts Toggle (Default OFF) */}
-              <div className={`flex items-center justify-between border rounded-xl p-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+              <div className={`flex items-center justify-between border rounded-xl p-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                 <div>
                   <p className={`text-sm font-medium ${t1}`}>Allow Discounts</p>
                   <p className={`text-xs ${t2}`}>Item eligible for manual and promo discounts</p>
@@ -702,11 +702,11 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
             </div>
           </div>
 
-          <div className={`mt-6 pt-4 border-t flex justify-end ${dm ? 'border-slate-700' : 'border-slate-100'}`}>
+          <div className={`mt-6 pt-4 border-t flex justify-end ${dm ? 'border-ink-700' : 'border-ink-100'}`}>
             <button
               disabled={!newName.trim() || !newPrice || (!editingId && newTrackInventory && !newStock)}
               onClick={saveProduct}
-              className="w-full md:w-auto px-6 bg-blue-600 text-white rounded-xl py-2.5 hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
+              className="w-full md:w-auto px-6 bg-brand-600 text-white rounded-xl py-2.5 hover:bg-brand-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-semibold"
             >
               {editingId ? 'Save Changes' : 'Add Product'}
             </button>
@@ -730,14 +730,14 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                 placeholder="e.g. Pastry & Bakery"
                 value={quickCategoryName}
                 onChange={e => setQuickCategoryName(e.target.value)}
-                className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400 ${inputCls}`}
+                className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}
               />
             </div>
             <div className="flex gap-2 justify-end pt-2">
               <button
                 type="button"
                 onClick={() => { setShowQuickCategoryModal(false); setQuickCategoryName(''); }}
-                className={`px-3 py-2 rounded-xl text-xs font-medium transition-colors ${dm ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`px-3 py-2 rounded-xl text-xs font-medium transition-colors ${dm ? 'text-ink-300 hover:bg-ink-700' : 'text-ink-600 hover:bg-ink-100'}`}
               >
                 Cancel
               </button>
@@ -760,7 +760,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                   setShowQuickCategoryModal(false);
                   setQuickCategoryName('');
                 }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors"
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors"
               >
                 Create Category
               </button>
@@ -785,7 +785,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
 function Toggle({ checked, onChange, darkMode }: { checked: boolean; onChange: () => void; darkMode: boolean }) {
   return (
     <button onClick={onChange} style={{ width: 40, height: 22, position: 'relative', flexShrink: 0 }}
-      className={`rounded-full transition-colors ${checked ? 'bg-blue-600' : (darkMode ? 'bg-slate-600' : 'bg-slate-300')}`}>
+      className={`rounded-full transition-colors ${checked ? 'bg-brand-600' : (darkMode ? 'bg-ink-600' : 'bg-ink-300')}`}>
       <span style={{ position: 'absolute', width: 18, height: 18, top: 2, left: 2, backgroundColor: 'white', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transform: checked ? 'translateX(18px)' : 'translateX(0)', transition: 'transform 0.2s' }} />
     </button>
   );
@@ -795,11 +795,11 @@ function Modal({ title, children, onClose, darkMode, maxWidth = "max-w-sm" }: { 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className={`relative rounded-2xl p-5 w-full ${maxWidth} max-h-[90vh] overflow-y-auto shadow-2xl ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}>
-        <button onClick={onClose} className={`absolute top-4 right-4 transition-colors ${darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}>
+      <div className={`relative rounded-2xl p-5 w-full ${maxWidth} max-h-[90vh] overflow-y-auto shadow-2xl ${darkMode ? 'bg-ink-800 border border-ink-700' : 'bg-white'}`}>
+        <button onClick={onClose} className={`absolute top-4 right-4 transition-colors ${darkMode ? 'text-ink-400 hover:text-ink-200' : 'text-ink-400 hover:text-ink-600'}`}>
           <X size={18} />
         </button>
-        <h3 className={`mb-4 font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{title}</h3>
+        <h3 className={`mb-4 font-semibold ${darkMode ? 'text-ink-100' : 'text-ink-800'}`}>{title}</h3>
         {children}
       </div>
     </div>

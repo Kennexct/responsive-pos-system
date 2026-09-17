@@ -3,13 +3,13 @@
 -- ═══════════════════════════════════════════════════════════════
 
 -- 1. Create Enums for Subscription Plans and Statuses
-DO $ BEGIN
+DO $$ BEGIN
   CREATE TYPE subscription_plan_type AS ENUM ('trial', 'monthly', 'yearly', 'lifetime');
-EXCEPTION WHEN duplicate_object THEN null; END $ ;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-DO $ BEGIN
+DO $$ BEGIN
   CREATE TYPE subscription_status_type AS ENUM ('trial', 'active', 'suspended', 'expired');
-EXCEPTION WHEN duplicate_object THEN null; END $ ;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- 2. Add Subscription and Access Columns to MERCHANTS table
 ALTER TABLE merchants ADD COLUMN IF NOT EXISTS subscription_plan subscription_plan_type DEFAULT 'trial';
@@ -49,9 +49,9 @@ CREATE TABLE IF NOT EXISTS platform_super_admins (
 
 -- 6. Enable RLS on Super Admins
 ALTER TABLE platform_super_admins ENABLE ROW LEVEL SECURITY;
-DO $ BEGIN
+DO $$ BEGIN
   CREATE POLICY "Public read write super admins" ON platform_super_admins FOR ALL USING (true);
-EXCEPTION WHEN duplicate_object THEN null; END $ ;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- Seed default Super Admin account (admin@vpos.app / 0000)
 INSERT INTO platform_super_admins (name, email, pin, role)

@@ -257,13 +257,13 @@ export function GuidedSetupModal({
     onClose();
   };
 
-  const inputCls = `w-full px-4 py-3 rounded-xl text-sm border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+  const inputCls = `w-full px-4 py-3 rounded-xl text-sm border transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 ${
     dm
-      ? 'bg-slate-800 border-slate-700 text-slate-100 placeholder-slate-500 focus:border-blue-500'
-      : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:bg-white'
+      ? 'bg-ink-800 border-ink-700 text-ink-100 placeholder-ink-500 focus:border-brand-500'
+      : 'bg-ink-50 border-ink-200 text-ink-800 placeholder-ink-400 focus:border-brand-500 focus:bg-white'
   }`;
 
-  const labelCls = `block text-xs font-semibold mb-1.5 ${dm ? 'text-slate-300' : 'text-slate-600'}`;
+  const labelCls = `block text-xs font-semibold mb-1.5 ${dm ? 'text-ink-300' : 'text-ink-600'}`;
 
   return (
     <AnimatePresence>
@@ -273,7 +273,7 @@ export function GuidedSetupModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/75 backdrop-blur-md"
+          className="fixed inset-0 bg-black/75"
         />
 
         {/* Modal Container */}
@@ -283,17 +283,17 @@ export function GuidedSetupModal({
           exit={{ opacity: 0, scale: 0.95, y: 16 }}
           transition={{ duration: 0.25 }}
           className={`relative w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden my-auto ${
-            dm ? 'bg-slate-900 border border-slate-800 text-slate-100' : 'bg-white text-slate-900'
+            dm ? 'bg-ink-900 border border-ink-800 text-ink-100' : 'bg-white text-ink-900'
           }`}
         >
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 p-6 text-white relative">
+          <div className="bg-brand-700 p-6 text-white relative">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 <VPosLogo size={32} />
                 <span className="font-bold tracking-tight text-lg">Store Setup Guide</span>
               </div>
-              <div className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm">
+              <div className="text-xs font-boldr px-3 py-1 rounded-full bg-white/20">
                 Step {step} of {totalSteps}
               </div>
             </div>
@@ -323,7 +323,7 @@ export function GuidedSetupModal({
                     i + 1 === step
                       ? 'w-8 bg-white'
                       : i + 1 < step
-                      ? 'w-4 bg-white/80'
+                      ? 'w-4 bg-white'
                       : 'w-2.5 bg-white/30'
                   }`}
                 />
@@ -334,7 +334,7 @@ export function GuidedSetupModal({
           {/* Modal Content Body */}
           <div className="p-6 max-h-[62vh] overflow-y-auto">
             {errorMsg && (
-              <div className="mb-4 p-3 rounded-xl text-xs font-medium bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400">
+              <div className="mb-4 p-3 rounded-xl text-xs font-medium bg-chili-500/10 border border-chili-500/30 text-chili-600 dark:text-chili-400">
                 {errorMsg}
               </div>
             )}
@@ -367,18 +367,18 @@ export function GuidedSetupModal({
                           onClick={() => handleSelectIndustry(preset)}
                           className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-all ${
                             isSelected
-                              ? 'border-blue-600 bg-blue-600/10 text-blue-600 dark:text-blue-400 ring-2 ring-blue-500/30 font-semibold'
+                              ? 'border-brand-600 bg-brand-600/10 text-brand-600 dark:text-brand-400 ring-2 ring-brand-500/30 font-semibold'
                               : dm
-                              ? 'border-slate-800 bg-slate-800/60 hover:bg-slate-800 text-slate-300'
-                              : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'
+                              ? 'border-ink-800 bg-ink-800 hover:bg-ink-800 text-ink-300'
+                              : 'border-ink-200 bg-ink-50 hover:bg-ink-100 text-ink-700'
                           }`}
                         >
-                          <div className={`p-2 rounded-xl ${isSelected ? 'bg-blue-600 text-white' : dm ? 'bg-slate-700 text-slate-300' : 'bg-white text-slate-600 shadow-sm'}`}>
+                          <div className={`p-2 rounded-xl ${isSelected ? 'bg-brand-600 text-white' : dm ? 'bg-ink-700 text-ink-300' : 'bg-white text-ink-600 shadow-sm'}`}>
                             <Icon size={18} />
                           </div>
                           <div>
                             <p className="text-xs sm:text-sm">{preset.name}</p>
-                            <p className={`text-[10px] ${dm ? 'text-slate-400' : 'text-slate-500'}`}>{preset.categories.slice(0, 3).join(', ')}...</p>
+                            <p className={`text-[10px] ${dm ? 'text-ink-400' : 'text-ink-500'}`}>{preset.categories.slice(0, 3).join(', ')}...</p>
                           </div>
                         </button>
                       );
@@ -444,7 +444,7 @@ export function GuidedSetupModal({
                     <button
                       type="button"
                       onClick={handleAddCategory}
-                      className="px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shrink-0 flex items-center gap-1.5 transition-colors"
+                      className="px-5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold text-sm shrink-0 flex items-center gap-1.5 transition-colors"
                     >
                       <Plus size={16} /> Add
                     </button>
@@ -455,10 +455,10 @@ export function GuidedSetupModal({
                 <div>
                   <label className={labelCls}>Current Categories ({categoryList.length})</label>
                   <div className={`p-4 rounded-2xl border min-h-[140px] flex flex-wrap gap-2 items-start content-start ${
-                    dm ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'
+                    dm ? 'bg-ink-800 border-ink-700' : 'bg-ink-50 border-ink-200'
                   }`}>
                     {categoryList.length === 0 ? (
-                      <p className={`text-xs ${dm ? 'text-slate-500' : 'text-slate-400'} italic`}>
+                      <p className={`text-xs ${dm ? 'text-ink-500' : 'text-ink-400'} italic`}>
                         No categories added. Add one above or select an industry preset.
                       </p>
                     ) : (
@@ -466,15 +466,15 @@ export function GuidedSetupModal({
                         <span
                           key={cat}
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-colors ${
-                            dm ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-white text-slate-800 border border-slate-200'
+                            dm ? 'bg-ink-800 text-ink-200 border border-ink-700' : 'bg-white text-ink-800 border border-ink-200'
                           }`}
                         >
-                          <Tag size={12} className="text-blue-500" />
+                          <Tag size={12} className="text-brand-500" />
                           {cat}
                           <button
                             type="button"
                             onClick={() => handleRemoveCategory(cat)}
-                            className="hover:text-red-500 text-slate-400 ml-1 transition-colors"
+                            className="hover:text-chili-500 text-ink-400 ml-1 transition-colors"
                             title="Remove"
                           >
                             <X size={13} />
@@ -510,19 +510,19 @@ export function GuidedSetupModal({
                         onClick={() => handleTogglePayment(pm.id)}
                         className={`p-4 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${
                           pm.enabled
-                            ? 'border-blue-600 bg-blue-600/10 text-blue-600 dark:text-blue-400 font-semibold shadow-sm'
+                            ? 'border-brand-600 bg-brand-600/10 text-brand-600 dark:text-brand-400 font-semibold shadow-sm'
                             : dm
-                            ? 'border-slate-800 bg-slate-800/40 text-slate-400 hover:bg-slate-800'
-                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                            ? 'border-ink-800 bg-ink-800 text-ink-400 hover:bg-ink-800'
+                            : 'border-ink-200 bg-ink-50 text-ink-600 hover:bg-ink-100'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`p-2.5 rounded-xl ${pm.enabled ? 'bg-blue-600 text-white' : dm ? 'bg-slate-700 text-slate-400' : 'bg-white text-slate-400 shadow-sm'}`}>
+                          <div className={`p-2.5 rounded-xl ${pm.enabled ? 'bg-brand-600 text-white' : dm ? 'bg-ink-700 text-ink-400' : 'bg-white text-ink-400 shadow-sm'}`}>
                             <Icon size={20} />
                           </div>
                           <div>
                             <p className="text-sm">{pm.label}</p>
-                            <p className={`text-[10px] ${dm ? 'text-slate-400' : 'text-slate-500'}`}>
+                            <p className={`text-[10px] ${dm ? 'text-ink-400' : 'text-ink-500'}`}>
                               {pm.enabled ? 'Active at checkout' : 'Disabled'}
                             </p>
                           </div>
@@ -530,10 +530,10 @@ export function GuidedSetupModal({
 
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center border transition-colors ${
                           pm.enabled
-                            ? 'bg-blue-600 border-blue-600 text-white'
+                            ? 'bg-brand-600 border-brand-600 text-white'
                             : dm
-                            ? 'border-slate-700 bg-slate-800'
-                            : 'border-slate-300 bg-white'
+                            ? 'border-ink-700 bg-ink-800'
+                            : 'border-ink-300 bg-white'
                         }`}>
                           {pm.enabled && <CheckCircle2 size={16} />}
                         </div>
@@ -548,11 +548,11 @@ export function GuidedSetupModal({
             {step === 4 && (
               <div className="space-y-4">
                 <div className={`p-4 rounded-2xl border flex items-center justify-between ${
-                  dm ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'
+                  dm ? 'bg-ink-800 border-ink-700' : 'bg-ink-50 border-ink-200'
                 }`}>
                   <div>
                     <h4 className="text-sm font-semibold">Enable Store Tax</h4>
-                    <p className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <p className={`text-xs ${dm ? 'text-ink-400' : 'text-ink-500'}`}>
                       Automatically compute sales tax at checkout and display on receipt.
                     </p>
                   </div>
@@ -560,7 +560,7 @@ export function GuidedSetupModal({
                     type="button"
                     onClick={() => setEnableTax(!enableTax)}
                     className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                      enableTax ? 'bg-blue-600 justify-end' : dm ? 'bg-slate-700 justify-start' : 'bg-slate-300 justify-start'
+                      enableTax ? 'bg-brand-600 justify-end' : dm ? 'bg-ink-700 justify-start' : 'bg-ink-300 justify-start'
                     }`}
                   >
                     <div className="w-4 h-4 rounded-full bg-white shadow-md" />
@@ -606,8 +606,8 @@ export function GuidedSetupModal({
                           onClick={() => setTaxInclusive(false)}
                           className={`p-3 rounded-xl border text-xs font-semibold text-center transition-all ${
                             !taxInclusive
-                              ? 'border-blue-600 bg-blue-600/10 text-blue-600 dark:text-blue-400'
-                              : dm ? 'border-slate-700 bg-slate-800 text-slate-400' : 'border-slate-200 bg-white text-slate-600'
+                              ? 'border-brand-600 bg-brand-600/10 text-brand-600 dark:text-brand-400'
+                              : dm ? 'border-ink-700 bg-ink-800 text-ink-400' : 'border-ink-200 bg-white text-ink-600'
                           }`}
                         >
                           Exclusive (Added to bill)
@@ -617,8 +617,8 @@ export function GuidedSetupModal({
                           onClick={() => setTaxInclusive(true)}
                           className={`p-3 rounded-xl border text-xs font-semibold text-center transition-all ${
                             taxInclusive
-                              ? 'border-blue-600 bg-blue-600/10 text-blue-600 dark:text-blue-400'
-                              : dm ? 'border-slate-700 bg-slate-800 text-slate-400' : 'border-slate-200 bg-white text-slate-600'
+                              ? 'border-brand-600 bg-brand-600/10 text-brand-600 dark:text-brand-400'
+                              : dm ? 'border-ink-700 bg-ink-800 text-ink-400' : 'border-ink-200 bg-white text-ink-600'
                           }`}
                         >
                           Inclusive (Included in price)
@@ -634,11 +634,11 @@ export function GuidedSetupModal({
             {step === 5 && (
               <div className="space-y-4">
                 <div className={`p-4 rounded-2xl border flex items-center justify-between ${
-                  dm ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'
+                  dm ? 'bg-ink-800 border-ink-700' : 'bg-ink-50 border-ink-200'
                 }`}>
                   <div>
                     <h4 className="text-sm font-semibold">Enable Store Discounts</h4>
-                    <p className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <p className={`text-xs ${dm ? 'text-ink-400' : 'text-ink-500'}`}>
                       Master switch for applying promo vouchers and sales discounts.
                     </p>
                   </div>
@@ -646,7 +646,7 @@ export function GuidedSetupModal({
                     type="button"
                     onClick={() => setEnableDiscounts(!enableDiscounts)}
                     className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                      enableDiscounts ? 'bg-blue-600 justify-end' : dm ? 'bg-slate-700 justify-start' : 'bg-slate-300 justify-start'
+                      enableDiscounts ? 'bg-brand-600 justify-end' : dm ? 'bg-ink-700 justify-start' : 'bg-ink-300 justify-start'
                     }`}
                   >
                     <div className="w-4 h-4 rounded-full bg-white shadow-md" />
@@ -660,11 +660,11 @@ export function GuidedSetupModal({
                     className="space-y-3 pt-2"
                   >
                     <div className={`p-4 rounded-2xl border flex items-center justify-between ${
-                      dm ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'
+                      dm ? 'bg-ink-800 border-ink-700' : 'bg-ink-50 border-ink-200'
                     }`}>
                       <div>
                         <h4 className="text-sm font-semibold">Allow Item-Level Discounts</h4>
-                        <p className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <p className={`text-xs ${dm ? 'text-ink-400' : 'text-ink-500'}`}>
                           Allow cashier to manually apply percent or nominal discounts on specific items.
                         </p>
                       </div>
@@ -672,7 +672,7 @@ export function GuidedSetupModal({
                         type="button"
                         onClick={() => setAllowItemDiscount(!allowItemDiscount)}
                         className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                          allowItemDiscount ? 'bg-blue-600 justify-end' : dm ? 'bg-slate-700 justify-start' : 'bg-slate-300 justify-start'
+                          allowItemDiscount ? 'bg-brand-600 justify-end' : dm ? 'bg-ink-700 justify-start' : 'bg-ink-300 justify-start'
                         }`}
                       >
                         <div className="w-4 h-4 rounded-full bg-white shadow-md" />
@@ -680,12 +680,12 @@ export function GuidedSetupModal({
                     </div>
 
                     <div className={`p-4 rounded-2xl border ${
-                      dm ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'
+                      dm ? 'bg-ink-800 border-ink-700' : 'bg-ink-50 border-ink-200'
                     }`}>
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <h4 className="text-sm font-semibold">Create Starter Promo Code</h4>
-                          <p className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <p className={`text-xs ${dm ? 'text-ink-400' : 'text-ink-500'}`}>
                             Provide customers with a welcome or grand-opening discount code.
                           </p>
                         </div>
@@ -693,7 +693,7 @@ export function GuidedSetupModal({
                           type="button"
                           onClick={() => setCreateStarterPromo(!createStarterPromo)}
                           className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                            createStarterPromo ? 'bg-blue-600 justify-end' : dm ? 'bg-slate-700 justify-start' : 'bg-slate-300 justify-start'
+                            createStarterPromo ? 'bg-brand-600 justify-end' : dm ? 'bg-ink-700 justify-start' : 'bg-ink-300 justify-start'
                           }`}
                         >
                           <div className="w-4 h-4 rounded-full bg-white shadow-md" />
@@ -736,10 +736,10 @@ export function GuidedSetupModal({
             {step === 6 && (
               <div className="space-y-4">
                 <div className={`p-5 rounded-2xl border ${
-                  dm ? 'bg-blue-950/20 border-blue-800/40 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800'
+                  dm ? 'bg-brand-950/20 border-brand-800/40 text-brand-200' : 'bg-brand-50 border-brand-200 text-brand-800'
                 }`}>
                   <div className="flex items-center gap-3 mb-2">
-                    <Sparkles className="text-blue-500" size={24} />
+                    <Sparkles className="text-brand-500" size={24} />
                     <h3 className="text-base font-bold">Your Store is Configured!</h3>
                   </div>
                   <p className="text-xs opacity-90">
@@ -748,28 +748,28 @@ export function GuidedSetupModal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className={`p-3.5 rounded-xl border ${dm ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <p className={`font-semibold mb-1 ${dm ? 'text-slate-400' : 'text-slate-500'}`}>Business Profile</p>
+                  <div className={`p-3.5 rounded-xl border ${dm ? 'border-ink-700 bg-ink-800' : 'border-ink-200 bg-ink-50'}`}>
+                    <p className={`font-semibold mb-1 ${dm ? 'text-ink-400' : 'text-ink-500'}`}>Business Profile</p>
                     <p className="font-bold text-sm">{bizName || 'My Store'}</p>
-                    <p className="opacity-80">{bizPhone || 'No phone set'} · {bizEmail || currentUser.email}</p>
+                    <p className="opacity-80">{bizPhone || 'No phone set'}, {bizEmail || currentUser.email}</p>
                     <p className="opacity-80 truncate">{bizAddress || 'No address set'}</p>
                   </div>
 
-                  <div className={`p-3.5 rounded-xl border ${dm ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <p className={`font-semibold mb-1 ${dm ? 'text-slate-400' : 'text-slate-500'}`}>Categories ({categoryList.length})</p>
+                  <div className={`p-3.5 rounded-xl border ${dm ? 'border-ink-700 bg-ink-800' : 'border-ink-200 bg-ink-50'}`}>
+                    <p className={`font-semibold mb-1 ${dm ? 'text-ink-400' : 'text-ink-500'}`}>Categories ({categoryList.length})</p>
                     <p className="font-bold truncate">{categoryList.join(', ')}</p>
                     <p className="opacity-80 mt-1">Ready for product inventory catalog</p>
                   </div>
 
-                  <div className={`p-3.5 rounded-xl border ${dm ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <p className={`font-semibold mb-1 ${dm ? 'text-slate-400' : 'text-slate-500'}`}>Payment Channels</p>
+                  <div className={`p-3.5 rounded-xl border ${dm ? 'border-ink-700 bg-ink-800' : 'border-ink-200 bg-ink-50'}`}>
+                    <p className={`font-semibold mb-1 ${dm ? 'text-ink-400' : 'text-ink-500'}`}>Payment Channels</p>
                     <p className="font-bold">
                       {payments.filter(p => p.enabled).map(p => p.label).join(', ') || 'None'}
                     </p>
                   </div>
 
-                  <div className={`p-3.5 rounded-xl border ${dm ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <p className={`font-semibold mb-1 ${dm ? 'text-slate-400' : 'text-slate-500'}`}>Taxes & Promos</p>
+                  <div className={`p-3.5 rounded-xl border ${dm ? 'border-ink-700 bg-ink-800' : 'border-ink-200 bg-ink-50'}`}>
+                    <p className={`font-semibold mb-1 ${dm ? 'text-ink-400' : 'text-ink-500'}`}>Taxes & Promos</p>
                     <p className="font-bold">
                       Tax: {enableTax ? `${taxName} (${taxRate}%)` : 'Disabled'}
                     </p>
@@ -784,14 +784,14 @@ export function GuidedSetupModal({
 
           {/* Modal Footer Controls */}
           <div className={`p-5 border-t flex items-center justify-between ${
-            dm ? 'border-slate-800 bg-slate-900/60' : 'border-slate-100 bg-slate-50/80'
+            dm ? 'border-ink-800 bg-ink-900' : 'border-ink-100 bg-ink-50/80'
           }`}>
             {step > 1 ? (
               <button
                 type="button"
                 onClick={handleBack}
                 className={`px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors ${
-                  dm ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-200 text-slate-600'
+                  dm ? 'hover:bg-ink-800 text-ink-300' : 'hover:bg-ink-200 text-ink-600'
                 }`}
               >
                 <ChevronLeft size={16} /> Back
@@ -805,7 +805,7 @@ export function GuidedSetupModal({
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-blue-500/20 transition-colors"
+                  className="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-lg transition-colors"
                 >
                   Next <ChevronRight size={16} />
                 </button>
@@ -813,7 +813,7 @@ export function GuidedSetupModal({
                 <button
                   type="button"
                   onClick={handleComplete}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-emerald-500/25 transition-colors"
+                  className="px-6 py-2.5 bg-leaf-600 hover:bg-leaf-700 text-white rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-lg transition-colors"
                 >
                   <CheckCircle2 size={16} /> Finish & Start Selling
                 </button>

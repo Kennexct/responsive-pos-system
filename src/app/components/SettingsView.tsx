@@ -1,8 +1,9 @@
 import { useState, type ElementType } from 'react';
 import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Tag, AlertTriangle } from 'lucide-react';
-import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry } from './mockData';
+import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry, ServiceChargeSettings, Product } from './mockData';
 import { formatIndonesianPhone } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
+import { IS_LOCAL_DEMO, saveStaffMember } from '../lib/auth';
 import { useToast } from '../contexts/ToastContext';
 
 interface SettingsViewProps {
@@ -26,6 +27,8 @@ interface SettingsViewProps {
   onToggleDark: () => void;
   taxRules?: TaxRule[];
   setTaxRules?: React.Dispatch<React.SetStateAction<TaxRule[]>>;
+  serviceCharge?: ServiceChargeSettings;
+  setServiceCharge?: React.Dispatch<React.SetStateAction<ServiceChargeSettings>>;
   paymentMethods: PaymentMethodEntry[];
   setPaymentMethods: React.Dispatch<React.SetStateAction<PaymentMethodEntry[]>>;
   terminalViewMode?: TerminalViewMode;
@@ -64,6 +67,7 @@ export function SettingsView({
   refundSettings, setRefundSettings,
   loyaltySettings, setLoyaltySettings,
   taxRules = [], setTaxRules,
+  serviceCharge, setServiceCharge,
   paymentMethods, setPaymentMethods,
   terminalViewMode = 'grid', setTerminalViewMode,
   darkMode, onToggleDark,
@@ -107,7 +111,7 @@ export function SettingsView({
     }, 1500);
   };
   
-  const { addToast } = useToast();
+  const { showToast: addToast } = useToast();
 
   // Delete User Confirmation State
   const [deleteUserTarget, setDeleteUserTarget] = useState<User | null>(null);
@@ -138,6 +142,8 @@ export function SettingsView({
   const [newTaxName, setNewTaxName] = useState('');
   const [newTaxRate, setNewTaxRate] = useState('');
   const [newTaxInclusive, setNewTaxInclusive] = useState(false);
+  const [newTaxCompound, setNewTaxCompound] = useState(false);
+  const [taxError, setTaxError] = useState('');
 
   // User modal
   const [userModal, setUserModal] = useState(false);
@@ -174,21 +180,18 @@ export function SettingsView({
   const toggleCategoryTax = (id: string) => setCategories(prev => prev.map(c => c.id === id ? { ...c, isTaxable: !c.isTaxable } : c));
 
   const saveTax = () => {
-    if (!newTaxName || !newTaxRate) return;
+    const rate = Number(newTaxRate);
+    if (!newTaxName.trim()) return setTaxError('Give the tax a name, for example PPN or PB1.');
+    if (!Number.isFinite(rate) || rate <= 0 || rate > 100) return setTaxError('Rate must be between 0 and 100.');
     if (setTaxRules) {
+      const fields = { name: newTaxName.trim(), rate, isInclusive: newTaxInclusive, compound: newTaxInclusive ? false : newTaxCompound };
       if (editingTaxId) {
-        setTaxRules(prev => prev.map(t => t.id === editingTaxId ? { ...t, name: newTaxName, rate: Number(newTaxRate), isInclusive: newTaxInclusive } : t));
+        setTaxRules(prev => prev.map(t => t.id === editingTaxId ? { ...t, ...fields } : t));
       } else {
-        setTaxRules(prev => [...prev, {
-          id: Date.now().toString(),
-          name: newTaxName,
-          rate: Number(newTaxRate),
-          isInclusive: newTaxInclusive,
-          order: prev.length + 1
-        }]);
+        setTaxRules(prev => [...prev, { id: `tax-${Date.now()}`, order: prev.length + 1, ...fields }]);
       }
     }
-    setTaxModal(false); setEditingTaxId(null); setNewTaxName(''); setNewTaxRate(''); setNewTaxInclusive(false);
+    setTaxModal(false); setEditingTaxId(null); setNewTaxName(''); setNewTaxRate(''); setNewTaxInclusive(false); setNewTaxCompound(false); setTaxError('');
   };
 
   const savePromo = () => {
@@ -238,24 +241,43 @@ export function SettingsView({
   const togglePromo = (id: string) => setDiscountSettings(prev => ({ ...prev, promoCodes: prev.promoCodes.map(p => p.id === id ? { ...p, active: !p.active } : p) }));
 
   const openUserModal = (u?: User) => {
-    if (u) { setEditingUserId(u.id); setNewUser(u); }
+    if (u) { setEditingUserId(u.id); setNewUser({ ...u, pin: IS_LOCAL_DEMO ? u.pin : '' }); }
     else { setEditingUserId(null); setNewUser({ name: '', role: 'cashier', pin: '' }); }
     setUserModal(true);
   };
 
-  const saveUser = () => {
-    if (!newUser.name || !newUser.pin) return;
-    if (newUser.pin.length !== 4) return addToast("PIN Code must be exactly 4 numbers.", "error");
-    if (editingUserId) {
-      const existingUser = users.find(u => u.id === editingUserId);
-      if (existingUser?.role === 'owner' && newUser.role !== 'owner') {
-        const ownerCount = users.filter(u => u.role === 'owner').length;
-        if (ownerCount <= 1) return addToast("Cannot change role of the last owner.", "error");
-      }
-      setUsers(users.map(u => u.id === editingUserId ? { ...u, ...newUser } as User : u));
-    } else {
-      setUsers([...users, { id: Date.now().toString(), name: newUser.name, role: newUser.role || 'cashier', pin: newUser.pin }]);
+  const saveUser = async () => {
+    const name = newUser.name?.trim();
+    const pin = newUser.pin ?? '';
+    // In cloud mode PINs are never loaded back, so an empty PIN while editing means "keep the current one".
+    const pinRequired = !editingUserId || IS_LOCAL_DEMO;
+    if (!name) return addToast('Enter the staff member\'s name.', 'error');
+    if ((pinRequired || pin) && !/^\d{4,6}$/.test(pin)) return addToast('PIN must be 4 to 6 digits.', 'error');
+
+    const existingUser = editingUserId ? users.find(u => u.id === editingUserId) : undefined;
+    if (existingUser?.role === 'owner' && newUser.role !== 'owner' && users.filter(u => u.role === 'owner').length <= 1) {
+      return addToast('Keep at least one owner on the account.', 'error');
     }
+
+    const saved: User = existingUser
+      ? { ...existingUser, ...newUser, name, pin: IS_LOCAL_DEMO ? (pin || existingUser.pin) : '' } as User
+      : {
+          id: crypto.randomUUID(),
+          name,
+          email: newUser.email?.trim() || '',
+          role: newUser.role || 'cashier',
+          pin: IS_LOCAL_DEMO ? pin : '',
+          merchantId: currentUser?.merchantId,
+          businessName: currentUser?.businessName,
+        };
+
+    try {
+      await saveStaffMember(currentUser?.merchantId ?? '', saved, pin || undefined);
+    } catch (err) {
+      return addToast(err instanceof Error ? err.message : 'Could not save staff member.', 'error');
+    }
+    setUsers(prev => existingUser ? prev.map(u => u.id === saved.id ? saved : u) : [...prev, saved]);
+    addToast(existingUser ? 'Staff member updated' : 'Staff member added', 'success');
     setUserModal(false);
   };
 
@@ -280,10 +302,10 @@ export function SettingsView({
   };
 
   const dm = darkMode;
-  const bg      = dm ? 'bg-slate-900' : 'bg-slate-50';
-  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
-  const t1      = dm ? 'text-slate-100' : 'text-slate-800';
-  const t2      = dm ? 'text-slate-400' : 'text-slate-500';
+  const bg      = dm ? 'bg-ink-900' : 'bg-ink-50';
+  const surface = dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-100';
+  const t1      = dm ? 'text-ink-100' : 'text-ink-800';
+  const t2      = dm ? 'text-ink-400' : 'text-ink-500';
 
   return (
     <div className={`flex-1 overflow-y-auto w-full ${bg}`}>
@@ -301,8 +323,8 @@ export function SettingsView({
                   className={[
                     'flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap sm:w-full transition-colors text-left',
                     tab === t.id
-                      ? 'bg-blue-600 text-white'
-                      : dm ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-200' : 'text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm'
+                      ? 'bg-brand-600 text-white'
+                      : dm ? 'text-ink-400 hover:bg-ink-700 hover:text-ink-200' : 'text-ink-500 hover:bg-white hover:text-ink-700 hover:shadow-sm'
                   ].join(' ')}
                 >
                   <t.icon size={16} className={tab === t.id ? 'text-white/80' : ''} />
@@ -312,7 +334,7 @@ export function SettingsView({
               
               <button
                 onClick={onToggleDark}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap sm:w-full transition-colors text-left font-medium ml-2 pl-3 border-l sm:ml-0 sm:pl-3 sm:border-l-0 sm:border-t sm:mt-2 sm:pt-3 ${dm ? 'border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200' : 'border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700'}`}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap sm:w-full transition-colors text-left font-medium ml-2 pl-3 border-l sm:ml-0 sm:pl-3 sm:border-l-0 sm:border-t sm:mt-2 sm:pt-3 ${dm ? 'border-ink-700 text-ink-400 hover:bg-ink-700 hover:text-ink-200' : 'border-ink-200 text-ink-500 hover:bg-white hover:text-ink-700'}`}
               >
                 {dm ? <Sun size={16} className="shrink-0" /> : <Moon size={16} className="shrink-0" />}
                 {dm ? 'Light Mode' : 'Dark Mode'}
@@ -329,9 +351,9 @@ export function SettingsView({
                 <h3 className={t1}>Business Profile</h3>
                 <div>
                   <label className={`text-sm block mb-1 ${t2}`}>Business Type</label>
-                  <div className={`flex border rounded-xl overflow-hidden w-fit ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                  <div className={`flex border rounded-xl overflow-hidden w-fit ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                     {(['retail', 'fnb'] as BusinessType[]).map(t => (
-                      <button key={t} onClick={() => onBusinessTypeChange(t)} className={`px-5 py-2.5 text-sm font-medium capitalize transition-colors ${businessType === t ? 'bg-blue-600 text-white' : dm ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      <button key={t} onClick={() => onBusinessTypeChange(t)} className={`px-5 py-2.5 text-sm font-medium capitalize transition-colors ${businessType === t ? 'bg-brand-600 text-white' : dm ? 'text-ink-400 hover:bg-ink-700' : 'text-ink-500 hover:bg-ink-50'}`}>
                         {t === 'fnb' ? 'F&B' : 'Retail'}
                       </button>
                     ))}
@@ -342,9 +364,9 @@ export function SettingsView({
                 </div>
                 <div>
                   <label className={`text-sm block mb-1 ${t2}`}>Terminal View Mode</label>
-                  <div className={`flex border rounded-xl overflow-hidden w-fit ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                  <div className={`flex border rounded-xl overflow-hidden w-fit ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                     {(['grid', 'scanner'] as TerminalViewMode[]).map(mode => (
-                      <button key={mode} onClick={() => setTerminalViewMode?.(mode)} className={`px-5 py-2.5 text-sm font-medium capitalize transition-colors ${terminalViewMode === mode ? 'bg-blue-600 text-white' : dm ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      <button key={mode} onClick={() => setTerminalViewMode?.(mode)} className={`px-5 py-2.5 text-sm font-medium capitalize transition-colors ${terminalViewMode === mode ? 'bg-brand-600 text-white' : dm ? 'text-ink-400 hover:bg-ink-700' : 'text-ink-500 hover:bg-ink-50'}`}>
                         {mode === 'grid' ? 'Grid (F&B)' : 'Scanner (Retail)'}
                       </button>
                     ))}
@@ -356,21 +378,21 @@ export function SettingsView({
 
                 {onOpenSetupGuide && (
                   <div className={`border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                    dm ? 'bg-blue-950/20 border-blue-800/40 text-blue-200' : 'bg-blue-50/80 border-blue-200 text-blue-900'
+                    dm ? 'bg-brand-950/20 border-brand-800/40 text-brand-200' : 'bg-brand-50/80 border-brand-200 text-brand-900'
                   }`}>
                     <div>
                       <h4 className="text-sm font-bold flex items-center gap-2">
-                        <Store size={16} className="text-blue-500" />
+                        <Store size={16} className="text-brand-500" />
                         Guided Store Setup Wizard
                       </h4>
-                      <p className={`text-xs mt-0.5 ${dm ? 'text-slate-400' : 'text-slate-600'}`}>
+                      <p className={`text-xs mt-0.5 ${dm ? 'text-ink-400' : 'text-ink-600'}`}>
                         Configure your profile, categories, payments, tax, and promos with the step-by-step wizard.
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={onOpenSetupGuide}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shrink-0 transition-colors shadow-sm"
+                      className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold shrink-0 transition-colors shadow-sm"
                     >
                       Launch Setup Wizard
                     </button>
@@ -391,10 +413,10 @@ export function SettingsView({
                 <SaveButton darkMode={darkMode} onSave={() => setConfirmSave(true)} saved={saved} />
 
                 {/* Danger Zone */}
-                <div className={`mt-8 p-5 border rounded-2xl ${dm ? 'bg-red-950/20 border-red-900/40' : 'bg-red-50/60 border-red-200'}`}>
+                <div className={`mt-8 p-5 border rounded-2xl ${dm ? 'bg-chili-950/20 border-chili-900/40' : 'bg-chili-50/60 border-chili-200'}`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <h4 className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-chili-600 dark:text-chili-400 flex items-center gap-2">
                         <AlertTriangle size={18} />
                         Danger Zone — Delete All Data
                       </h4>
@@ -404,7 +426,7 @@ export function SettingsView({
                     </div>
                     <button
                       onClick={() => { setPurgeModal(true); setPurgeError(''); setPurgePin(''); }}
-                      className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-xl transition-colors shrink-0 flex items-center justify-center gap-2"
+                      className="px-4 py-2.5 bg-chili-600 hover:bg-chili-700 text-white font-semibold text-xs rounded-xl transition-colors shrink-0 flex items-center justify-center gap-2"
                     >
                       <Trash2 size={14} />
                       Delete All Data
@@ -418,14 +440,14 @@ export function SettingsView({
             {tab === 'currency' && (
               <div className="space-y-4">
                 <h3 className={t1}>Currency Settings</h3>
-                <div className={`border rounded-xl p-3 text-sm ${dm ? 'bg-blue-900/20 border-blue-800/40 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
+                <div className={`border rounded-xl p-3 text-sm ${dm ? 'bg-brand-900/20 border-brand-800/40 text-brand-300' : 'bg-brand-50 border-brand-200 text-brand-700'}`}>
                   Base currency is set once at onboarding and cannot be changed later (v1).
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {[['Base Currency', 'IDR — Indonesian Rupiah'], ['Symbol', 'Rp']].map(([l, v]) => (
                     <div key={l}>
                       <label className={`text-sm block mb-1 ${t2}`}>{l}</label>
-                      <div className={`border rounded-xl px-4 py-3 text-sm ${dm ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>{v}</div>
+                      <div className={`border rounded-xl px-4 py-3 text-sm ${dm ? 'bg-ink-700 border-ink-600 text-ink-300' : 'bg-ink-50 border-ink-200 text-ink-700'}`}>{v}</div>
                     </div>
                   ))}
                 </div>
@@ -442,17 +464,17 @@ export function SettingsView({
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className={t1}>Tax Rates</h3>
-                    <button onClick={() => setTaxModal(true)} className={`flex items-center gap-1.5 text-sm text-blue-600 border px-3 py-1.5 rounded-lg transition-colors font-medium ${dm ? 'border-blue-800 hover:bg-blue-900/20' : 'border-blue-200 hover:bg-blue-50'}`}>
+                    <button onClick={() => setTaxModal(true)} className={`flex items-center gap-1.5 text-sm text-brand-600 border px-3 py-1.5 rounded-lg transition-colors font-medium ${dm ? 'border-brand-800 hover:bg-brand-900/20' : 'border-brand-200 hover:bg-brand-50'}`}>
                       <Plus size={14} /> Add Rate
                     </button>
                   </div>
                   {taxRules.length === 0
                     ? <p className={`text-sm text-center py-4 ${t2}`}>No tax rules yet.</p>
-                    : taxRules.sort((a, b) => a.order - b.order).map(rate => (
-                      <div key={rate.id} className={`border rounded-xl p-4 flex items-center justify-between gap-3 ${dm ? 'border-slate-700' : 'border-slate-200'} mb-2`}>
+                    : [...taxRules].sort((a, b) => a.order - b.order).map(rate => (
+                      <div key={rate.id} className={`border rounded-xl p-4 flex items-center justify-between gap-3 ${dm ? 'border-ink-700' : 'border-ink-200'} mb-2`}>
                         <div>
                           <p className={`text-sm font-semibold ${t1}`}>{rate.name}</p>
-                          <p className={`text-xs mt-0.5 ${t2}`}>{rate.rate}% · {rate.isInclusive ? 'Inclusive' : 'Exclusive'} · Stack Order: {rate.order}</p>
+                          <p className={`text-xs mt-0.5 ${t2}`}>{rate.rate}%, {rate.isInclusive ? 'included in price' : rate.compound ? 'added, compounds on earlier taxes' : 'added to price'}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <button onClick={() => {
@@ -460,13 +482,14 @@ export function SettingsView({
                             setNewTaxName(rate.name);
                             setNewTaxRate(rate.rate.toString());
                             setNewTaxInclusive(rate.isInclusive);
+                            setNewTaxCompound(!!rate.compound);
                             setTaxModal(true);
-                          }} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50`}>
+                          }} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-brand-100 text-brand-700 hover:bg-brand-200 dark:bg-brand-900/30 dark:text-brand-400 dark:hover:bg-brand-900/50`}>
                             Edit
                           </button>
                           <button onClick={() => {
                             if (setTaxRules) setTaxRules(prev => prev.filter(t => t.id !== rate.id));
-                          }} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50`}>
+                          }} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-chili-100 text-chili-700 hover:bg-chili-200 dark:bg-chili-900/30 dark:text-chili-400 dark:hover:bg-chili-900/50`}>
                             Delete
                           </button>
                         </div>
@@ -475,13 +498,45 @@ export function SettingsView({
                   }
                 </div>
 
-                <div className={`border-t pt-6 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                {serviceCharge && setServiceCharge && (
+                  <div className={`border-t pt-6 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h3 className={t1}>Service charge</h3>
+                        <p className={`text-sm ${t2}`}>Added after discounts and before tax.</p>
+                      </div>
+                      <Toggle darkMode={darkMode} checked={serviceCharge.enabled} onChange={() => setServiceCharge(prev => ({ ...prev, enabled: !prev.enabled }))} />
+                    </div>
+                    {serviceCharge.enabled && (
+                      <div className="grid sm:grid-cols-2 gap-3 mt-3">
+                        <label className="block">
+                          <span className={`text-sm block mb-1 ${t2}`}>Rate (%)</span>
+                          <input
+                            type="number" min={0} max={100} step="0.5"
+                            value={serviceCharge.rate}
+                            onChange={e => {
+                              const v = Number(e.target.value);
+                              setServiceCharge(prev => ({ ...prev, rate: Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 0 }));
+                            }}
+                            className={`w-full rounded-lg border px-3 py-2 text-sm tabular-nums ${dm ? 'bg-ink-800 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`}
+                          />
+                        </label>
+                        <div className={`flex items-center justify-between border rounded-lg px-3 py-2 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+                          <span className={`text-sm ${t1}`}>Charge tax on it</span>
+                          <Toggle darkMode={darkMode} checked={serviceCharge.taxable} onChange={() => setServiceCharge(prev => ({ ...prev, taxable: !prev.taxable }))} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className={`border-t pt-6 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                   <h3 className={`mb-2 ${t1}`}>Category Taxes</h3>
                   <p className={`text-sm mb-4 ${t2}`}>Select which product categories are subject to the default tax rate.</p>
                   
                   <div className="grid gap-2">
                     {categories.filter(c => c.id !== 'cat-all').map(cat => (
-                      <div key={cat.id} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <div key={cat.id} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                         <span className={`text-sm font-medium ${t1}`}>{cat.name}</span>
                         <Toggle darkMode={darkMode} checked={cat.isTaxable} onChange={() => toggleCategoryTax(cat.id)} />
                       </div>
@@ -496,14 +551,14 @@ export function SettingsView({
               <div className="space-y-6">
                 <div>
                   <h3 className={`mb-2 ${t1}`}>Discount Settings</h3>
-                  <div className={`flex items-center justify-between border rounded-xl px-4 py-3 mb-2 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                  <div className={`flex items-center justify-between border rounded-xl px-4 py-3 mb-2 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                     <div>
                       <span className={`text-sm font-medium block ${t1}`}>Enable All Discounts</span>
                       <span className={`text-xs ${t2}`}>Master switch for discount features.</span>
                     </div>
                     <Toggle darkMode={darkMode} checked={discountSettings.enabled} onChange={() => setDiscountSettings(prev => ({...prev, enabled: !prev.enabled}))} />
                   </div>
-                  <div className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                  <div className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                     <div>
                       <span className={`text-sm font-medium block ${t1}`}>Allow Item-Level Discounts</span>
                       <span className={`text-xs ${t2}`}>Allow cashiers to apply ad-hoc discounts to specific items.</span>
@@ -515,7 +570,7 @@ export function SettingsView({
                   </div>
                 </div>
 
-                <div className={`border-t pt-6 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                <div className={`border-t pt-6 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className={t1}>Promo Codes</h3>
                     <button
@@ -533,7 +588,7 @@ export function SettingsView({
                         setNewPromoCannotCombine(false);
                         setPromoModal(true);
                       }}
-                      className={`flex items-center gap-1.5 text-sm text-blue-600 border px-3 py-1.5 rounded-lg transition-colors font-medium ${dm ? 'border-blue-800 hover:bg-blue-900/20' : 'border-blue-200 hover:bg-blue-50'}`}
+                      className={`flex items-center gap-1.5 text-sm text-brand-600 border px-3 py-1.5 rounded-lg transition-colors font-medium ${dm ? 'border-brand-800 hover:bg-brand-900/20' : 'border-brand-200 hover:bg-brand-50'}`}
                     >
                       <Plus size={14} /> Add Code
                     </button>
@@ -541,12 +596,12 @@ export function SettingsView({
                   {discountSettings.promoCodes.length === 0
                     ? <p className={`text-sm text-center py-4 ${t2}`}>No promo codes added.</p>
                     : discountSettings.promoCodes.map(promo => (
-                      <div key={promo.id} className={`border rounded-xl p-4 flex items-center justify-between gap-3 ${dm ? 'border-slate-700' : 'border-slate-200'} mb-2`}>
+                      <div key={promo.id} className={`border rounded-xl p-4 flex items-center justify-between gap-3 ${dm ? 'border-ink-700' : 'border-ink-200'} mb-2`}>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold uppercase tracking-wider ${t1}`}>{promo.code}</span>
+                            <span className={`text-sm font-boldr ${t1}`}>{promo.code}</span>
                             {promo.name && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${dm ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${dm ? 'bg-ink-700 text-ink-300' : 'bg-ink-100 text-ink-700'}`}>
                                 {promo.name}
                               </span>
                             )}
@@ -557,9 +612,9 @@ export function SettingsView({
                           </p>
                           {(promo.activeDate || promo.expiryDate || promo.minSpend) && (
                             <div className={`mt-2 flex flex-wrap gap-2 text-[10px] ${t2}`}>
-                              {promo.activeDate && <span className={`px-1.5 py-0.5 rounded ${dm ? 'bg-slate-700' : 'bg-slate-100'}`}>From: {promo.activeDate}</span>}
-                              {promo.expiryDate && <span className={`px-1.5 py-0.5 rounded ${dm ? 'bg-slate-700' : 'bg-slate-100'}`}>Until: {promo.expiryDate}</span>}
-                              {promo.minSpend && <span className={`px-1.5 py-0.5 rounded ${dm ? 'bg-slate-700' : 'bg-slate-100'}`}>Min Spend: {promo.minSpend.toLocaleString('id-ID')}</span>}
+                              {promo.activeDate && <span className={`px-1.5 py-0.5 rounded ${dm ? 'bg-ink-700' : 'bg-ink-100'}`}>From: {promo.activeDate}</span>}
+                              {promo.expiryDate && <span className={`px-1.5 py-0.5 rounded ${dm ? 'bg-ink-700' : 'bg-ink-100'}`}>Until: {promo.expiryDate}</span>}
+                              {promo.minSpend && <span className={`px-1.5 py-0.5 rounded ${dm ? 'bg-ink-700' : 'bg-ink-100'}`}>Min Spend: {promo.minSpend.toLocaleString('id-ID')}</span>}
                             </div>
                           )}
                         </div>
@@ -578,10 +633,10 @@ export function SettingsView({
                             setNewPromoCategories(promo.categories || []);
                             setNewPromoCannotCombine(promo.cannotCombine || false);
                             setPromoModal(true);
-                          }} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50`}>
+                          }} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-brand-100 text-brand-700 hover:bg-brand-200 dark:bg-brand-900/30 dark:text-brand-400 dark:hover:bg-brand-900/50`}>
                             Edit
                           </button>
-                          <button onClick={() => deletePromo(promo.id)} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50`}>
+                          <button onClick={() => deletePromo(promo.id)} className={`transition-colors px-3 py-1 text-xs font-medium rounded-lg bg-chili-100 text-chili-700 hover:bg-chili-200 dark:bg-chili-900/30 dark:text-chili-400 dark:hover:bg-chili-900/50`}>
                             Delete
                           </button>
                         </div>
@@ -597,14 +652,14 @@ export function SettingsView({
             {tab === 'refunds' && (
               <div className="space-y-4">
                 <h3 className={t1}>Refunds & Voids</h3>
-                <div className={`border rounded-xl p-4 text-sm ${dm ? 'bg-amber-900/20 border-amber-800/40 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+                <div className={`border rounded-xl p-4 text-sm ${dm ? 'bg-turmeric-900/20 border-turmeric-800/40 text-turmeric-300' : 'bg-turmeric-50 border-turmeric-200 text-turmeric-700'}`}>
                   <ul className="list-disc pl-5 space-y-1">
                     <li><strong>Refund:</strong> Restocks items back into inventory (if tracked).</li>
                     <li><strong>Void:</strong> Cancels order without restocking items (e.g., waste).</li>
                   </ul>
                 </div>
                 
-                <div className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                <div className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                   <div>
                     <span className={`text-sm font-medium block ${t1}`}>Require Manager PIN</span>
                     <span className={`text-xs ${t2}`}>Cashiers must enter a manager's PIN to refund or void an order.</span>
@@ -625,7 +680,7 @@ export function SettingsView({
                 <p className={`text-sm ${t2}`}>Enable the methods available at checkout.</p>
                 <div className="space-y-3">
                   {paymentMethods.map(pm => (
-                    <div key={pm.id} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                    <div key={pm.id} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                       <span className={`text-sm font-medium ${t1}`}>{pm.label}</span>
                       <Toggle darkMode={darkMode} checked={pm.enabled} onChange={() => togglePayment(pm.id)} />
                     </div>
@@ -643,27 +698,27 @@ export function SettingsView({
                     <h3 className={`text-lg font-bold ${t1}`}>Categories</h3>
                     <p className={`text-sm ${t2}`}>Manage product categories</p>
                   </div>
-                  <button onClick={() => { setEditingCategoryId(null); setNewCategoryName(''); setCategoryDeleteError(''); setCategoryModal(true); }} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl flex items-center gap-2">
+                  <button onClick={() => { setEditingCategoryId(null); setNewCategoryName(''); setCategoryDeleteError(''); setCategoryModal(true); }} className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl flex items-center gap-2">
                     <Plus size={16} /> Add Category
                   </button>
                 </div>
                 {categoryDeleteError && (
-                  <div className="p-4 rounded-xl bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-sm">
+                  <div className="p-4 rounded-xl bg-chili-100 text-chili-700 dark:bg-chili-900/30 dark:text-chili-400 text-sm">
                     {categoryDeleteError}
                   </div>
                 )}
                 <div className={`rounded-xl border ${surface} overflow-hidden`}>
-                  <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                  <div className="divide-y divide-ink-100 dark:divide-ink-700">
                     {categories.map(c => {
-                      const count = products.filter(p => p.categoryId === c.id).length;
+                      const count = products.filter(p => p.category === c.name).length;
                       return (
-                        <div key={c.id} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <div key={c.id} className="flex items-center justify-between p-4 hover:bg-ink-50 dark:hover:bg-ink-800/50">
                           <div>
                             <p className={`font-semibold ${t1}`}>{c.name}</p>
                             <p className={`text-xs ${t2}`}>{count} product(s) linked</p>
                           </div>
                           <div className="flex gap-2">
-                            <button onClick={() => { setEditingCategoryId(c.id); setNewCategoryName(c.name); setCategoryDeleteError(''); setCategoryModal(true); }} className={`px-3 py-1 text-xs font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50`}>
+                            <button onClick={() => { setEditingCategoryId(c.id); setNewCategoryName(c.name); setCategoryDeleteError(''); setCategoryModal(true); }} className={`px-3 py-1 text-xs font-medium rounded-lg bg-brand-100 text-brand-700 hover:bg-brand-200 dark:bg-brand-900/30 dark:text-brand-400 dark:hover:bg-brand-900/50`}>
                               Edit
                             </button>
                             <button onClick={() => {
@@ -673,7 +728,7 @@ export function SettingsView({
                               }
                               setCategoryDeleteError('');
                               setDeleteCategoryTarget(c);
-                            }} className={`px-3 py-1 text-xs font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50`}>
+                            }} className={`px-3 py-1 text-xs font-medium rounded-lg bg-chili-100 text-chili-700 hover:bg-chili-200 dark:bg-chili-900/30 dark:text-chili-400 dark:hover:bg-chili-900/50`}>
                               Delete
                             </button>
                           </div>
@@ -690,21 +745,21 @@ export function SettingsView({
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className={t1}>Staff Accounts</h3>
-                    <button onClick={() => openUserModal()} className="flex items-center gap-1.5 text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                    <button onClick={() => openUserModal()} className="flex items-center gap-1.5 text-sm bg-brand-600 text-white px-3 py-1.5 rounded-lg hover:bg-brand-700 transition-colors font-medium">
                       <Plus size={14} /> Add User
                     </button>
                   </div>
                   <div className="space-y-3">
                     {users.map(u => (
-                      <div key={u.id} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <div key={u.id} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                         <div>
                           <p className={`text-sm font-semibold ${t1}`}>{u.name}</p>
                           <p className={`text-xs mt-0.5 capitalize ${t2}`}>{u.role}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => openUserModal(u)} className={`text-xs px-3 py-1.5 border rounded-lg font-medium transition-colors ${dm ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>Edit</button>
+                          <button onClick={() => openUserModal(u)} className={`text-xs px-3 py-1.5 border rounded-lg font-medium transition-colors ${dm ? 'border-ink-600 text-ink-300 hover:bg-ink-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50'}`}>Edit</button>
                           {u.role !== 'owner' && (
-                            <button onClick={() => deleteUser(u.id)} className={`transition-colors p-1.5 ${dm ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-400'}`}><Trash2 size={15} /></button>
+                            <button onClick={() => deleteUser(u.id)} className={`transition-colors p-1.5 ${dm ? 'text-ink-600 hover:text-chili-400' : 'text-ink-300 hover:text-chili-400'}`}><Trash2 size={15} /></button>
                           )}
                         </div>
                       </div>
@@ -712,17 +767,17 @@ export function SettingsView({
                   </div>
                 </div>
 
-                <div className={`border-t pt-6 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                <div className={`border-t pt-6 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                   <h3 className={`mb-4 ${t1}`}>Role Permissions</h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className={`border-b text-left ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <tr className={`border-b text-left ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                           <th className={`pb-3 font-semibold ${t2}`}>Role</th>
                           {VIEWS.map(v => <th key={v.id} className={`pb-3 font-semibold text-center ${t2}`}>{v.label}</th>)}
                         </tr>
                       </thead>
-                      <tbody className={`divide-y ${dm ? 'divide-slate-700' : 'divide-slate-100'}`}>
+                      <tbody className={`divide-y ${dm ? 'divide-ink-700' : 'divide-ink-100'}`}>
                         {ROLES.map(role => (
                           <tr key={role}>
                             <td className={`py-3 capitalize font-medium ${t1}`}>{role}</td>
@@ -734,7 +789,7 @@ export function SettingsView({
                                   <button
                                     onClick={() => togglePermission(role, v.id)}
                                     disabled={disabled}
-                                    className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${has ? 'bg-blue-600 text-white' : dm ? 'border border-slate-600 text-transparent hover:border-slate-400' : 'border border-slate-300 text-transparent hover:border-slate-400'}`}
+                                    className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${has ? 'bg-brand-600 text-white' : dm ? 'border border-ink-600 text-transparent hover:border-ink-400' : 'border border-ink-300 text-transparent hover:border-ink-400'}`}
                                   >
                                     <Check size={12} className={has ? 'opacity-100' : 'opacity-0'} />
                                   </button>
@@ -765,13 +820,24 @@ export function SettingsView({
 
       {taxModal && (
         <Modal title={editingTaxId ? "Edit Tax Rate" : "Add Tax Rate"} onClose={() => setTaxModal(false)} darkMode={dm}>
-          <Field label="Tax Name" value={newTaxName} onChange={setNewTaxName} placeholder="e.g. Service Charge" darkMode={dm} />
+          <Field label="Tax Name" value={newTaxName} onChange={setNewTaxName} placeholder="e.g. PB1" darkMode={dm} />
           <Field label="Rate (%)" value={newTaxRate} onChange={setNewTaxRate} placeholder="e.g. 5" type="number" darkMode={dm} />
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex items-center gap-2 mb-3">
             <Toggle darkMode={darkMode} checked={newTaxInclusive} onChange={() => setNewTaxInclusive(!newTaxInclusive)} />
             <span className={`text-sm ${t2}`}>Tax included in price</span>
           </div>
-          <button onClick={saveTax} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700">{editingTaxId ? 'Save Tax' : 'Add Tax'}</button>
+          {!newTaxInclusive && (
+            <div className="mb-3">
+              <div className="flex items-center gap-2">
+                <Toggle darkMode={darkMode} checked={newTaxCompound} onChange={() => setNewTaxCompound(!newTaxCompound)} />
+                <span className={`text-sm ${t2}`}>Also tax the taxes above it</span>
+              </div>
+              <p className={`text-xs mt-1 ml-1 ${t2}`}>Leave off unless your tax office requires tax-on-tax. PPN, PB1 and GST are normally additive.</p>
+            </div>
+          )}
+          {taxError && <p role="alert" className="text-sm text-chili-600 mb-3">{taxError}</p>}
+          <div className="mb-3" />
+          <button onClick={saveTax} className="w-full bg-brand-600 text-white rounded-xl py-3 font-semibold hover:bg-brand-700">{editingTaxId ? 'Save Tax' : 'Add Tax'}</button>
         </Modal>
       )}
 
@@ -781,13 +847,13 @@ export function SettingsView({
           <Field label="Promo Code" value={newPromoCode} onChange={e => setNewPromoCode(e.toUpperCase())} placeholder="e.g. SUMMER10" darkMode={dm} />
           <div className="mb-3">
             <label className={`text-sm block mb-1 ${t2}`}>Discount Type</label>
-            <div className={`flex border rounded-xl overflow-hidden ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+            <div className={`flex border rounded-xl overflow-hidden ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
               {(['percent', 'nominal'] as ('percent'|'nominal')[]).map(t => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setNewPromoType(t)}
-                  className={`flex-1 py-2.5 text-sm font-medium capitalize transition-colors ${newPromoType === t ? 'bg-blue-600 text-white' : dm ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                  className={`flex-1 py-2.5 text-sm font-medium capitalize transition-colors ${newPromoType === t ? 'bg-brand-600 text-white' : dm ? 'text-ink-400 hover:bg-ink-700' : 'text-ink-500 hover:bg-ink-50'}`}
                 >
                   {t === 'percent' ? 'Percentage (%)' : 'Amount (IDR)'}
                 </button>
@@ -816,12 +882,12 @@ export function SettingsView({
           
           <div className="mb-4">
             <label className={`text-sm block mb-1 ${t2}`}>Applicable Categories (Empty = All)</label>
-            <div className={`flex flex-wrap gap-2 border rounded-xl p-3 ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+            <div className={`flex flex-wrap gap-2 border rounded-xl p-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
               {categories.filter(c => c.id !== 'cat-all').map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => setNewPromoCategories(prev => prev.includes(cat.id) ? prev.filter(id => id !== cat.id) : [...prev, cat.id])}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${newPromoCategories.includes(cat.id) ? 'bg-blue-600 text-white' : dm ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${newPromoCategories.includes(cat.id) ? 'bg-brand-600 text-white' : dm ? 'bg-ink-700 text-ink-300' : 'bg-ink-100 text-ink-600'}`}
                 >
                   {cat.name}
                 </button>
@@ -834,7 +900,7 @@ export function SettingsView({
             <span className={`text-sm ${t2}`}>Cannot combine with item discounts</span>
           </div>
 
-          <button onClick={savePromo} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700 mt-2">{editingPromoCodeId ? 'Save Promo' : 'Add Promo'}</button>
+          <button onClick={savePromo} className="w-full bg-brand-600 text-white rounded-xl py-3 font-semibold hover:bg-brand-700 mt-2">{editingPromoCodeId ? 'Save Promo' : 'Add Promo'}</button>
         </Modal>
       )}
 
@@ -843,7 +909,7 @@ export function SettingsView({
           <div className="space-y-4">
             <div>
               <label className={`block text-xs font-medium mb-1 ${t2}`}>Category Name</label>
-              <input value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} className={`w-full p-2 rounded-xl border outline-none text-sm ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+              <input value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} className={`w-full p-2 rounded-xl border outline-none text-sm ${darkMode ? 'bg-ink-900 border-ink-700 text-ink-200' : 'bg-ink-50 border-ink-200 text-ink-800'}`} />
             </div>
             <button
               onClick={() => {
@@ -851,11 +917,11 @@ export function SettingsView({
                 if (editingCategoryId) {
                   setCategories(prev => prev.map(c => c.id === editingCategoryId ? { ...c, name: newCategoryName } : c));
                 } else {
-                  setCategories(prev => [...prev, { id: Date.now().toString(), name: newCategoryName, isActive: true }]);
+                  setCategories(prev => [...prev, { id: `cat-${Date.now()}`, name: newCategoryName, isTaxable: true, isDiscountable: true }]);
                 }
                 setCategoryModal(false);
               }}
-              className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
+              className="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg"
             >
               Save Category
             </button>
@@ -871,7 +937,7 @@ export function SettingsView({
             <select
               value={newUser.role || 'cashier'}
               onChange={e => setNewUser({ ...newUser, role: e.target.value as Role })}
-              className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 ${dm ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}
+              className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-400 ${dm ? 'bg-ink-700 border-ink-600 text-ink-200' : 'bg-white border-ink-200 text-ink-800'}`}
             >
               <option value="owner">Owner</option>
               <option value="manager">Manager</option>
@@ -879,17 +945,17 @@ export function SettingsView({
             </select>
           </div>
           <Field
-            label="PIN Code"
+            label={editingUserId && !IS_LOCAL_DEMO ? 'New PIN (leave empty to keep the current one)' : 'PIN'}
             value={newUser.pin || ''}
-            onChange={v => setNewUser({ ...newUser, pin: v.replace(/\D/g, '').slice(0, 4) })}
-            placeholder="Requires 4 numbers (e.g. 1234)"
+            onChange={v => setNewUser({ ...newUser, pin: v.replace(/\D/g, '').slice(0, 6) })}
+            placeholder="4 to 6 digits"
             type="password"
-            maxLength={4}
+            maxLength={6}
             pattern="[0-9]*"
             inputMode="numeric"
             darkMode={dm}
           />
-          <button onClick={saveUser} disabled={!newUser.name || !newUser.pin || newUser.pin.length !== 4} className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold hover:bg-blue-700 disabled:opacity-50 mt-2">
+          <button onClick={saveUser} disabled={!newUser.name} className="w-full bg-brand-600 text-white rounded-xl py-3 font-semibold hover:bg-brand-700 disabled:opacity-50 mt-2">
             {editingUserId ? 'Save Changes' : 'Add User'}
           </button>
         </Modal>
@@ -898,19 +964,19 @@ export function SettingsView({
       {purgeModal && (
         <Modal title="Confirm Data Deletion" onClose={() => setPurgeModal(false)} darkMode={dm}>
           <form onSubmit={handlePurgeSubmit} className="space-y-4">
-            <div className={`p-3.5 rounded-xl border text-xs leading-relaxed ${dm ? 'bg-red-950/30 border-red-900/40 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
+            <div className={`p-3.5 rounded-xl border text-xs leading-relaxed ${dm ? 'bg-chili-950/30 border-chili-900/40 text-chili-300' : 'bg-chili-50 border-chili-200 text-chili-700'}`}>
               <strong className="block mb-0.5">⚠️ Warning: Irreversible Action</strong>
               This will permanently delete all products, transaction logs, order records, and customer profiles. Please enter your <strong>Owner PIN / Password</strong> to authorize.
             </div>
 
             {purgeError && (
-              <div className="p-3 text-xs rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 font-medium">
+              <div className="p-3 text-xs rounded-xl bg-chili-500/10 text-chili-500 border border-chili-500/20 font-medium">
                 {purgeError}
               </div>
             )}
 
             {purgeSuccess ? (
-              <div className="p-3 text-xs text-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold">
+              <div className="p-3 text-xs text-center rounded-xl bg-leaf-500/10 text-leaf-500 border border-leaf-500/20 font-bold">
                 ✓ All store data has been deleted!
               </div>
             ) : (
@@ -926,7 +992,7 @@ export function SettingsView({
                 <button
                   type="submit"
                   disabled={purgeLoading || !purgePin}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl py-3 font-semibold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full bg-chili-600 hover:bg-chili-700 text-white rounded-xl py-3 font-semibold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {purgeLoading ? 'Deleting data…' : 'Wipe All Store Data'}
                 </button>
@@ -978,11 +1044,11 @@ export function SettingsView({
 function Field({ label, value, onChange, placeholder, type = 'text', maxLength, pattern, inputMode, darkMode }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; maxLength?: number; pattern?: string; inputMode?: string; darkMode: boolean; }) {
   return (
     <div className="mb-4">
-      <label className={`text-sm block mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{label}</label>
+      <label className={`text-sm block mb-1 ${darkMode ? 'text-ink-400' : 'text-ink-500'}`}>{label}</label>
       <input
         type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
         maxLength={maxLength} pattern={pattern} inputMode={inputMode as any}
-        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-colors ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800 placeholder-slate-400'}`}
+        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-400 transition-colors ${darkMode ? 'bg-ink-700 border-ink-600 text-ink-100 placeholder-ink-500' : 'bg-white border-ink-200 text-ink-800 placeholder-ink-400'}`}
       />
     </div>
   );
@@ -991,7 +1057,7 @@ function Field({ label, value, onChange, placeholder, type = 'text', maxLength, 
 function Toggle({ checked, onChange, darkMode }: { checked: boolean; onChange: () => void; darkMode: boolean }) {
   return (
     <button onClick={onChange} style={{ width: 40, height: 22, position: 'relative', flexShrink: 0 }}
-      className={`rounded-full transition-colors ${checked ? 'bg-blue-600' : (darkMode ? 'bg-slate-600' : 'bg-slate-300')}`}>
+      className={`rounded-full transition-colors ${checked ? 'bg-brand-600' : (darkMode ? 'bg-ink-600' : 'bg-ink-300')}`}>
       <span style={{ position: 'absolute', width: 18, height: 18, top: 2, left: 2, backgroundColor: 'white', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transform: checked ? 'translateX(18px)' : 'translateX(0)', transition: 'transform 0.2s' }} />
     </button>
   );
@@ -1000,7 +1066,7 @@ function Toggle({ checked, onChange, darkMode }: { checked: boolean; onChange: (
 function SaveButton({ onSave, saved, darkMode }: { onSave: () => void; saved: boolean; darkMode: boolean }) {
   return (
     <div className="pt-2">
-      <button onClick={onSave} disabled={saved} className={`px-6 py-2.5 rounded-xl font-semibold transition-colors ${saved ? (darkMode ? 'bg-emerald-900/40 text-emerald-600' : 'bg-emerald-100 text-emerald-600') : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+      <button onClick={onSave} disabled={saved} className={`px-6 py-2.5 rounded-xl font-semibold transition-colors ${saved ? (darkMode ? 'bg-leaf-900/40 text-leaf-600' : 'bg-leaf-100 text-leaf-600') : 'bg-brand-600 text-white hover:bg-brand-700'}`}>
         {saved ? 'Saved!' : 'Save Settings'}
       </button>
     </div>
@@ -1011,9 +1077,9 @@ function Modal({ title, children, onClose, darkMode }: { title: string; children
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className={`relative rounded-2xl p-5 w-full max-w-sm shadow-2xl ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}>
-        <button onClick={onClose} className={`absolute top-4 right-4 transition-colors ${darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}><X size={18} /></button>
-        <h3 className={`mb-4 font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{title}</h3>
+      <div className={`relative rounded-2xl p-5 w-full max-w-sm shadow-2xl ${darkMode ? 'bg-ink-800 border border-ink-700' : 'bg-white'}`}>
+        <button onClick={onClose} className={`absolute top-4 right-4 transition-colors ${darkMode ? 'text-ink-400 hover:text-ink-200' : 'text-ink-400 hover:text-ink-600'}`}><X size={18} /></button>
+        <h3 className={`mb-4 font-semibold ${darkMode ? 'text-ink-100' : 'text-ink-800'}`}>{title}</h3>
         {children}
       </div>
     </div>

@@ -1,7 +1,10 @@
 import { useState, type ElementType } from 'react';
 import { X, Banknote, Smartphone, CreditCard, Building2, Printer, Delete, CheckCircle, Ticket, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { CartItem, OrderType, PaymentMethod, DiscountSettings, PromoCode, Customer, LoyaltySettings, PaymentMethodEntry } from './mockData';
+import type { CartItem, OrderType, PaymentMethod, DiscountSettings, PromoCode, Customer, LoyaltySettings, PaymentMethodEntry, TaxRule, ServiceChargeSettings, CheckoutResult } from './mockData';
+import { computeOrderTotals, type PricingLine } from '../lib/pricing';
+import { promoToPricing } from '../lib/cartPricing';
+import { escapeHtml } from '../lib/escapeHtml';
 import { formatIDR } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 
@@ -13,14 +16,16 @@ interface CheckoutModalProps {
   darkMode: boolean;
   discountSettings: DiscountSettings;
   categories: { id: string; name: string }[];
-  subtotalBeforePromo: number;
-  taxAmount: number;
+  pricingLines: PricingLine[];
+  taxRules: TaxRule[];
+  tierDiscountPercent: number;
+  serviceCharge?: ServiceChargeSettings;
   customers?: Customer[];
   loyaltySettings?: LoyaltySettings;
   selectedCustomerId?: string | null;
   paymentMethods: PaymentMethodEntry[];
   onClose: (completed?: boolean) => void;
-  onConfirm: (method: PaymentMethod, amountPaid: number, promoCode?: string, pointsRedeemed?: number, pointsDiscountAmt?: number, finalTax?: number, total?: number, finalSubtotal?: number) => string | void;
+  onConfirm: (result: CheckoutResult) => string | void;
 }
 
 const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[] = [
@@ -30,7 +35,7 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: ElementType }[]
   { id: 'bank-transfer', label: 'Bank Transfer',  icon: Building2  },
 ];
 
-export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, categories, subtotalBeforePromo, taxAmount, customers, loyaltySettings, selectedCustomerId, paymentMethods, onClose, onConfirm }: CheckoutModalProps) {
+export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode, discountSettings, categories, pricingLines, taxRules, tierDiscountPercent, serviceCharge, customers, loyaltySettings, selectedCustomerId, paymentMethods, onClose, onConfirm }: CheckoutModalProps) {
   const availableMethods = PAYMENT_OPTIONS.filter(po => paymentMethods.find(pm => pm.id === po.id)?.enabled);
   const [orderNumber, setOrderNumber] = useState('');
   const [step,       setStep]      = useState<'payment' | 'success'>('payment');
@@ -52,6 +57,10 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   const [splitAmount, setSplitAmount] = useState<string>('');
 
   const [confirmCancelModal, setConfirmCancelModal] = useState(false);
+
+  // Before promo/points: the base a promo's minimum spend is checked against.
+  const basePricing = computeOrderTotals({ lines: pricingLines, taxRules, tierDiscountPercent, serviceCharge });
+  const subtotalBeforePromo = basePricing.netSubtotal;
 
   const applyPromo = () => {
     setPromoError('');
@@ -122,73 +131,35 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
     setPromoInput('');
   };
 
-  // Recalculate totals
-  let promoDiscountAmt = 0;
-  if (appliedPromo) {
-    let applicableSubtotal = subtotalBeforePromo;
-    
-    if (appliedPromo.categories && appliedPromo.categories.length > 0) {
-      let tierDiscPct = 0;
-      if (selectedCustomerId && loyaltySettings?.enabled && customers) {
-        const cust = customers.find(c => c.id === selectedCustomerId);
-        if (cust) {
-          const tier = loyaltySettings.tiers.slice().sort((a,b) => b.minSpend - a.minSpend).find(t => cust.totalSpend >= t.minSpend);
-          tierDiscPct = tier?.discountPercent || 0;
-        }
-      }
-
-      const allowedCategoryNames = categories
-        .filter(c => appliedPromo.categories!.includes(c.id))
-        .map(c => c.name);
-        
-      applicableSubtotal = cart
-        .filter(item => allowedCategoryNames.includes(item.product.category))
-        .reduce((sum, item) => {
-          const basePrice = item.product.price + (item.variant?.priceModifier || 0);
-          const linePrice = basePrice * item.qty;
-          let after = linePrice;
-          if (item.itemDiscountNominal) after -= (item.itemDiscountNominal * item.qty);
-          else if (item.discount) after -= linePrice * (item.discount / 100);
-          
-          if (tierDiscPct > 0) after -= after * (tierDiscPct / 100);
-          
-          return sum + after;
-        }, 0);
-    }
-
-    if (applicableSubtotal > 0) {
-      if (appliedPromo.type === 'percent') {
-        let disc = applicableSubtotal * (appliedPromo.value / 100);
-        if (appliedPromo.maxDiscountAmount && appliedPromo.maxDiscountAmount > 0) {
-          disc = Math.min(disc, appliedPromo.maxDiscountAmount);
-        }
-        promoDiscountAmt = disc;
-      } else {
-        promoDiscountAmt = Math.min(appliedPromo.value, applicableSubtotal);
-      }
-    }
-  }
-
-  const finalSubtotalAfterPromo = Math.max(0, subtotalBeforePromo - promoDiscountAmt);
-  
-  let pointsDiscountAmt = 0;
-  let pointsRedeemed = 0;
+  // Recalculate totals with the shared engine (tax is recomputed per line after every discount)
   const customer = customers?.find(c => c.id === selectedCustomerId);
+  const withPromo = computeOrderTotals({
+    lines: pricingLines, taxRules, tierDiscountPercent, serviceCharge,
+    promo: promoToPricing(appliedPromo),
+  });
+  const promoDiscountAmt = withPromo.promoDiscount;
 
-  if (Number(pointsToRedeem) > 0 && customer && loyaltySettings?.enabled) {
-    const requestedPoints = Math.min(Number(pointsToRedeem), customer.pointsBalance);
-    const maxPointsNeeded = Math.ceil(finalSubtotalAfterPromo / loyaltySettings.redemptionValue);
-    pointsRedeemed = Math.min(requestedPoints, maxPointsNeeded);
-    pointsDiscountAmt = pointsRedeemed * loyaltySettings.redemptionValue;
+  let pointsRedeemed = 0;
+  if (Number(pointsToRedeem) > 0 && customer && loyaltySettings?.enabled && loyaltySettings.redemptionValue > 0) {
+    const requestedPoints = Math.min(Math.floor(Number(pointsToRedeem)), customer.pointsBalance);
+    // Points can cover the goods, never more — service charge and tax are still paid.
+    const maxPointsUsable = Math.floor(withPromo.netSubtotal / loyaltySettings.redemptionValue);
+    pointsRedeemed = Math.max(0, Math.min(requestedPoints, maxPointsUsable));
   }
 
-  const finalSubtotal = Math.max(0, finalSubtotalAfterPromo - pointsDiscountAmt);
-  const effectiveRatio = subtotalBeforePromo > 0 ? (finalSubtotal / subtotalBeforePromo) : 1;
-  const finalTax = Math.round(taxAmount * effectiveRatio);
-  const total = finalSubtotal + finalTax;
+  const pricing = pointsRedeemed > 0
+    ? computeOrderTotals({
+        lines: pricingLines, taxRules, tierDiscountPercent, serviceCharge,
+        promo: promoToPricing(appliedPromo),
+        pointsValue: pointsRedeemed * (loyaltySettings?.redemptionValue ?? 0),
+      })
+    : withPromo;
+  const pointsDiscountAmt = pricing.pointsDiscount;
+  const finalTax = pricing.taxTotal;
+  const total = pricing.total;
 
   const pointsEarnedPreview = (customer && loyaltySettings?.enabled && loyaltySettings.earnRateSpend > 0) 
-    ? Math.floor(total / loyaltySettings.earnRateSpend) * loyaltySettings.earnRatePoints 
+    ? Math.floor(pricing.netSubtotal / loyaltySettings.earnRateSpend) * loyaltySettings.earnRatePoints 
     : 0;
 
   const cashPaid   = parseInt(cashInput.replace(/\D/g, ''), 10) || 0;
@@ -203,7 +174,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const invoiceNum = onConfirm(method, method === 'cash' ? cashPaid : total, appliedPromo?.code, pointsRedeemed, pointsDiscountAmt, finalTax, total, finalSubtotal);
+      const invoiceNum = onConfirm({ paymentMethod: method, amountPaid: method === 'cash' ? cashPaid : total, promoCode: appliedPromo?.code, pointsRedeemed, pricing });
       if (invoiceNum) setOrderNumber(invoiceNum);
       setStep('success');
     } catch (e) {
@@ -256,8 +227,8 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   </style>
 </head>
 <body>
-  <div class="center bold" style="font-size:15px">${bizName.toUpperCase()}</div>
-  <div class="center" style="color:#555">${cashierName}</div>
+  <div class="center bold" style="font-size:15px">${escapeHtml(bizName.toUpperCase())}</div>
+  <div class="center" style="color:#555">${escapeHtml(cashierName)}</div>
   <div class="div"></div>
   <div class="row"><span>${orderNumber}</span><span>${now}</span></div>
   <div class="row"><span>Order type:</span><span>${orderTypeLabel}</span></div>
@@ -269,14 +240,15 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
     if (item.itemDiscountNominal) after -= (item.itemDiscountNominal * item.qty);
     else if (item.discount) after -= linePrice * (item.discount / 100);
     
-    return `<div class="row"><span class="bold">${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}</span></div>
+    return `<div class="row"><span class="bold">${escapeHtml(item.product.name)} ${item.variant ? `(${escapeHtml(item.variant.name)})` : ''}</span></div>
       <div class="row indent"><span>${item.qty} x ${formatIDR(basePrice)}${item.discount > 0 ? ` (-${item.discount}%)` : item.itemDiscountNominal ? ` (-Rp${item.itemDiscountNominal})` : ''}</span><span>${formatIDR(after)}</span></div>`;
   }).join('')}
   <div class="div"></div>
   <div class="row"><span>Subtotal</span><span>${formatIDR(subtotalBeforePromo)}</span></div>
-  ${appliedPromo ? `<div class="row"><span>Promo (${appliedPromo.code})</span><span>-${formatIDR(promoDiscountAmt)}</span></div>` : ''}
+  ${appliedPromo ? `<div class="row"><span>Promo (${escapeHtml(appliedPromo.code)})</span><span>-${formatIDR(promoDiscountAmt)}</span></div>` : ''}
   ${pointsDiscountAmt > 0 ? `<div class="row"><span>Points Redeemed (${pointsRedeemed})</span><span>-${formatIDR(pointsDiscountAmt)}</span></div>` : ''}
-  <div class="row"><span>Tax</span><span>${formatIDR(finalTax)}</span></div>
+  ${pricing.serviceCharge > 0 ? `<div class="row"><span>Service charge</span><span>${formatIDR(pricing.serviceCharge)}</span></div>` : ''}
+  ${pricing.taxes.filter(t => t.amount > 0).map(t => `<div class="row"><span>${escapeHtml(t.name)} ${t.rate}%${t.isInclusive ? ' (incl.)' : ''}</span><span>${formatIDR(t.amount)}</span></div>`).join('')}
   <div class="div"></div>
   <div class="row total"><span>TOTAL</span><span>${formatIDR(total)}</span></div>
   <div class="row" style="margin-top:4px"><span>Payment: ${paymentLabel}</span>${method === 'cash' && cashPaid >= total ? `<span>Change: ${formatIDR(change)}</span>` : ''}</div>
@@ -294,18 +266,18 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   };
 
   const dm = darkMode;
-  const modalBg = dm ? 'bg-slate-900' : 'bg-white';
-  const t1      = dm ? 'text-slate-100' : 'text-slate-800';
-  const t2      = dm ? 'text-slate-400' : 'text-slate-500';
-  const card    = dm ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200';
-  const inputCls = dm ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-500 focus:border-blue-400' : 'bg-white border-slate-200 text-slate-700 focus:border-blue-400';
+  const modalBg = dm ? 'bg-ink-900' : 'bg-white';
+  const t1      = dm ? 'text-ink-100' : 'text-ink-800';
+  const t2      = dm ? 'text-ink-400' : 'text-ink-500';
+  const card    = dm ? 'bg-ink-800 border-ink-700' : 'bg-ink-50 border-ink-200';
+  const inputCls = dm ? 'bg-ink-700 border-ink-600 text-ink-100 placeholder-ink-500 focus:border-brand-400' : 'bg-white border-ink-200 text-ink-700 focus:border-brand-400';
 
   if (step === 'success') {
     return (
       <ModalShell onClose={() => onClose(true)} darkMode={dm}>
         <div className="flex flex-col items-center">
-          <div className={`w-16 h-16 rounded-full ${dm ? 'bg-emerald-900/40' : 'bg-emerald-100'} flex items-center justify-center mb-4`}>
-            <CheckCircle size={32} className="text-emerald-600" />
+          <div className={`w-16 h-16 rounded-full ${dm ? 'bg-leaf-900/40' : 'bg-leaf-100'} flex items-center justify-center mb-4`}>
+            <CheckCircle size={32} className="text-leaf-600" />
           </div>
           <h2 className={`text-xl font-bold mb-1 ${t1}`}>Payment Received</h2>
           <p className={`text-sm mb-4 ${t2}`}>Order: {orderNumber}</p>
@@ -317,13 +289,13 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
           <div className="flex gap-3 w-full mt-4">
             <button
               onClick={printReceipt}
-              className={`flex-1 flex items-center justify-center gap-2 border rounded-xl py-3 text-sm font-medium transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+              className={`flex-1 flex items-center justify-center gap-2 border rounded-xl py-3 text-sm font-medium transition-colors ${dm ? 'border-ink-700 text-ink-300 hover:bg-ink-800' : 'border-ink-200 text-ink-600 hover:bg-ink-50'}`}
             >
               <Printer size={16} /> Print Receipt
             </button>
             <button
               onClick={() => onClose(true)}
-              className="flex-1 bg-blue-600 text-white rounded-xl py-3 hover:bg-blue-700 transition-colors text-sm font-semibold"
+              className="flex-1 bg-brand-600 text-white rounded-xl py-3 hover:bg-brand-700 transition-colors text-sm font-semibold"
             >
               New Order
             </button>
@@ -340,24 +312,27 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
 
       {/* Order summary */}
       <div className={`rounded-xl p-3 space-y-1.5 mb-4 border ${card}`}>
-        <div className={`border-b pb-1.5 mb-1.5 space-y-1 tabular-nums ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+        <div className={`border-b pb-1.5 mb-1.5 space-y-1 tabular-nums ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
           <div className={`flex justify-between text-sm ${t2}`}><span>Subtotal</span><span>{formatIDR(subtotalBeforePromo)}</span></div>
           {appliedPromo && (
-            <div className={`flex justify-between text-sm text-emerald-500 font-medium`}>
+            <div className={`flex justify-between text-sm text-leaf-500 font-medium`}>
               <span>Promo ({appliedPromo.code})</span><span>-{formatIDR(promoDiscountAmt)}</span>
             </div>
           )}
           {pointsDiscountAmt > 0 && (
-            <div className={`flex justify-between text-sm text-amber-500 font-medium`}>
+            <div className={`flex justify-between text-sm text-turmeric-500 font-medium`}>
               <span>Points Redeemed ({pointsRedeemed})</span><span>-{formatIDR(pointsDiscountAmt)}</span>
             </div>
           )}
+          {pricing.serviceCharge > 0 && (
+            <div className={`flex justify-between text-sm ${t2}`}><span>Service charge</span><span>{formatIDR(pricing.serviceCharge)}</span></div>
+          )}
           <div className={`flex justify-between text-sm ${t2}`}><span>Tax</span><span>{formatIDR(finalTax)}</span></div>
-          <div className={`flex justify-between text-sm font-bold ${t1} pt-1 mt-1 border-t ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-            <span>Total</span><span className="text-blue-500">{formatIDR(total)}</span>
+          <div className={`flex justify-between text-sm font-bold ${t1} pt-1 mt-1 border-t ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+            <span>Total</span><span className="text-brand-500">{formatIDR(total)}</span>
           </div>
           {pointsEarnedPreview > 0 && (
-            <div className={`flex justify-between text-xs text-amber-500 font-medium pt-1`}>
+            <div className={`flex justify-between text-xs text-turmeric-500 font-medium pt-1`}>
               <span>Points to earn</span><span>+{pointsEarnedPreview} pts</span>
             </div>
           )}
@@ -366,10 +341,10 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
         {/* Points Input */}
         {customer && loyaltySettings?.enabled && customer.pointsBalance > 0 && (
           <div className="mt-2 mb-3">
-            <div className={`p-3 rounded-xl border transition-colors ${Number(pointsToRedeem) > 0 ? 'border-amber-500 bg-amber-500/5' : dm ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
+            <div className={`p-3 rounded-xl border transition-colors ${Number(pointsToRedeem) > 0 ? 'border-turmeric-500 bg-turmeric-500/5' : dm ? 'border-ink-700 bg-ink-800' : 'border-ink-200 bg-ink-50'}`}>
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <div className={`text-sm font-medium ${Number(pointsToRedeem) > 0 ? (dm ? 'text-amber-500' : 'text-amber-600') : t1}`}>
+                  <div className={`text-sm font-medium ${Number(pointsToRedeem) > 0 ? (dm ? 'text-turmeric-500' : 'text-turmeric-600') : t1}`}>
                     Redeem Points
                   </div>
                   <div className={`text-xs ${t2}`}>
@@ -385,11 +360,11 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                   onChange={e => setPointsToRedeem(e.target.value)}
                   max={customer.pointsBalance}
                   min="0"
-                  className={`flex-1 w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-amber-400 ${dm ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                  className={`flex-1 w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-turmeric-400 ${dm ? 'bg-ink-900 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`}
                 />
                 <button 
                   onClick={() => setPointsToRedeem(String(customer.pointsBalance))}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${dm ? 'border-ink-700 text-ink-300 hover:bg-ink-700' : 'border-ink-200 text-ink-600 hover:bg-ink-100'}`}
                 >
                   Max
                 </button>
@@ -408,19 +383,19 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                     <Ticket size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${t2}`} />
                     <input 
                       type="text" placeholder="Enter promo code" value={promoInput} onChange={e => setPromoInput(e.target.value.toUpperCase())}
-                      className={`w-full pl-8 pr-3 py-2 text-sm border rounded-lg focus:outline-none uppercase ${inputCls}`}
+                      className={`w-full pl-8 pr-3 py-2 text-sm border rounded-lg focus:outline-none ${inputCls}`}
                     />
                   </div>
-                  <button onClick={applyPromo} disabled={!promoInput.trim()} className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 hover:bg-blue-700 transition-colors">Apply</button>
+                  <button onClick={applyPromo} disabled={!promoInput.trim()} className="px-3 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 hover:bg-brand-700 transition-colors">Apply</button>
                 </div>
-                {promoError && <p className="text-xs text-red-500 mt-1 pl-1">{promoError}</p>}
+                {promoError && <p className="text-xs text-chili-500 mt-1 pl-1">{promoError}</p>}
 
                 {/* Available Discounts List */}
                 {discountSettings.promoCodes.filter(p => p.active).length > 0 && (
                   <div className="mt-2.5">
                     <div className="flex items-center gap-1.5 mb-1.5">
-                      <Tag size={12} className="text-blue-500" />
-                      <span className={`text-[11px] font-semibold uppercase tracking-wider ${t2}`}>Available Discounts</span>
+                      <Tag size={12} className="text-brand-500" />
+                      <span className={`text-[11px] font-semiboldr ${t2}`}>Available Discounts</span>
                     </div>
                     <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto pr-1">
                       {discountSettings.promoCodes
@@ -434,8 +409,8 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                               onClick={() => handleSelectPromo(promo)}
                               className={`w-full text-left p-2 rounded-lg border transition-all flex items-center justify-between gap-2 group ${
                                 dm 
-                                  ? 'bg-slate-900/60 border-slate-700 hover:border-blue-500 hover:bg-slate-800/80' 
-                                  : 'bg-white border-slate-200 hover:border-blue-400 hover:bg-blue-50/50'
+                                  ? 'bg-ink-900 border-ink-700 hover:border-brand-500 hover:bg-ink-800/80' 
+                                  : 'bg-white border-ink-200 hover:border-brand-400 hover:bg-brand-50/50'
                               } ${!isEligible ? 'opacity-60' : ''}`}
                             >
                               <div className="min-w-0 flex-1">
@@ -443,12 +418,12 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                                   <span className={`text-xs font-semibold truncate ${t1}`}>
                                     {promo.name || promo.code}
                                   </span>
-                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-brand-500/10 text-brand-600 border border-brand-500/20">
                                     {promo.code}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5 text-[11px]">
-                                  <span className="text-emerald-600 font-medium">
+                                  <span className="text-leaf-600 font-medium">
                                     {promo.type === 'percent' ? `${promo.value}% OFF` : `Rp ${promo.value.toLocaleString('id-ID')} OFF`}
                                   </span>
                                   {promo.type === 'percent' && promo.maxDiscountAmount && promo.maxDiscountAmount > 0 && (
@@ -463,7 +438,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                                   )}
                                 </div>
                               </div>
-                              <span className="shrink-0 text-xs font-medium px-2 py-1 rounded bg-blue-600/10 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                              <span className="shrink-0 text-xs font-medium px-2 py-1 rounded bg-brand-600/10 text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-colors">
                                 Apply
                               </span>
                             </button>
@@ -474,8 +449,8 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                 )}
               </div>
             ) : (
-              <div className={`flex items-center justify-between p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10`}>
-                <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium">
+              <div className={`flex items-center justify-between p-2.5 rounded-lg border border-leaf-500/30 bg-leaf-500/10`}>
+                <div className="flex items-center gap-2 text-leaf-600 text-sm font-medium">
                   <Ticket size={16} />
                   <div>
                     <span className="font-bold">{appliedPromo.name || appliedPromo.code}</span>
@@ -484,7 +459,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                     </span>
                   </div>
                 </div>
-                <button onClick={removePromo} className="text-emerald-700 hover:text-emerald-900 p-1 rounded hover:bg-emerald-500/20"><X size={15} /></button>
+                <button onClick={removePromo} className="text-leaf-700 hover:text-leaf-900 p-1 rounded hover:bg-leaf-500/20"><X size={15} /></button>
               </div>
             )}
           </div>
@@ -494,7 +469,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
       {/* Payment method */}
       <div className="flex items-center justify-between mb-2">
         <p className={`text-xs font-semibold ${t2}`}>PAYMENT METHOD</p>
-        <button onClick={() => setIsSplit(!isSplit)} className="text-xs font-medium text-blue-600 hover:text-blue-700">
+        <button onClick={() => setIsSplit(!isSplit)} className="text-xs font-medium text-brand-600 hover:text-brand-700">
           {isSplit ? 'Single Payment' : 'Split Payment'}
         </button>
       </div>
@@ -510,8 +485,8 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                 className={[
                   'flex items-center gap-2 border-2 rounded-xl px-3 py-2.5 transition-all text-left text-sm font-medium',
                   method === id
-                    ? 'border-blue-600 bg-blue-600/10 text-blue-600'
-                    : dm ? 'border-slate-700 text-slate-400 hover:border-slate-600' : 'border-slate-200 text-slate-600 hover:border-slate-300',
+                    ? 'border-brand-600 bg-brand-600/10 text-brand-600'
+                    : dm ? 'border-ink-700 text-ink-400 hover:border-ink-600' : 'border-ink-200 text-ink-600 hover:border-ink-300',
                 ].join(' ')}
               >
                 <Icon size={17} className="shrink-0" />
@@ -528,7 +503,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                 const val = Number(e.target.value.replace(/\D/g, ''));
                 if (val <= total) setSplitAmount(String(val));
               }}
-              className={`mt-2 w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 ${dm ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+              className={`mt-2 w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 ${dm ? 'bg-ink-900 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`}
             />
           )}
         </div>
@@ -544,8 +519,8 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                   className={[
                     'flex items-center gap-2 border-2 rounded-xl px-3 py-2.5 transition-all text-left text-sm font-medium',
                     method2 === id
-                      ? 'border-blue-600 bg-blue-600/10 text-blue-600'
-                      : dm ? 'border-slate-700 text-slate-400 hover:border-slate-600' : 'border-slate-200 text-slate-600 hover:border-slate-300',
+                      ? 'border-brand-600 bg-brand-600/10 text-brand-600'
+                      : dm ? 'border-ink-700 text-ink-400 hover:border-ink-600' : 'border-ink-200 text-ink-600 hover:border-ink-300',
                   ].join(' ')}
                 >
                   <Icon size={17} className="shrink-0" />
@@ -560,7 +535,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
       {/* Cash: numpad */}
       {((!isSplit && method === 'cash') || (isSplit && (method === 'cash' || method2 === 'cash'))) && (
         <div className="mb-4">
-          <div className={`rounded-xl px-4 py-3 mb-3 border ${dm ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+          <div className={`rounded-xl px-4 py-3 mb-3 border ${dm ? 'bg-ink-800 border-ink-700' : 'bg-ink-50 border-ink-200'}`}>
             <p className={`text-xs font-semibold mb-1 ${t2}`}>AMOUNT RECEIVED</p>
             <div className="flex items-center gap-2">
               <span className={`text-sm ${t2} pb-1`}>Rp</span>
@@ -570,14 +545,14 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                 placeholder="0"
                 value={cashInput ? Number(cashInput).toLocaleString('id-ID') : ''}
                 onChange={e => setCashInput(e.target.value.replace(/\D/g, ''))}
-                className={`w-full bg-transparent text-2xl font-bold tabular-nums focus:outline-none ${cashInput ? (cashPaid >= total ? 'text-emerald-600' : 'text-red-500') : t1}`}
+                className={`w-full bg-transparent text-2xl font-bold tabular-nums focus:outline-none ${cashInput ? (cashPaid >= total ? 'text-leaf-600' : 'text-chili-500') : t1}`}
               />
             </div>
             {cashInput && cashPaid >= total && (
-              <p className="text-emerald-600 text-sm font-semibold mt-1">Change: {formatIDR(change)}</p>
+              <p className="text-leaf-600 text-sm font-semibold mt-1">Change: {formatIDR(change)}</p>
             )}
             {cashInput && cashPaid < total && (
-              <p className="text-red-500 text-sm font-semibold mt-1">Short: {formatIDR(total - cashPaid)}</p>
+              <p className="text-chili-500 text-sm font-semibold mt-1">Short: {formatIDR(total - cashPaid)}</p>
             )}
           </div>
 
@@ -586,8 +561,8 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
               onClick={() => setCashInput(String(total))}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors tabular-nums ${
                 cashInput === String(total)
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  ? 'bg-brand-600 text-white border-brand-600'
+                  : dm ? 'border-ink-700 text-ink-300 hover:bg-ink-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50'
               }`}
             >
               Exact: {formatIDR(total)}
@@ -598,8 +573,8 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                 onClick={() => setCashInput(String(amt))}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors tabular-nums ${
                   cashInput === String(amt)
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : dm ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-brand-600 text-white border-brand-600'
+                    : dm ? 'border-ink-700 text-ink-300 hover:bg-ink-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50'
                 }`}
               >
                 {formatIDR(amt)}
@@ -615,8 +590,8 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                 className={[
                   'numpad-btn rounded-xl py-3.5 text-lg font-semibold transition-all active:scale-95 select-none',
                   key === '⌫' || key === 'C'
-                    ? dm ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    : dm ? 'bg-slate-800 text-slate-100 hover:bg-slate-700 border border-slate-700' : 'bg-white text-slate-800 hover:bg-slate-50 border border-slate-200 shadow-sm',
+                    ? dm ? 'bg-ink-700 text-ink-300 hover:bg-ink-600' : 'bg-ink-100 text-ink-600 hover:bg-ink-200'
+                    : dm ? 'bg-ink-800 text-ink-100 hover:bg-ink-700 border border-ink-700' : 'bg-white text-ink-800 hover:bg-ink-50 border border-ink-200 shadow-sm',
                 ].join(' ')}
               >
                 {key === '⌫' ? <Delete size={18} className="mx-auto" /> : key}
@@ -631,10 +606,10 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
         disabled={!canConfirm || isSubmitting}
         className={[
           'w-full py-4 rounded-xl transition-colors text-white font-semibold tabular-nums',
-          canConfirm ? 'bg-emerald-600 hover:bg-emerald-700' : (dm ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-slate-300 text-slate-400 cursor-not-allowed'),
+          canConfirm ? 'bg-leaf-600 hover:bg-leaf-700' : (dm ? 'bg-ink-700 text-ink-400 cursor-not-allowed' : 'bg-ink-300 text-ink-400 cursor-not-allowed'),
         ].join(' ')}
       >
-        Confirm Payment · {formatIDR(total)}
+        Charge {formatIDR(total)}
       </button>
       </ModalShell>
 
@@ -670,12 +645,12 @@ function ModalShell({ children, onClose, darkMode }: { children: React.ReactNode
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
           className={`relative w-full md:max-w-md rounded-t-2xl md:rounded-2xl p-5 md:p-6 max-h-[96vh] overflow-y-auto shadow-2xl ${
-            darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'
+            darkMode ? 'bg-ink-900 border border-ink-800' : 'bg-white'
           }`}
         >
           <button
             onClick={onClose}
-            className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${darkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-400'}`}
+            className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${darkMode ? 'hover:bg-ink-800 text-ink-400' : 'hover:bg-ink-100 text-ink-400'}`}
           >
             <X size={18} />
           </button>

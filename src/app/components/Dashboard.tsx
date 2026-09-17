@@ -38,19 +38,19 @@ export function Dashboard({ orders, products, customers, loyaltySettings, darkMo
   const todayOrders   = sessionOrders;
   const avgOrderValue = Math.round(todaySales / (todayOrders || 1));
 
-  const bg        = dm ? 'bg-slate-900' : 'bg-slate-50';
-  const surface   = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
-  const t1        = dm ? 'text-slate-100' : 'text-slate-800';
-  const t2        = dm ? 'text-slate-400' : 'text-slate-500';
-  const gridLine  = dm ? '#1E2330' : '#F1F5F9';
-  const tickColor = dm ? '#64748B' : '#94A3B8';
-  const tooltipStyle = { borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', fontSize: 12, background: dm ? '#1E2330' : '#fff', color: dm ? '#F1F5F9' : '#1E293B' };
+  const bg        = dm ? 'bg-ink-900' : 'bg-ink-50';
+  const surface   = dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-100';
+  const t1        = dm ? 'text-ink-100' : 'text-ink-800';
+  const t2        = dm ? 'text-ink-400' : 'text-ink-500';
+  const gridLine  = dm ? '#181B25' : '#ECEEF2';
+  const tickColor = dm ? '#646A7E' : '#8D93A5';
+  const tooltipStyle = { borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', fontSize: 12, background: dm ? '#181B25' : '#fff', color: dm ? '#ECEEF2' : '#252937' };
 
   const STAT_CARDS = [
-    { label: "Today's Revenue",  value: formatIDR(todaySales),    change: '+12.5%', up: true,  icon: DollarSign,  iconBg: dm ? 'bg-blue-900/40'    : 'bg-blue-50',    iconColor: 'text-blue-500',    accent: 'border-l-blue-500'    },
-    { label: 'Orders Today',     value: String(todayOrders),      change: '+8.3%',  up: true,  icon: ShoppingBag, iconBg: dm ? 'bg-emerald-900/40' : 'bg-emerald-50', iconColor: 'text-emerald-500', accent: 'border-l-emerald-500' },
-    { label: 'Avg Order Value',  value: formatIDR(avgOrderValue), change: '+3.8%',  up: true,  icon: TrendingUp,  iconBg: dm ? 'bg-violet-900/40'  : 'bg-violet-50',  iconColor: 'text-violet-500',  accent: 'border-l-violet-500'  },
-    { label: 'Customers',        value: String(customers.length), change: '+2.1%',  up: true,  icon: Users,       iconBg: dm ? 'bg-orange-900/40'  : 'bg-orange-50',  iconColor: 'text-orange-500',  accent: 'border-l-orange-500'  },
+    { label: "Today's Revenue",  value: formatIDR(todaySales),    change: '+12.5%', up: true,  icon: DollarSign,  iconBg: dm ? 'bg-brand-900/40'    : 'bg-brand-50',    iconColor: 'text-brand-500',    accent: 'border-l-brand-500'    },
+    { label: 'Orders Today',     value: String(todayOrders),      change: '+8.3%',  up: true,  icon: ShoppingBag, iconBg: dm ? 'bg-leaf-900/40' : 'bg-leaf-50', iconColor: 'text-leaf-500', accent: 'border-l-leaf-500' },
+    { label: 'Avg Order Value',  value: formatIDR(avgOrderValue), change: '+3.8%',  up: true,  icon: TrendingUp,  iconBg: dm ? 'bg-brand-900/40'  : 'bg-brand-50',  iconColor: 'text-brand-500',  accent: 'border-l-brand-500'  },
+    { label: 'Customers',        value: String(customers.length), change: '+2.1%',  up: true,  icon: Users,       iconBg: dm ? 'bg-turmeric-900/40'  : 'bg-turmeric-50',  iconColor: 'text-turmeric-500',  accent: 'border-l-turmeric-500'  },
   ];
 
   const displayOrders = orders.slice(0, 6);
@@ -67,7 +67,7 @@ export function Dashboard({ orders, products, customers, loyaltySettings, darkMo
           <p className={`text-sm mt-0.5 ${t2}`}>
             {getDynamicDate()}
             {sessionOrders > 0 && (
-              <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-semibold">
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-leaf-500/10 text-leaf-600 text-xs font-semibold">
                 {sessionOrders} live order{sessionOrders > 1 ? 's' : ''} this session
               </span>
             )}
@@ -76,35 +76,35 @@ export function Dashboard({ orders, products, customers, loyaltySettings, darkMo
 
         <div className="flex flex-col md:flex-row gap-4 mb-2">
           {lowStockProducts.length > 0 && (
-            <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex-1">
-              <div className={`p-2 rounded-lg ${dm ? 'bg-amber-900/20 text-amber-500' : 'bg-amber-500/20 text-amber-600'}`}>
+            <div className="flex items-center gap-3 bg-turmeric-500/10 border border-turmeric-500/20 rounded-xl p-3 flex-1">
+              <div className={`p-2 rounded-lg ${dm ? 'bg-turmeric-900/20 text-turmeric-500' : 'bg-turmeric-500/20 text-turmeric-600'}`}>
                 <ShoppingBag size={20} />
               </div>
               <div>
-                <p className={`text-sm font-semibold ${dm ? 'text-amber-400' : 'text-amber-700'}`}>Low Stock Alert</p>
-                <p className={`text-xs ${dm ? 'text-amber-500' : 'text-amber-600'}`}>{lowStockProducts.length} product(s) below reorder threshold.</p>
+                <p className={`text-sm font-semibold ${dm ? 'text-turmeric-400' : 'text-turmeric-700'}`}>Low Stock Alert</p>
+                <p className={`text-xs ${dm ? 'text-turmeric-500' : 'text-turmeric-600'}`}>{lowStockProducts.length} product(s) below reorder threshold.</p>
               </div>
             </div>
           )}
           {totalPointsLiability > 500000 && (
-            <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex-1">
-              <div className={`p-2 rounded-lg ${dm ? 'bg-red-900/20 text-red-500' : 'bg-red-500/20 text-red-600'}`}>
+            <div className="flex items-center gap-3 bg-chili-500/10 border border-chili-500/20 rounded-xl p-3 flex-1">
+              <div className={`p-2 rounded-lg ${dm ? 'bg-chili-900/20 text-chili-500' : 'bg-chili-500/20 text-chili-600'}`}>
                 <DollarSign size={20} />
               </div>
               <div>
-                <p className={`text-sm font-semibold ${dm ? 'text-red-400' : 'text-red-700'}`}>High Points Liability</p>
-                <p className={`text-xs ${dm ? 'text-red-500' : 'text-red-600'}`}>Unredeemed points value exceeds {formatIDR(500000)} (Current: {formatIDR(totalPointsLiability)}).</p>
+                <p className={`text-sm font-semibold ${dm ? 'text-chili-400' : 'text-chili-700'}`}>High Points Liability</p>
+                <p className={`text-xs ${dm ? 'text-chili-500' : 'text-chili-600'}`}>Unredeemed points value exceeds {formatIDR(500000)} (Current: {formatIDR(totalPointsLiability)}).</p>
               </div>
             </div>
           )}
           {isSalesDrop && (
-            <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex-1">
-              <div className={`p-2 rounded-lg ${dm ? 'bg-red-900/20 text-red-500' : 'bg-red-500/20 text-red-600'}`}>
+            <div className="flex items-center gap-3 bg-chili-500/10 border border-chili-500/20 rounded-xl p-3 flex-1">
+              <div className={`p-2 rounded-lg ${dm ? 'bg-chili-900/20 text-chili-500' : 'bg-chili-500/20 text-chili-600'}`}>
                 <TrendingDown size={20} />
               </div>
               <div>
-                <p className={`text-sm font-semibold ${dm ? 'text-red-400' : 'text-red-700'}`}>Sales Pacing Alert</p>
-                <p className={`text-xs ${dm ? 'text-red-500' : 'text-red-600'}`}>Today's revenue is pacing heavily below average.</p>
+                <p className={`text-sm font-semibold ${dm ? 'text-chili-400' : 'text-chili-700'}`}>Sales Pacing Alert</p>
+                <p className={`text-xs ${dm ? 'text-chili-500' : 'text-chili-600'}`}>Today's revenue is pacing heavily below average.</p>
               </div>
             </div>
           )}
@@ -120,7 +120,7 @@ export function Dashboard({ orders, products, customers, loyaltySettings, darkMo
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${card.iconBg}`}>
                     <Icon size={18} className={card.iconColor} />
                   </div>
-                  <span className={`text-xs flex items-center gap-0.5 font-semibold ${card.up ? 'text-emerald-500' : 'text-red-400'}`}>
+                  <span className={`text-xs flex items-center gap-0.5 font-semibold ${card.up ? 'text-leaf-500' : 'text-chili-400'}`}>
                     {card.up ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
                     {card.change}
                   </span>
@@ -137,21 +137,21 @@ export function Dashboard({ orders, products, customers, loyaltySettings, darkMo
           <div className={`lg:col-span-2 rounded-2xl p-5 shadow-sm border ${surface}`}>
             <div className="flex items-center justify-between mb-4">
               <h3 className={`font-semibold ${t1}`}>Weekly Sales</h3>
-              <span className={`text-xs px-2 py-1 rounded-full ${dm ? 'bg-slate-700 text-slate-400' : 'bg-slate-100 text-slate-400'}`}>Last 7 days</span>
+              <span className={`text-xs px-2 py-1 rounded-full ${dm ? 'bg-ink-700 text-ink-400' : 'bg-ink-100 text-ink-400'}`}>Last 7 days</span>
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={WEEKLY_SALES} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#3B82F6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}   />
+                    <stop offset="5%"  stopColor="#3445AB" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#3445AB" stopOpacity={0}   />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridLine} />
                 <XAxis dataKey="day" tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} tickFormatter={v => formatCompact(v)} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatIDR(v), 'Sales']} />
-                <Area type="monotone" dataKey="sales" stroke="#3B82F6" strokeWidth={2} fill="url(#salesGrad)" />
+                <Area type="monotone" dataKey="sales" stroke="#3445AB" strokeWidth={2} fill="url(#salesGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -190,7 +190,7 @@ export function Dashboard({ orders, products, customers, loyaltySettings, darkMo
                 <XAxis type="number" tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} width={90} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [v, 'Sold']} />
-                <Bar dataKey="sold" fill="#3B82F6" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="sold" fill="#3445AB" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -205,15 +205,15 @@ export function Dashboard({ orders, products, customers, loyaltySettings, darkMo
             <div className="space-y-3">
               {displayOrders.map(order => (
                 <div key={order.id} className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${dm ? 'bg-blue-900/40' : 'bg-blue-50'}`}>
-                    <ShoppingBag size={13} className="text-blue-500" />
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${dm ? 'bg-brand-900/40' : 'bg-brand-50'}`}>
+                    <ShoppingBag size={13} className="text-brand-500" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${t1}`}>{order.orderNumber}</p>
                     <p className={`text-xs flex items-center gap-1 capitalize ${t2}`}>
                       <span>{order.orderType}</span>
                       <span>·</span>
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${dm ? 'bg-slate-700 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${dm ? 'bg-ink-700 text-ink-400' : 'bg-ink-100 text-ink-500'}`}>
                         {PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod}
                       </span>
                     </p>

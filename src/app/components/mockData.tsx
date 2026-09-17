@@ -211,6 +211,9 @@ export interface RecentOrder {
   pointsEarned?: number;
   pointsRedeemed?: number;
   pointsDiscountAmt?: number;
+  promoDiscountAmt?: number;
+  serviceCharge?: number;
+  taxBreakdown?: { id: string; name: string; rate: number; isInclusive: boolean; amount: number }[];
 }
 
 export interface PromoCode {
@@ -323,6 +326,26 @@ export interface TaxRule {
   rate: number;
   isInclusive: boolean;
   order: number;
+  /** Charge this tax on top of earlier exclusive taxes. Off = additive (the usual case for PPN/PB1/GST). */
+  compound?: boolean;
+}
+
+export interface ServiceChargeSettings {
+  enabled: boolean;
+  rate: number;
+  /** Whether tax is charged on the service charge itself. */
+  taxable: boolean;
+}
+
+export const INITIAL_SERVICE_CHARGE: ServiceChargeSettings = { enabled: false, rate: 5, taxable: true };
+
+/** Everything checkout hands back to the app when an order is paid. */
+export interface CheckoutResult {
+  paymentMethod: PaymentMethod;
+  amountPaid: number;
+  promoCode?: string;
+  pointsRedeemed: number;
+  pricing: import('../lib/pricing').PricingResult;
 }
 
 export type TerminalViewMode = 'grid' | 'scanner';

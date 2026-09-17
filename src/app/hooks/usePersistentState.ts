@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import localforage from 'localforage';
 import { loadFromSupabase, saveToSupabase } from '../services/supabaseSync';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -8,36 +8,39 @@ localforage.config({
   storeName: 'pos_data'
 });
 
+/**
+ * State persisted to IndexedDB (instant) and Supabase (when configured), scoped per merchant.
+ *
+ * Saves only happen for the key whose data has finished loading. Without this guard two
+ * bugs appeared: defaults overwrote stored data on first mount, and switching merchant
+ * wrote the previous merchant's data under the new merchant's key.
+ */
 export function usePersistentState<T>(key: string, initialValue: T, merchantId?: string): [T, React.Dispatch<React.SetStateAction<T>>, boolean] {
   const storageKey = merchantId ? `${key}_${merchantId}` : key;
   const [state, setState] = useState<T>(initialValue);
-  const [isLoaded, setIsLoaded] = useState(true);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const initialRef = useRef(initialValue);
+  initialRef.current = initialValue;
 
-  // Load initial data (localforage first for instant render, then Supabase if configured)
   useEffect(() => {
-    let isMounted = true;
+    let cancelled = false;
 
-    async function init() {
-      // 1. Fast local load
+    (async () => {
+      let next: T = initialRef.current;
       try {
         const localVal = await localforage.getItem<T>(storageKey);
-        if (isMounted) {
-          if (localVal !== null) {
-            setState(localVal);
-          } else {
-            setState(initialValue);
-          }
-        }
+        if (localVal !== null) next = localVal;
       } catch (err) {
-        console.error(`Failed to load ${storageKey} from localforage:`, err);
-        if (isMounted) setState(initialValue);
+        console.error(`Failed to load ${storageKey} from local storage:`, err);
       }
+      if (cancelled) return;
+      setState(next);
+      setLoadedKey(storageKey);
 
-      // 2. Cloud Supabase sync
       if (isSupabaseConfigured) {
         try {
           const remoteVal = await loadFromSupabase<T>(key, merchantId);
-          if (isMounted && remoteVal !== null) {
+          if (!cancelled && remoteVal !== null) {
             setState(remoteVal);
             await localforage.setItem(storageKey, remoteVal);
           }
@@ -45,28 +48,22 @@ export function usePersistentState<T>(key: string, initialValue: T, merchantId?:
           console.warn(`Supabase sync failed for ${key}:`, err);
         }
       }
+    })();
 
-      if (isMounted) {
-        setIsLoaded(true);
-      }
-    }
-
-    init();
-    return () => { isMounted = false; };
+    return () => { cancelled = true; };
   }, [key, storageKey, merchantId]);
 
-  // Save data on change (both localforage & Supabase)
-  useEffect(() => {
-    if (isLoaded) {
-      localforage.setItem(storageKey, state).catch(err => {
-        console.error(`Failed to save ${storageKey} to localforage:`, err);
-      });
+  const isLoaded = loadedKey === storageKey;
 
-      if (isSupabaseConfigured) {
-        saveToSupabase(key, state, merchantId).catch(err => {
-          console.warn(`Failed to save ${key} to Supabase:`, err);
-        });
-      }
+  useEffect(() => {
+    if (!isLoaded) return;
+    localforage.setItem(storageKey, state).catch(err => {
+      console.error(`Failed to save ${storageKey} locally:`, err);
+    });
+    if (isSupabaseConfigured) {
+      saveToSupabase(key, state, merchantId).catch(err => {
+        console.warn(`Failed to save ${key} to Supabase:`, err);
+      });
     }
   }, [key, storageKey, state, isLoaded, merchantId]);
 

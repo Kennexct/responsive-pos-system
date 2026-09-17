@@ -40,19 +40,19 @@ export function ToastProvider({ children, darkMode }: { children: ReactNode, dar
               exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border min-w-[300px] ${
                 darkMode 
-                  ? 'bg-slate-800 border-slate-700 text-white' 
-                  : 'bg-white border-slate-200 text-slate-800'
+                  ? 'bg-ink-800 border-ink-700 text-white' 
+                  : 'bg-white border-ink-200 text-ink-800'
               }`}
             >
-              {toast.type === 'success' && <CheckCircle className="text-emerald-500" size={20} />}
-              {toast.type === 'error' && <AlertCircle className="text-red-500" size={20} />}
-              {toast.type === 'info' && <Info className="text-blue-500" size={20} />}
+              {toast.type === 'success' && <CheckCircle className="text-leaf-500" size={20} />}
+              {toast.type === 'error' && <AlertCircle className="text-chili-500" size={20} />}
+              {toast.type === 'info' && <Info className="text-brand-500" size={20} />}
               <span className="flex-1 text-sm font-medium">{toast.message}</span>
               <button 
                 onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-                className={`p-1 rounded-md transition-colors ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}
+                className={`p-1 rounded-md transition-colors ${darkMode ? 'hover:bg-ink-700' : 'hover:bg-ink-100'}`}
               >
-                <X size={14} className={darkMode ? 'text-slate-400' : 'text-slate-500'} />
+                <X size={14} className={darkMode ? 'text-ink-400' : 'text-ink-500'} />
               </button>
             </motion.div>
           ))}

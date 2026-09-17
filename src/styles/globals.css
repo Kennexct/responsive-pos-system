@@ -1,57 +1,63 @@
-/* ─── Base Typography ─────────────────────────────────────────────────────── */
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
 body {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Custom Scrollbars ───────────────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
-}
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+/* Money is read at a glance across a counter: figures line up column by column. */
+.tabular-nums, [data-money] { font-variant-numeric: tabular-nums lining-nums; }
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
-/* ─── Smooth transitions for dark mode ───────────────────────────────────── */
-*, *::before, *::after {
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+/* ─── Scrollbars ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-ink-300); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-ink-400); }
+.dark ::-webkit-scrollbar-thumb { background: var(--color-ink-700); }
+.dark ::-webkit-scrollbar-thumb:hover { background: var(--color-ink-600); }
+
+/* Colour transitions only where people interact — a global `*` transition made
+   product grids repaint on every theme or state change. */
+button, a, input, select, textarea, [role="button"] {
+  transition-property: background-color, border-color, color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+button:not(:disabled):active, [role="button"]:active { transform: scale(0.98); }
+
+/* Receipt edge: torn thermal-paper bottom used on the cart total and sign-in receipt. */
+.receipt-edge {
+  --tooth: 10px;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / var(--tooth) 100%;
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / var(--tooth) 100%;
+  padding-bottom: calc(var(--tooth) / 2 + 12px);
 }
 
 /* ─── Animations ─────────────────────────────────────────────────────────── */
 @keyframes pop-in {
   0%   { transform: scale(1); }
-  50%  { transform: scale(1.06); }
+  50%  { transform: scale(0.96); }
   100% { transform: scale(1); }
 }
+.pop-animation { animation: pop-in 0.2s ease-out; }
 
-.pop-animation {
-  animation: pop-in 0.2s ease-out;
-}
+.numpad-btn:active { transform: scale(0.94); }
 
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(1.5); }
-}
-.pulse-dot {
-  animation: pulse-dot 1.5s ease-in-out infinite;
-}
-
-/* ─── Numpad button feel ─────────────────────────────────────────────────── */
-.numpad-btn:active {
-  transform: scale(0.94);
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

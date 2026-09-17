@@ -20,9 +20,9 @@ CREATE INDEX IF NOT EXISTS idx_product_variants_barcode ON product_variants(barc
 
 -- 3. Enable RLS and policies for promo_codes if not already added
 ALTER TABLE promo_codes ENABLE ROW LEVEL SECURITY;
-DO $ BEGIN
+DO $$ BEGIN
   CREATE POLICY "Public read write promo_codes" ON promo_codes FOR ALL USING (true);
-EXCEPTION WHEN duplicate_object THEN null; END $ ;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- 4. Backfill default merchant id for existing promos and variants
 UPDATE promo_codes SET merchant_id = 'm_default' WHERE merchant_id IS NULL;

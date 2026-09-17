@@ -39,8 +39,8 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
   ).sort((a, b) => {
     if (!sortConfig) return 0;
     const { key, direction } = sortConfig;
-    const aVal = key === 'name' ? a.name : key === 'points' ? a.points : key === 'spend' ? a.totalSpend : 0;
-    const bVal = key === 'name' ? b.name : key === 'points' ? b.points : key === 'spend' ? b.totalSpend : 0;
+    const aVal = key === 'name' ? a.name : key === 'points' ? a.pointsBalance : key === 'spend' ? a.totalSpend : 0;
+    const bVal = key === 'name' ? b.name : key === 'points' ? b.pointsBalance : key === 'spend' ? b.totalSpend : 0;
     if (aVal < bVal) return direction === 'asc' ? -1 : 1;
     if (aVal > bVal) return direction === 'asc' ? 1 : -1;
     return 0;
@@ -64,10 +64,10 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
   });
 
   const dm = darkMode;
-  const bg = dm ? 'bg-slate-900' : 'bg-slate-50';
-  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
-  const t1 = dm ? 'text-slate-100' : 'text-slate-800';
-  const t2 = dm ? 'text-slate-400' : 'text-slate-500';
+  const bg = dm ? 'bg-ink-900' : 'bg-ink-50';
+  const surface = dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-100';
+  const t1 = dm ? 'text-ink-100' : 'text-ink-800';
+  const t2 = dm ? 'text-ink-400' : 'text-ink-500';
 
   return (
     <div className={`flex flex-col h-full w-full ${bg}`}>
@@ -75,16 +75,16 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
         {/* Header & Tabs */}
         <div className="p-4 sm:p-6 pb-2 shrink-0">
           <h1 className={`text-2xl font-bold ${t1} mb-4`}>CRM & Loyalty</h1>
-          <div className={`flex gap-2 overflow-x-auto pb-2 border-b ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+          <div className={`flex gap-2 overflow-x-auto pb-2 border-b ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
             <button
               onClick={() => setActiveTab('directory')}
-              className={`px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap ${activeTab === 'directory' ? (dm ? 'bg-blue-900/20 text-blue-400 border-b-2 border-blue-500' : 'bg-blue-50 text-blue-700 border-b-2 border-blue-600') : (dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100')}`}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap ${activeTab === 'directory' ? (dm ? 'bg-brand-900/20 text-brand-400 border-b-2 border-brand-500' : 'bg-brand-50 text-brand-700 border-b-2 border-brand-600') : (dm ? 'text-ink-400 hover:text-ink-200 hover:bg-ink-800' : 'text-ink-500 hover:text-ink-700 hover:bg-ink-100')}`}
             >
               Customer Directory
             </button>
             <button
               onClick={() => setActiveTab('segments')}
-              className={`px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap ${activeTab === 'segments' ? (dm ? 'bg-blue-900/20 text-blue-400 border-b-2 border-blue-500' : 'bg-blue-50 text-blue-700 border-b-2 border-blue-600') : (dm ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100')}`}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap ${activeTab === 'segments' ? (dm ? 'bg-brand-900/20 text-brand-400 border-b-2 border-brand-500' : 'bg-brand-50 text-brand-700 border-b-2 border-brand-600') : (dm ? 'text-ink-400 hover:text-ink-200 hover:bg-ink-800' : 'text-ink-500 hover:text-ink-700 hover:bg-ink-100')}`}
             >
               Segmentation & Campaigns
             </button>
@@ -95,20 +95,20 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
           <div className="flex flex-col flex-1 overflow-hidden">
             <div className="px-4 sm:px-6 py-4 shrink-0 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <div className="flex gap-3 w-full sm:w-auto">
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border w-full sm:w-72 ${dm ? 'bg-slate-800 border-slate-700 focus-within:border-slate-600' : 'bg-white border-slate-200 focus-within:border-slate-300'}`}>
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border w-full sm:w-72 ${dm ? 'bg-ink-800 border-ink-700 focus-within:border-ink-600' : 'bg-white border-ink-200 focus-within:border-ink-300'}`}>
                   <Search size={18} className={t2} />
                   <input
                     type="text"
                     placeholder="Search by name or phone..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className={`bg-transparent border-none outline-none text-sm w-full ${t1} placeholder:text-slate-400`}
+                    className={`bg-transparent border-none outline-none text-sm w-full ${t1} placeholder:text-ink-400`}
                   />
                 </div>
                 <select
                   value={filterTier}
                   onChange={e => setFilterTier(e.target.value)}
-                  className={`text-sm px-3 py-2 rounded-xl border outline-none ${dm ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}
+                  className={`text-sm px-3 py-2 rounded-xl border outline-none ${dm ? 'bg-ink-800 border-ink-700 text-ink-200' : 'bg-white border-ink-200 text-ink-700'}`}
                 >
                   <option value="all">All Tiers</option>
                   {loyaltySettings.tiers?.map(t => (
@@ -118,7 +118,7 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
               </div>
               <button
                 onClick={() => setShowAddModal(true)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${dm ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${dm ? 'bg-brand-600 hover:bg-brand-700 text-white' : 'bg-brand-600 hover:bg-brand-700 text-white'}`}
               >
                 <User size={16} /> Add Customer
               </button>
@@ -129,7 +129,7 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm whitespace-nowrap">
                     <thead>
-                      <tr className={`text-left text-xs uppercase tracking-wider border-b ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <tr className={`text-left text-xsr border-b ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
                         <th className={`px-4 py-3 font-semibold ${t2} cursor-pointer select-none`} onClick={() => handleSort('name')}>
                           <div className="flex items-center gap-1">Customer <ArrowUpDown size={14} className="opacity-50" /></div>
                         </th>
@@ -143,19 +143,19 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
                         </th>
                       </tr>
                     </thead>
-                    <tbody className={`divide-y ${dm ? 'divide-slate-700' : 'divide-slate-100'}`}>
+                    <tbody className={`divide-y ${dm ? 'divide-ink-700' : 'divide-ink-100'}`}>
                       {filteredDirectory.map(c => (
-                        <tr key={c.id} onClick={() => setSelectedCustomer(c)} className={`cursor-pointer transition-colors ${dm ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'}`}>
+                        <tr key={c.id} onClick={() => setSelectedCustomer(c)} className={`cursor-pointer transition-colors ${dm ? 'hover:bg-ink-700/50' : 'hover:bg-ink-50'}`}>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${dm ? 'bg-slate-700 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${dm ? 'bg-ink-700 text-brand-400' : 'bg-brand-100 text-brand-600'}`}>
                                 <User size={16} />
                               </div>
                               <div className="flex flex-col">
                                 <span className={`font-semibold ${t1}`}>{c.name}</span>
                                 {c.tags && c.tags.length > 0 && (
                                   <div className="flex gap-1 mt-0.5">
-                                    {c.tags.map(t => <span key={t} className={`px-1.5 py-0.5 rounded text-[10px] ${dm ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>{t}</span>)}
+                                    {c.tags.map(t => <span key={t} className={`px-1.5 py-0.5 rounded text-[10px] ${dm ? 'bg-ink-700 text-ink-300' : 'bg-ink-200 text-ink-700'}`}>{t}</span>)}
                                   </div>
                                 )}
                               </div>
@@ -164,11 +164,11 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
                           <td className="px-4 py-3">
                             <div className="flex flex-col gap-1 items-start">
                               {c.tierId ? (
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${dm ? 'bg-amber-900/30 text-amber-300' : 'bg-amber-100 text-amber-800'}`}>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${dm ? 'bg-turmeric-900/30 text-turmeric-300' : 'bg-turmeric-100 text-turmeric-800'}`}>
                                   {loyaltySettings.tiers?.find(t => t.id === c.tierId)?.name || c.tierId}
                                 </span>
                               ) : <span className={`text-xs ${t2}`}>-</span>}
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded ${dm ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-800'}`}>{c.rfmSegment}</span>
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded ${dm ? 'bg-brand-900/30 text-brand-300' : 'bg-brand-100 text-brand-800'}`}>{c.rfmSegment}</span>
                             </div>
                           </td>
                           <td className="px-4 py-3">
@@ -179,8 +179,8 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1.5">
-                              <Award size={14} className={c.pointsBalance > 0 ? 'text-amber-500' : t2} />
-                              <span className={`font-medium ${c.pointsBalance > 0 ? (dm ? 'text-amber-400' : 'text-amber-600') : t1}`}>
+                              <Award size={14} className={c.pointsBalance > 0 ? 'text-turmeric-500' : t2} />
+                              <span className={`font-medium ${c.pointsBalance > 0 ? (dm ? 'text-turmeric-400' : 'text-turmeric-600') : t1}`}>
                                 {c.pointsBalance.toLocaleString('id-ID')} pts
                               </span>
                             </div>
@@ -226,17 +226,17 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
                   <button 
                     key={s.id} 
                     onClick={() => setSegmentFilter(s.id)}
-                    className={`flex flex-col text-left p-3 rounded-xl transition-colors border ${segmentFilter === s.id ? (dm ? 'border-blue-500 bg-blue-900/20' : 'border-blue-500 bg-blue-50') : (dm ? 'border-transparent hover:bg-slate-700/50' : 'border-transparent hover:bg-slate-100')}`}
+                    className={`flex flex-col text-left p-3 rounded-xl transition-colors border ${segmentFilter === s.id ? (dm ? 'border-brand-500 bg-brand-900/20' : 'border-brand-500 bg-brand-50') : (dm ? 'border-transparent hover:bg-ink-700/50' : 'border-transparent hover:bg-ink-100')}`}
                   >
-                    <span className={`font-medium text-sm ${segmentFilter === s.id ? (dm ? 'text-blue-400' : 'text-blue-700') : t1}`}>{s.label}</span>
-                    <span className={`text-xs ${segmentFilter === s.id ? (dm ? 'text-blue-300' : 'text-blue-500') : t2}`}>{s.desc}</span>
+                    <span className={`font-medium text-sm ${segmentFilter === s.id ? (dm ? 'text-brand-400' : 'text-brand-700') : t1}`}>{s.label}</span>
+                    <span className={`text-xs ${segmentFilter === s.id ? (dm ? 'text-brand-300' : 'text-brand-500') : t2}`}>{s.desc}</span>
                   </button>
                 ))}
               </div>
 
               {/* Segment Results */}
               <div className={`col-span-1 md:col-span-3 flex flex-col rounded-2xl border overflow-hidden ${surface}`}>
-                <div className={`p-4 border-b flex justify-between items-center ${dm ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
+                <div className={`p-4 border-b flex justify-between items-center ${dm ? 'border-ink-700 bg-ink-800' : 'border-ink-200 bg-ink-50'}`}>
                   <div>
                     <h3 className={`font-semibold ${t1}`}>Segment Audience</h3>
                     <p className={`text-sm ${t2}`}>{segmentedCustomers.length} customers matched</p>
@@ -244,15 +244,15 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
                   <button 
                     onClick={() => setShowCampaignModal(true)}
                     disabled={segmentedCustomers.length === 0}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-leaf-600 hover:bg-leaf-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
                   >
                     <MessageCircle size={16} /> New Campaign
                   </button>
                 </div>
                 <div className="p-4 flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {segmentedCustomers.map(c => (
-                    <div key={c.id} className={`p-3 rounded-xl border flex items-center gap-3 ${dm ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
-                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                    <div key={c.id} className={`p-3 rounded-xl border flex items-center gap-3 ${dm ? 'border-ink-700 bg-ink-800' : 'border-ink-200 bg-white'}`}>
+                      <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
                         <User size={18} />
                       </div>
                       <div className="flex-col flex flex-1 min-w-0">
@@ -307,9 +307,9 @@ export function CustomersView({ customers, setCustomers, loyaltySettings, darkMo
 
 function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClose }: { customer: Customer, setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>, orders: RecentOrder[], darkMode: boolean, onClose: () => void }) {
   const dm = darkMode;
-  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
-  const t1 = dm ? 'text-slate-100' : 'text-slate-800';
-  const t2 = dm ? 'text-slate-400' : 'text-slate-500';
+  const surface = dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-100';
+  const t1 = dm ? 'text-ink-100' : 'text-ink-800';
+  const t2 = dm ? 'text-ink-400' : 'text-ink-500';
 
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -317,7 +317,7 @@ function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClos
   const [name, setName] = useState(customer.name);
   const [phone, setPhone] = useState(customer.phone);
   const [email, setEmail] = useState(customer.email || '');
-  const [birthday, setBirthday] = useState(customer.birthday || '');
+  const [birthday, setBirthday] = useState(customer.dateOfBirth || '');
   const [tags, setTags] = useState(customer.tags?.join(', ') || '');
   const [pointsBalance, setPointsBalance] = useState(customer.pointsBalance.toString());
 
@@ -327,7 +327,7 @@ function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClos
       name,
       phone,
       email,
-      birthday,
+      dateOfBirth: birthday || undefined,
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
       pointsBalance: parseInt(pointsBalance, 10) || 0
     } : c));
@@ -340,18 +340,18 @@ function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
-      <div className={`w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-right ${dm ? 'bg-slate-900' : 'bg-slate-50'}`}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
+      <div className={`w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-right ${dm ? 'bg-ink-900' : 'bg-ink-50'}`}>
         <div className={`p-4 border-b flex items-center justify-between sticky top-0 z-10 ${surface}`}>
           <h2 className={`font-semibold ${t1}`}>Customer Details</h2>
           <div className="flex items-center gap-2">
             {!isEditing && (
-              <button onClick={() => setIsEditing(true)} className={`px-3 py-1 text-sm font-medium rounded-lg ${dm ? 'bg-slate-800 text-blue-400 hover:bg-slate-700' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}>Edit</button>
+              <button onClick={() => setIsEditing(true)} className={`px-3 py-1 text-sm font-medium rounded-lg ${dm ? 'bg-ink-800 text-brand-400 hover:bg-ink-700' : 'bg-brand-50 text-brand-600 hover:bg-brand-100'}`}>Edit</button>
             )}
             {isEditing && (
-              <button onClick={handleSave} className={`px-3 py-1 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white`}>Save</button>
+              <button onClick={handleSave} className={`px-3 py-1 text-sm font-medium rounded-lg bg-brand-600 hover:bg-brand-700 text-white`}>Save</button>
             )}
-            <button onClick={onClose} className={`p-2 rounded-full ${dm ? 'hover:bg-slate-800' : 'hover:bg-slate-100'} ${t2}`}>
+            <button onClick={onClose} className={`p-2 rounded-full ${dm ? 'hover:bg-ink-800' : 'hover:bg-ink-100'} ${t2}`}>
               <X size={20} />
             </button>
           </div>
@@ -359,7 +359,7 @@ function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClos
         
         <div className="p-6 overflow-y-auto flex-1">
           <div className="flex flex-col items-center text-center mb-8">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${dm ? 'bg-slate-800 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${dm ? 'bg-ink-800 text-brand-400' : 'bg-brand-100 text-brand-600'}`}>
               <User size={40} />
             </div>
             {!isEditing ? (
@@ -367,15 +367,15 @@ function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClos
                 <h3 className={`text-xl font-bold ${t1}`}>{customer.name}</h3>
                 <p className={`${t2}`}>{customer.phone}</p>
                 {customer.email && <p className={`text-sm mt-1 ${t2}`}>{customer.email}</p>}
-                {customer.birthday && <p className={`text-sm mt-1 ${t2}`}>Born: {customer.birthday}</p>}
+                {customer.dateOfBirth && <p className={`text-sm mt-1 ${t2}`}>Born: {customer.dateOfBirth}</p>}
                 {customer.marketingConsent && (
-                  <span className={`mt-2 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${dm ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-800'}`}>
+                  <span className={`mt-2 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${dm ? 'bg-leaf-900/30 text-leaf-400' : 'bg-leaf-100 text-leaf-800'}`}>
                     <CheckCircle size={12} /> Marketing Opt-In
                   </span>
                 )}
                 {customer.tags && customer.tags.length > 0 && (
                   <div className="flex flex-wrap justify-center gap-2 mt-3">
-                    {customer.tags.map(tag => <span key={tag} className={`px-2 py-1 text-xs rounded-full ${dm ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>{tag}</span>)}
+                    {customer.tags.map(tag => <span key={tag} className={`px-2 py-1 text-xs rounded-full ${dm ? 'bg-ink-800 text-ink-300' : 'bg-ink-100 text-ink-600'}`}>{tag}</span>)}
                   </div>
                 )}
               </>
@@ -383,7 +383,7 @@ function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClos
               <div className="w-full space-y-3 text-left">
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${t2}`}>Name</label>
-                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Customer name" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Customer name" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 text-ink-200' : 'bg-ink-50 border-ink-200 text-ink-800'}`} />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${t2}`}>Phone</label>
@@ -392,24 +392,24 @@ function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClos
                     onChange={e => setPhone(formatIndonesianPhone(e.target.value))}
                     onFocus={() => { if (!phone) setPhone('+62 '); }}
                     placeholder="+62 812-3456-7890"
-                    className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                    className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 text-ink-200' : 'bg-ink-50 border-ink-200 text-ink-800'}`}
                   />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${t2}`}>Email</label>
-                  <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="customer@example.com" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                  <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="customer@example.com" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 text-ink-200' : 'bg-ink-50 border-ink-200 text-ink-800'}`} />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${t2}`}>Birthday</label>
-                  <input value={birthday} onChange={e => setBirthday(e.target.value)} type="date" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                  <input value={birthday} onChange={e => setBirthday(e.target.value)} type="date" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 text-ink-200' : 'bg-ink-50 border-ink-200 text-ink-800'}`} />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${t2}`}>Tags</label>
-                  <input value={tags} onChange={e => setTags(e.target.value)} placeholder="Comma separated" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                  <input value={tags} onChange={e => setTags(e.target.value)} placeholder="Comma separated" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 text-ink-200' : 'bg-ink-50 border-ink-200 text-ink-800'}`} />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${t2}`}>Points Balance</label>
-                  <input value={pointsBalance} onChange={e => setPointsBalance(e.target.value)} type="number" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                  <input value={pointsBalance} onChange={e => setPointsBalance(e.target.value)} type="number" className={`w-full p-2 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 text-ink-200' : 'bg-ink-50 border-ink-200 text-ink-800'}`} />
                 </div>
               </div>
             )}
@@ -427,28 +427,28 @@ function CustomerDetailsModal({ customer, setCustomers, orders, darkMode, onClos
                       <span className={`text-sm font-medium ${t1}`}>{o.orderNumber}</span>
                       <span className={`text-xs block ${t2}`}>{new Date(o.createdAt).toLocaleString()}</span>
                     </div>
-                    <span className={`text-sm font-bold ${dm ? 'text-blue-400' : 'text-blue-600'}`}>{formatIDR(o.total)}</span>
+                    <span className={`text-sm font-bold ${dm ? 'text-brand-400' : 'text-brand-600'}`}>{formatIDR(o.total)}</span>
                   </div>
                   <div className={`text-xs flex gap-2 ${t2}`}>
-                    {o.pointsEarned ? <span className="text-amber-500">+{o.pointsEarned} pts</span> : null}
-                    {o.pointsRedeemed ? <span className="text-amber-500">-{o.pointsRedeemed} pts</span> : null}
+                    {o.pointsEarned ? <span className="text-turmeric-500">+{o.pointsEarned} pts</span> : null}
+                    {o.pointsRedeemed ? <span className="text-turmeric-500">-{o.pointsRedeemed} pts</span> : null}
                   </div>
                 </div>
               ))
             )}
           </div>
           
-          <div className="mt-8 pt-4 border-t border-red-500/20">
+          <div className="mt-8 pt-4 border-t border-chili-500/20">
             {!showDeleteConfirm ? (
-              <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-2.5 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-2.5 rounded-xl border border-chili-200 dark:border-chili-900/50 text-chili-600 dark:text-chili-400 font-medium hover:bg-chili-50 dark:hover:bg-chili-900/20 transition-colors">
                 Delete Customer
               </button>
             ) : (
-              <div className={`p-4 rounded-xl border border-red-200 dark:border-red-900/50 ${dm ? 'bg-red-900/10' : 'bg-red-50'}`}>
-                <p className={`text-sm font-medium text-red-600 dark:text-red-400 mb-3`}>Are you sure? This cannot be undone.</p>
+              <div className={`p-4 rounded-xl border border-chili-200 dark:border-chili-900/50 ${dm ? 'bg-chili-900/10' : 'bg-chili-50'}`}>
+                <p className={`text-sm font-medium text-chili-600 dark:text-chili-400 mb-3`}>Are you sure? This cannot be undone.</p>
                 <div className="flex gap-2">
-                  <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2 rounded-lg font-medium bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Cancel</button>
-                  <button onClick={handleDelete} className="flex-1 py-2 rounded-lg font-medium bg-red-600 hover:bg-red-700 text-white">Confirm Delete</button>
+                  <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2 rounded-lg font-medium bg-ink-200 dark:bg-ink-800 text-ink-700 dark:text-ink-300">Cancel</button>
+                  <button onClick={handleDelete} className="flex-1 py-2 rounded-lg font-medium bg-chili-600 hover:bg-chili-700 text-white">Confirm Delete</button>
                 </div>
               </div>
             )}
@@ -465,20 +465,20 @@ function CampaignModal({ darkMode, customersCount, onClose }: { darkMode: boolea
   const [sent, setSent] = useState(false);
   
   const dm = darkMode;
-  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
-  const t1 = dm ? 'text-slate-100' : 'text-slate-800';
-  const t2 = dm ? 'text-slate-400' : 'text-slate-500';
+  const surface = dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-100';
+  const t1 = dm ? 'text-ink-100' : 'text-ink-800';
+  const t2 = dm ? 'text-ink-400' : 'text-ink-500';
 
   if (sent) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
         <div className={`w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl ${surface}`}>
-          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-full bg-leaf-100 text-leaf-600 flex items-center justify-center mx-auto mb-4">
             <CheckCircle size={32} />
           </div>
           <h2 className={`text-xl font-bold ${t1} mb-2`}>Campaign Sent!</h2>
           <p className={`${t2} mb-6`}>Message successfully broadcasted to {customersCount} customers via WhatsApp integration.</p>
-          <button onClick={onClose} className={`w-full py-3 font-medium rounded-xl ${dm ? 'bg-slate-100 text-slate-900' : 'bg-slate-900 text-white'}`}>
+          <button onClick={onClose} className={`w-full py-3 font-medium rounded-xl ${dm ? 'bg-ink-100 text-ink-900' : 'bg-ink-900 text-white'}`}>
             Close
           </button>
         </div>
@@ -487,17 +487,17 @@ function CampaignModal({ darkMode, customersCount, onClose }: { darkMode: boolea
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className={`w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden ${surface}`}>
-        <div className={`p-4 border-b flex items-center justify-between ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
-          <h2 className={`font-semibold ${t1} flex items-center gap-2`}><MessageCircle size={18} className="text-emerald-500"/> Broadcast Campaign</h2>
-          <button onClick={onClose} className={`p-1.5 rounded-full ${dm ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${t2}`}>
+        <div className={`p-4 border-b flex items-center justify-between ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+          <h2 className={`font-semibold ${t1} flex items-center gap-2`}><MessageCircle size={18} className="text-leaf-500"/> Broadcast Campaign</h2>
+          <button onClick={onClose} className={`p-1.5 rounded-full ${dm ? 'hover:bg-ink-700' : 'hover:bg-ink-100'} ${t2}`}>
             <X size={20} />
           </button>
         </div>
         <div className="p-6">
-          <div className={`mb-4 flex items-center gap-3 p-3 rounded-xl border ${dm ? 'border-blue-900/30 bg-blue-900/10' : 'border-blue-100 bg-blue-50'}`}>
-            <Users size={20} className="text-blue-500" />
+          <div className={`mb-4 flex items-center gap-3 p-3 rounded-xl border ${dm ? 'border-brand-900/30 bg-brand-900/10' : 'border-brand-100 bg-brand-50'}`}>
+            <Users size={20} className="text-brand-500" />
             <div className="flex flex-col">
               <span className={`text-sm font-semibold ${t1}`}>Target Audience</span>
               <span className={`text-xs ${t2}`}>{customersCount} customers selected</span>
@@ -507,14 +507,14 @@ function CampaignModal({ darkMode, customersCount, onClose }: { darkMode: boolea
           <textarea
             value={msg}
             onChange={(e) => setMsg(e.target.value)}
-            className={`w-full p-3 rounded-xl border outline-none text-sm resize-none h-32 ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`}
+            className={`w-full p-3 rounded-xl border outline-none text-sm resize-none h-32 ${dm ? 'bg-ink-900 border-ink-700 focus:border-ink-500 text-ink-200' : 'bg-ink-50 border-ink-200 focus:border-ink-400 text-ink-800'}`}
           />
         </div>
-        <div className={`p-4 border-t flex justify-end gap-3 ${dm ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
-          <button onClick={onClose} className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${dm ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700'}`}>
+        <div className={`p-4 border-t flex justify-end gap-3 ${dm ? 'border-ink-700 bg-ink-800' : 'border-ink-200 bg-ink-50'}`}>
+          <button onClick={onClose} className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${dm ? 'hover:bg-ink-700 text-ink-300' : 'hover:bg-ink-200 text-ink-700'}`}>
             Cancel
           </button>
-          <button onClick={() => setSent(true)} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2">
+          <button onClick={() => setSent(true)} className="px-6 py-2 bg-leaf-600 hover:bg-leaf-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2">
             Send Broadcast
           </button>
         </div>
@@ -529,11 +529,12 @@ function AddCustomerModal({ darkMode, onClose, setCustomers }: { darkMode: boole
   const [email, setEmail] = useState('');
   const [birthday, setBirthday] = useState('');
   const [tags, setTags] = useState('');
+  const [marketingConsent, setMarketingConsent] = useState(false);
   
   const dm = darkMode;
-  const surface = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100';
-  const t1 = dm ? 'text-slate-100' : 'text-slate-800';
-  const t2 = dm ? 'text-slate-400' : 'text-slate-500';
+  const surface = dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-100';
+  const t1 = dm ? 'text-ink-100' : 'text-ink-800';
+  const t2 = dm ? 'text-ink-400' : 'text-ink-500';
 
   const handleSave = () => {
     if (!name.trim() || phone.trim().length <= 4) return;
@@ -542,32 +543,33 @@ function AddCustomerModal({ darkMode, onClose, setCustomers }: { darkMode: boole
       name: name.trim(),
       phone: phone.trim(),
       email: email.trim(),
-      birthday,
+      dateOfBirth: birthday || undefined,
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
       pointsBalance: 0,
       totalSpend: 0,
       totalTransactions: 0,
       averageTransactionValue: 0,
-      marketingConsent: true,
-      createdAt: new Date().toISOString()
+      // UU PDP / PDPA: consent is opt-in and recorded only when the customer agrees
+      marketingConsent,
+      registrationDate: new Date().toISOString()
     };
     setCustomers(prev => [...prev, newCustomer]);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className={`w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden ${surface}`}>
-        <div className={`p-4 border-b flex items-center justify-between ${dm ? 'border-slate-700' : 'border-slate-200'}`}>
+        <div className={`p-4 border-b flex items-center justify-between ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
           <h2 className={`font-semibold ${t1}`}>Add New Customer</h2>
-          <button onClick={onClose} className={`p-1.5 rounded-full ${dm ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${t2}`}>
+          <button onClick={onClose} className={`p-1.5 rounded-full ${dm ? 'hover:bg-ink-700' : 'hover:bg-ink-100'} ${t2}`}>
             <X size={20} />
           </button>
         </div>
         <div className="p-6 space-y-4">
           <div>
             <label className={`block text-sm font-medium mb-1 ${t1}`}>Name *</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="Customer full name" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Customer full name" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 focus:border-ink-500 text-ink-200' : 'bg-ink-50 border-ink-200 focus:border-ink-400 text-ink-800'}`} />
           </div>
           <div>
             <label className={`block text-sm font-medium mb-1 ${t1}`}>Phone *</label>
@@ -577,25 +579,29 @@ function AddCustomerModal({ darkMode, onClose, setCustomers }: { darkMode: boole
               onChange={e => setPhone(formatIndonesianPhone(e.target.value))}
               onFocus={() => { if (!phone) setPhone('+62 '); }}
               placeholder="+62 812-3456-7890"
-              className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`}
+              className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 focus:border-ink-500 text-ink-200' : 'bg-ink-50 border-ink-200 focus:border-ink-400 text-ink-800'}`}
             />
           </div>
           <div>
             <label className={`block text-sm font-medium mb-1 ${t1}`}>Email</label>
-            <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="customer@example.com" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
+            <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="customer@example.com" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 focus:border-ink-500 text-ink-200' : 'bg-ink-50 border-ink-200 focus:border-ink-400 text-ink-800'}`} />
           </div>
           <div>
             <label className={`block text-sm font-medium mb-1 ${t1}`}>Birthday</label>
-            <input value={birthday} onChange={e => setBirthday(e.target.value)} type="date" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} />
+            <input value={birthday} onChange={e => setBirthday(e.target.value)} type="date" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 focus:border-ink-500 text-ink-200' : 'bg-ink-50 border-ink-200 focus:border-ink-400 text-ink-800'}`} />
           </div>
           <div>
             <label className={`block text-sm font-medium mb-1 ${t1}`}>Tags (comma separated)</label>
-            <input value={tags} onChange={e => setTags(e.target.value)} className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-slate-900 border-slate-700 focus:border-slate-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-slate-400 text-slate-800'}`} placeholder="e.g. VIP, Local" />
+            <input value={tags} onChange={e => setTags(e.target.value)} className={`w-full p-2.5 rounded-xl border outline-none text-sm ${dm ? 'bg-ink-900 border-ink-700 focus:border-ink-500 text-ink-200' : 'bg-ink-50 border-ink-200 focus:border-ink-400 text-ink-800'}`} placeholder="e.g. VIP, Local" />
           </div>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={marketingConsent} onChange={e => setMarketingConsent(e.target.checked)} className="mt-0.5 h-4 w-4 accent-brand-600" />
+            <span className={`text-sm ${t1}`}>Customer agrees to receive promotions by WhatsApp, SMS or email</span>
+          </label>
         </div>
-        <div className={`p-4 border-t flex justify-end gap-3 ${dm ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
-          <button onClick={onClose} className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${dm ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-200 text-slate-700'}`}>Cancel</button>
-          <button onClick={handleSave} disabled={!name.trim() || phone.trim().length <= 4} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-colors">Save Customer</button>
+        <div className={`p-4 border-t flex justify-end gap-3 ${dm ? 'border-ink-700 bg-ink-800' : 'border-ink-200 bg-ink-50'}`}>
+          <button onClick={onClose} className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${dm ? 'hover:bg-ink-700 text-ink-300' : 'hover:bg-ink-200 text-ink-700'}`}>Cancel</button>
+          <button onClick={handleSave} disabled={!name.trim() || phone.trim().length <= 4} className="px-6 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-colors">Save Customer</button>
         </div>
       </div>
     </div>
