@@ -19,6 +19,43 @@
 
 BEGIN;
 
+-- Fail early with a readable message instead of a cryptic error halfway through.
+-- The whole file is one transaction: if anything below fails, NOTHING is applied.
+DO $$
+DECLARE
+  problems TEXT := '';
+  t TEXT;
+  n BIGINT;
+BEGIN
+  IF to_regclass('public.merchants') IS NULL THEN
+    problems := problems || E'\n  • merchants table missing: run 002 first';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='promo_codes' AND column_name='merchant_id') THEN
+    problems := problems || E'\n  • migration 003 never ran: run the fixed 003_promo_discounts_and_variants.sql';
+  END IF;
+  IF to_regclass('public.platform_super_admins') IS NULL
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='merchants' AND column_name='subscription_status') THEN
+    problems := problems || E'\n  • migration 004 never ran: run the fixed 004_subscriptions_and_superadmin.sql';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='variants_json') THEN
+    problems := problems || E'\n  • migration 005 never ran: run 005_products_variants_json.sql';
+  END IF;
+
+  IF problems = '' AND to_regclass('public.merchant_members') IS NULL THEN
+    FOREACH t IN ARRAY ARRAY['staff','categories','products','product_variants','customers','orders','promo_codes','business_settings'] LOOP
+      EXECUTE format('SELECT count(*) FROM %I x WHERE NOT EXISTS (SELECT 1 FROM merchants m WHERE m.id = coalesce(x.merchant_id, %L))', t, 'm_default') INTO n;
+      IF n > 0 THEN
+        problems := problems || format(E'\n  • %s: %s row(s) belong to a merchant id that is not in the merchants table', t, n);
+      END IF;
+    END LOOP;
+  END IF;
+
+  IF problems <> '' THEN
+    RAISE EXCEPTION 'Migration 006 cannot run yet. Nothing was changed.%', problems
+      USING HINT = 'Run supabase/diagnostics/006_preflight.sql for details and the exact fix for each item.';
+  END IF;
+END $$;
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 -- ─── 1. Membership & platform admins ───────────────────────────────────────
@@ -62,21 +99,6 @@ REVOKE ALL ON FUNCTION public.is_platform_admin(), public.is_merchant_member(TEX
 GRANT EXECUTE ON FUNCTION public.is_platform_admin(), public.is_merchant_member(TEXT), public.is_merchant_manager(TEXT) TO authenticated;
 
 -- ─── 3. merchant_id everywhere, NOT NULL, per-merchant keys ────────────────
-
-ALTER TABLE merchants ADD COLUMN IF NOT EXISTS name TEXT;
-ALTER TABLE merchants ADD COLUMN IF NOT EXISTS email TEXT;
-ALTER TABLE merchants ADD COLUMN IF NOT EXISTS phone TEXT;
-ALTER TABLE merchants ADD COLUMN IF NOT EXISTS address TEXT;
-ALTER TABLE merchants ADD COLUMN IF NOT EXISTS type business_type DEFAULT 'fnb';
-
-DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'merchants' AND column_name = 'business_name') THEN
-    UPDATE merchants SET name = business_name WHERE name IS NULL;
-  END IF;
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'merchants' AND column_name = 'owner_email') THEN
-    UPDATE merchants SET email = owner_email WHERE email IS NULL;
-  END IF;
-END $$;
 
 ALTER TABLE loyalty_settings  ADD COLUMN IF NOT EXISTS merchant_id TEXT;
 ALTER TABLE loyalty_tiers     ADD COLUMN IF NOT EXISTS merchant_id TEXT;

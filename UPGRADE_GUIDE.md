@@ -61,6 +61,14 @@ pg_restore --no-owner --dbname "$STAGING_DB_URL" vpos-before-006.dump
 
 ## Step 3: Run the migrations on staging
 
+**First run the preflight.** Paste `supabase/diagnostics/006_preflight.sql` into the SQL editor and run it. It changes nothing. Fix every `FAIL` row using the `fix` column, run it again, and continue only when there are no `FAIL` rows.
+
+The most common findings on databases created before this upgrade:
+
+- **Migration 003 or 004 never ran.** The original files had broken `$` quoting, so they errored. Run the fixed 003 and 004 from this repo (both are safe to re-run).
+- **Rows without a merchant.** Businesses that signed up in the old app can have orders or products whose merchant was never saved. Use the optional "recover missing merchants" block at the bottom of the preflight file to keep that data, or delete those rows.
+
+
 In order, in the SQL editor or with the CLI:
 
 ```
@@ -73,6 +81,8 @@ In order, in the SQL editor or with the CLI:
 ```
 
 If 001–005 already ran on that database, run only 006. It is safe to run twice.
+
+006 runs as one transaction. **If it shows any error, nothing was applied**, and step 5 will fail with `relation "merchant_members" does not exist`. Run the preflight again; it will say what is still wrong. When 006 succeeds, the preflight shows a single `OK` row: `migration 006 applied`.
 
 ## Step 4: Prove isolation on staging
 

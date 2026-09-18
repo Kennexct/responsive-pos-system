@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, Plus, AlertTriangle, TrendingDown, TrendingUp, X, Trash2, ImagePlus, Pencil, PlusCircle, Layers, ArrowUpDown } from 'lucide-react';
 import { formatIDR, formatNumberWithDots } from './mockData';
-import type { Product, Category, ProductVariant } from './mockData';
+import type { Product, Category, ProductVariant, OptionGroup, OptionChoice } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 import { resizeImage } from './utils';
 
@@ -56,6 +56,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
   const [newTrackInventory, setNewTrackInventory] = useState(false);
   const [newAllowDiscount, setNewAllowDiscount] = useState(false);
   const [newVariants, setNewVariants] = useState<ProductVariant[]>([]);
+  const [newOptionGroups, setNewOptionGroups] = useState<OptionGroup[]>([]);
 
   // Quick Add Category Modal inside Add Product
   const [showQuickCategoryModal, setShowQuickCategoryModal] = useState(false);
@@ -122,7 +123,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
   const openAddProduct = () => {
     setEditingId(null);
     setNewName(''); setNewPrice(''); setNewCostPrice(''); setNewStock(''); setNewThreshold('10'); setNewEmoji('☕'); setNewImage(undefined);
-    setNewSku(''); setNewBarcode(''); setNewTrackInventory(false); setNewAllowDiscount(false); setNewVariants([]);
+    setNewSku(''); setNewBarcode(''); setNewTrackInventory(false); setNewAllowDiscount(true); setNewVariants([]); setNewOptionGroups([]);
     setProductModal(true);
   };
 
@@ -134,6 +135,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
     setNewSku(p.sku || ''); setNewBarcode(p.barcode || '');
     setNewTrackInventory(p.trackInventory !== false); setNewAllowDiscount(p.allowDiscount !== false);
     setNewVariants(p.variants || []);
+    setNewOptionGroups(p.optionGroups || []);
     setProductModal(true);
   };
 
@@ -151,6 +153,60 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
     setNewVariants(newVariants.filter((_, i) => i !== index));
   };
 
+  const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+
+  const addOptionGroup = (preset?: Partial<OptionGroup>) => {
+    setNewOptionGroups(prev => [...prev, {
+      id: uid('grp'),
+      name: preset?.name ?? '',
+      selection: preset?.selection ?? 'single',
+      required: preset?.required ?? true,
+      maxSelect: preset?.maxSelect,
+      choices: preset?.choices?.map(c => ({ ...c, id: uid('opt') }))
+        ?? [{ id: uid('opt'), name: '', priceDelta: 0, isDefault: true }],
+    }]);
+  };
+
+  const updateGroup = (id: string, patch: Partial<OptionGroup>) =>
+    setNewOptionGroups(prev => prev.map(g => g.id === id ? { ...g, ...patch } : g));
+
+  const removeGroup = (id: string) => setNewOptionGroups(prev => prev.filter(g => g.id !== id));
+
+  const addChoice = (groupId: string) =>
+    updateGroupChoices(groupId, choices => [...choices, { id: uid('opt'), name: '', priceDelta: 0 }]);
+
+  const updateChoice = (groupId: string, choiceId: string, patch: Partial<OptionChoice>) =>
+    updateGroupChoices(groupId, choices => choices.map(c => c.id === choiceId ? { ...c, ...patch } : c));
+
+  const removeChoice = (groupId: string, choiceId: string) =>
+    updateGroupChoices(groupId, choices => choices.filter(c => c.id !== choiceId));
+
+  const setDefaultChoice = (group: OptionGroup, choiceId: string) =>
+    updateGroupChoices(group.id, choices => choices.map(c => ({
+      ...c,
+      // Only one default makes sense when the cashier can pick just one.
+      isDefault: group.selection === 'single' ? c.id === choiceId : c.id === choiceId ? !c.isDefault : c.isDefault,
+    })));
+
+  const updateGroupChoices = (groupId: string, fn: (choices: OptionChoice[]) => OptionChoice[]) =>
+    setNewOptionGroups(prev => prev.map(g => g.id === groupId ? { ...g, choices: fn(g.choices) } : g));
+
+  /** Common F&B groups, so a café doesn't type the same three groups for every drink. */
+  const OPTION_PRESETS: { label: string; group: Partial<OptionGroup> }[] = [
+    { label: 'Size', group: { name: 'Size', selection: 'single', required: true, choices: [
+      { id: '', name: 'Small', priceDelta: -3000 }, { id: '', name: 'Medium', priceDelta: 0, isDefault: true }, { id: '', name: 'Large', priceDelta: 6000 },
+    ] } },
+    { label: 'Hot / Ice', group: { name: 'Temperature', selection: 'single', required: true, choices: [
+      { id: '', name: 'Hot', priceDelta: 0, isDefault: true }, { id: '', name: 'Ice', priceDelta: 2000 },
+    ] } },
+    { label: 'Extra shots', group: { name: 'Extra shots', selection: 'single', required: false, choices: [
+      { id: '', name: '+1 shot', priceDelta: 8000 }, { id: '', name: '+2 shots', priceDelta: 15000 },
+    ] } },
+    { label: 'Add-ons', group: { name: 'Add-ons', selection: 'multi', required: false, maxSelect: 3, choices: [
+      { id: '', name: 'Oat milk', priceDelta: 10000 }, { id: '', name: 'Extra cheese', priceDelta: 5000 },
+    ] } },
+  ];
+
   const saveProduct = () => {
     if (!newName.trim() || !newPrice || (!editingId && newTrackInventory && !newStock)) return;
 
@@ -166,7 +222,12 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
       barcode: newBarcode.trim() || undefined,
       trackInventory: newTrackInventory,
       allowDiscount: newAllowDiscount,
-      variants: newVariants.length > 0 ? newVariants : undefined,
+      variants: newVariants.length > 0 ? newVariants.filter(v => v.name.trim()) : undefined,
+      optionGroups: newOptionGroups.length > 0
+        ? newOptionGroups
+            .filter(g => g.name.trim() && g.choices.some(c => c.name.trim()))
+            .map(g => ({ ...g, name: g.name.trim(), choices: g.choices.filter(c => c.name.trim()) }))
+        : undefined,
     };
 
     if (editingId) {
@@ -439,9 +500,9 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
 
       {/* ─── Product modal (Add/Edit) ───────────────────────────────────────── */}
       {productModal && (
-        <Modal title={editingId ? 'Edit Product' : 'Add New Product'} onClose={() => setProductModal(false)} darkMode={dm} maxWidth="max-w-2xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
+        <Modal title={editingId ? 'Edit Product' : 'Add New Product'} onClose={() => setProductModal(false)} darkMode={dm} maxWidth="max-w-3xl">
+          <div className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-4 items-start">
               {/* Image upload */}
               <div>
                 <label className={`text-sm block mb-2 font-medium ${t2}`}>Product Image</label>
@@ -560,7 +621,7 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Product SKU & Barcode (Optional) */}
               <div className="grid grid-cols-2 gap-3 items-start">
                 <div>
@@ -575,93 +636,237 @@ export function InventoryView({ products, onProductsChange, categories, setCateg
                 </div>
               </div>
 
-              {/* Variants Section - each variant has 4 fields: name, price modifier, SKU, barcode */}
-              <div className={`border rounded-xl p-3.5 ${dm ? 'border-ink-700 bg-ink-850' : 'border-ink-200 bg-ink-50/50'}`}>
-                <div className="flex items-center justify-between mb-3">
+              {/* ── Variants: a different thing on the shelf, with its own SKU, barcode and price ── */}
+              <section className={`border rounded-xl p-4 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+                <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <h4 className={`text-sm font-semibold ${t1}`}>Variants (Sizes, Add-ons)</h4>
-                    <p className={`text-[11px] ${t2}`}>Attach unique SKU & Barcode to each variant</p>
+                    <h4 className={`text-sm font-semibold ${t1}`}>Variants</h4>
+                    <p className={`text-xs mt-0.5 ${t2}`}>A different item on the shelf: 500ml bottle, red / size M. Each one can carry its own SKU and barcode. The cashier picks exactly one.</p>
                   </div>
                   <button
                     type="button"
                     onClick={addVariant}
-                    className="text-xs flex items-center gap-1 font-semibold px-2.5 py-1 rounded-lg bg-brand-600/10 text-brand-600 hover:bg-brand-600/20 dark:text-brand-400"
+                    className={`shrink-0 text-sm flex items-center gap-1.5 font-semibold px-3 h-9 rounded-md cursor-pointer ${dm ? 'bg-ink-800 text-brand-300 hover:bg-ink-700' : 'bg-brand-50 text-brand-700 hover:bg-brand-100'}`}
                   >
-                    <PlusCircle size={14} /> Add Variant
+                    <PlusCircle size={15} /> Add variant
                   </button>
                 </div>
-                
+
                 {newVariants.length === 0 ? (
-                  <p className={`text-xs ${t2} py-2`}>No variants added yet. E.g., Size Large (+Rp 5.000)</p>
+                  <p className={`text-sm ${t2}`}>None. Most café drinks need options below instead.</p>
                 ) : (
-                  <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                  <div className="space-y-3">
                     {newVariants.map((v, i) => (
-                      <div key={v.id || i} className={`p-3 rounded-xl border relative space-y-2 ${dm ? 'bg-ink-800 border-ink-700' : 'bg-white border-ink-200'}`}>
+                      <div key={v.id || i} className={`rounded-lg border p-3 space-y-2.5 ${dm ? 'bg-ink-850 border-ink-700' : 'bg-ink-50 border-ink-200'}`}>
                         <div className="flex items-center justify-between">
-                          <span className={`text-xs font-bold text-brand-500`}>Variant #{i + 1}</span>
+                          <span className={`text-xs font-semibold ${t2}`}>Variant {i + 1}</span>
                           <button
                             type="button"
                             onClick={() => removeVariant(i)}
-                            className="p-1 rounded-lg text-ink-400 hover:text-chili-500 hover:bg-chili-500/10 transition-colors"
-                            title="Remove variant"
+                            aria-label={`Remove variant ${i + 1}`}
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-ink-400 hover:text-chili-600 hover:bg-chili-50 dark:hover:bg-chili-500/10 cursor-pointer"
                           >
-                            <X size={14} />
+                            <X size={15} />
                           </button>
                         </div>
-                        
-                        {/* Row 1: Name & Price */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <label className={`text-[10px] block mb-0.5 font-medium ${t2}`}>Variant Name *</label>
+                        <div className="grid sm:grid-cols-2 gap-2.5">
+                          <label className="block">
+                            <span className={`text-xs block mb-1 font-medium ${t2}`}>Name *</span>
                             <input
-                              type="text"
-                              placeholder="e.g. Large, Oat Milk"
-                              value={v.name}
+                              type="text" placeholder="e.g. 500ml bottle" value={v.name}
                               onChange={e => updateVariant(i, 'name', e.target.value)}
-                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-brand-400 ${inputCls}`}
+                              className={`w-full border rounded-md px-3 h-11 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}
                             />
-                          </div>
-                          <div>
-                            <label className={`text-[10px] block mb-0.5 font-medium ${t2}`}>Price Modifier (+ IDR)</label>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              placeholder="e.g. 5.000"
-                              value={v.priceModifier ? formatNumberWithDots(v.priceModifier) : ''}
-                              onChange={e => updateVariant(i, 'priceModifier', Number(e.target.value.replace(/\D/g, '')) || 0)}
-                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-brand-400 ${inputCls}`}
+                          </label>
+                          <label className="block">
+                            <span className={`text-xs block mb-1 font-medium ${t2}`}>Price difference</span>
+                            <MoneyDeltaInput
+                              value={v.priceModifier}
+                              onChange={n => updateVariant(i, 'priceModifier', n)}
+                              className={`w-full border rounded-md px-3 h-11 text-sm focus:outline-none focus:border-brand-400 tabular-nums ${inputCls}`}
                             />
-                          </div>
-                        </div>
-
-                        {/* Row 2: SKU & Barcode */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <label className={`text-[10px] block mb-0.5 font-medium ${t2}`}>Variant SKU</label>
+                            <span className={`text-xs mt-1 block ${t2}`}>
+                              {newPrice ? `Sells for ${formatIDR(Number(newPrice) + (v.priceModifier || 0))}` : 'Set the selling price first'}
+                            </span>
+                          </label>
+                          <label className="block">
+                            <span className={`text-xs block mb-1 font-medium ${t2}`}>SKU</span>
                             <input
-                              type="text"
-                              placeholder="e.g. COF-ESP-LG"
-                              value={v.sku || ''}
+                              type="text" placeholder="e.g. COF-ESP-LG" value={v.sku || ''}
                               onChange={e => updateVariant(i, 'sku', e.target.value)}
-                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-brand-400 ${inputCls}`}
+                              className={`w-full border rounded-md px-3 h-11 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}
                             />
-                          </div>
-                          <div>
-                            <label className={`text-[10px] block mb-0.5 font-medium ${t2}`}>Variant Barcode</label>
+                          </label>
+                          <label className="block">
+                            <span className={`text-xs block mb-1 font-medium ${t2}`}>Barcode</span>
                             <input
-                              type="text"
-                              placeholder="Scan or type barcode"
-                              value={v.barcode || ''}
+                              type="text" placeholder="Scan or type" value={v.barcode || ''}
                               onChange={e => updateVariant(i, 'barcode', e.target.value)}
-                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-brand-400 ${inputCls}`}
+                              className={`w-full border rounded-md px-3 h-11 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}
                             />
-                          </div>
+                          </label>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
+              </section>
+
+              {/* ── Options: how the same item is made. No stock, no barcode. ── */}
+              <section className={`border rounded-xl p-4 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+                <div className="mb-3">
+                  <h4 className={`text-sm font-semibold ${t1}`}>Options and add-ons</h4>
+                  <p className={`text-xs mt-0.5 ${t2}`}>How this item is made: size, hot or ice, extra shots. Each choice can add to the price. Ask as many groups as you need.</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {OPTION_PRESETS.map(preset => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => addOptionGroup(preset.group)}
+                      className={`text-sm px-3 h-9 rounded-md border font-medium cursor-pointer ${dm ? 'border-ink-700 text-ink-300 hover:bg-ink-800' : 'border-ink-200 text-ink-700 hover:bg-ink-100'}`}
+                    >
+                      + {preset.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addOptionGroup()}
+                    className={`text-sm flex items-center gap-1.5 px-3 h-9 rounded-md font-semibold cursor-pointer ${dm ? 'bg-ink-800 text-brand-300 hover:bg-ink-700' : 'bg-brand-50 text-brand-700 hover:bg-brand-100'}`}
+                  >
+                    <PlusCircle size={15} /> Blank group
+                  </button>
+                </div>
+
+                {newOptionGroups.length === 0 ? (
+                  <p className={`text-sm ${t2}`}>No options. Tap a suggestion above, for example Size, then Hot / Ice.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {newOptionGroups.map((g, gi) => (
+                      <div key={g.id} className={`rounded-lg border p-3 ${dm ? 'bg-ink-850 border-ink-700' : 'bg-ink-50 border-ink-200'}`}>
+                        <div className="flex items-end gap-2 mb-3">
+                          <label className="flex-1 block">
+                            <span className={`text-xs block mb-1 font-medium ${t2}`}>Option {gi + 1} name *</span>
+                            <input
+                              type="text" placeholder="e.g. Size, Temperature, Extra shots" value={g.name}
+                              onChange={e => updateGroup(g.id, { name: e.target.value })}
+                              className={`w-full border rounded-md px-3 h-11 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => removeGroup(g.id)}
+                            aria-label={`Remove option group ${g.name || gi + 1}`}
+                            className="w-11 h-11 flex items-center justify-center rounded-md text-ink-400 hover:text-chili-600 hover:bg-chili-50 dark:hover:bg-chili-500/10 cursor-pointer"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4 mb-3">
+                          <div role="radiogroup" aria-label="How many can be chosen" className={`flex rounded-md p-0.5 ${dm ? 'bg-ink-800' : 'bg-ink-200/60'}`}>
+                            {(['single', 'multi'] as const).map(mode => (
+                              <button
+                                key={mode}
+                                type="button"
+                                role="radio"
+                                aria-checked={g.selection === mode}
+                                onClick={() => updateGroup(g.id, {
+                                  selection: mode,
+                                  maxSelect: mode === 'multi' ? (g.maxSelect ?? 2) : undefined,
+                                  choices: mode === 'single'
+                                    ? g.choices.map((c, i) => ({ ...c, isDefault: c.isDefault && g.choices.findIndex(x => x.isDefault) === i }))
+                                    : g.choices,
+                                })}
+                                className={`px-3 h-9 rounded text-sm font-medium cursor-pointer ${
+                                  g.selection === mode
+                                    ? dm ? 'bg-ink-700 text-ink-50' : 'bg-white text-ink-900 shadow-sm'
+                                    : t2
+                                }`}
+                              >
+                                {mode === 'single' ? 'Pick one' : 'Pick many'}
+                              </button>
+                            ))}
+                          </div>
+
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox" checked={g.required}
+                              onChange={e => updateGroup(g.id, { required: e.target.checked })}
+                              className="h-4 w-4 accent-brand-600"
+                            />
+                            <span className={`text-sm ${t1}`}>Must be chosen</span>
+                          </label>
+
+                          {g.selection === 'multi' && (
+                            <label className="flex items-center gap-2">
+                              <span className={`text-sm ${t2}`}>Up to</span>
+                              <input
+                                type="number" min={1} max={10} value={g.maxSelect ?? 2}
+                                onChange={e => updateGroup(g.id, { maxSelect: Math.max(1, Number(e.target.value) || 1) })}
+                                className={`w-16 border rounded-md px-2 h-9 text-sm tabular-nums focus:outline-none focus:border-brand-400 ${inputCls}`}
+                              />
+                            </label>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          {g.choices.map((c, ci) => (
+                            <div key={c.id} className="flex items-end gap-2">
+                              <label className="flex-1 block">
+                                {ci === 0 && <span className={`text-xs block mb-1 font-medium ${t2}`}>Choice</span>}
+                                <input
+                                  type="text" placeholder="e.g. Large" value={c.name}
+                                  onChange={e => updateChoice(g.id, c.id, { name: e.target.value })}
+                                  className={`w-full border rounded-md px-3 h-11 text-sm focus:outline-none focus:border-brand-400 ${inputCls}`}
+                                />
+                              </label>
+                              <label className="w-32 block">
+                                {ci === 0 && <span className={`text-xs block mb-1 font-medium ${t2}`}>Extra price</span>}
+                                <MoneyDeltaInput
+                                  value={c.priceDelta}
+                                  onChange={n => updateChoice(g.id, c.id, { priceDelta: n })}
+                                  className={`w-full border rounded-md px-2 h-11 text-sm tabular-nums focus:outline-none focus:border-brand-400 ${inputCls}`}
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => setDefaultChoice(g, c.id)}
+                                aria-pressed={!!c.isDefault}
+                                title="Selected by default at the till"
+                                className={`px-3 h-11 rounded-md border text-xs font-semibold cursor-pointer ${
+                                  c.isDefault
+                                    ? 'border-brand-600 bg-brand-50 text-brand-700 dark:border-brand-400 dark:bg-brand-500/15 dark:text-brand-200'
+                                    : dm ? 'border-ink-700 text-ink-400 hover:bg-ink-800' : 'border-ink-200 text-ink-500 hover:bg-ink-100'
+                                }`}
+                              >
+                                Default
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeChoice(g.id, c.id)}
+                                aria-label={`Remove choice ${c.name || ci + 1}`}
+                                disabled={g.choices.length <= 1}
+                                className="w-11 h-11 flex items-center justify-center rounded-md text-ink-400 hover:text-chili-600 hover:bg-chili-50 dark:hover:bg-chili-500/10 disabled:opacity-30 cursor-pointer"
+                              >
+                                <X size={15} />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => addChoice(g.id)}
+                            className={`text-sm font-semibold flex items-center gap-1.5 h-9 px-1 cursor-pointer ${dm ? 'text-brand-300' : 'text-brand-700'}`}
+                          >
+                            <Plus size={15} /> Add choice
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
 
               {/* Track Inventory Toggle (Default OFF) */}
               <div className={`border rounded-xl p-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
@@ -788,6 +993,45 @@ function Toggle({ checked, onChange, darkMode }: { checked: boolean; onChange: (
       className={`rounded-full transition-colors ${checked ? 'bg-brand-600' : (darkMode ? 'bg-ink-600' : 'bg-ink-300')}`}>
       <span style={{ position: 'absolute', width: 18, height: 18, top: 2, left: 2, backgroundColor: 'white', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transform: checked ? 'translateX(18px)' : 'translateX(0)', transition: 'transform 0.2s' }} />
     </button>
+  );
+}
+
+/**
+ * Money field that accepts 0 and negative amounts. The old field wrote `value || ''`,
+ * so a 0 looked empty, and it stripped the minus sign, so a cheaper choice was impossible.
+ */
+function MoneyDeltaInput({ value, onChange, className }: { value: number; onChange: (n: number) => void; className?: string }) {
+  const [text, setText] = useState<string>(() => String(value ?? 0));
+
+  useEffect(() => {
+    if (Number(text.replace(/[^0-9-]/g, '')) !== value) setText(String(value ?? 0));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const commit = (raw: string) => {
+    const cleaned = raw.replace(/[^0-9-]/g, '');
+    const negative = cleaned.startsWith('-');
+    const digits = cleaned.replace(/-/g, '');
+    setText((negative ? '-' : '') + digits);
+    onChange(digits === '' ? 0 : Number(negative ? `-${digits}` : digits));
+  };
+
+  const display = (() => {
+    if (text === '' || text === '-') return text;
+    const n = Number(text);
+    return Number.isFinite(n) ? (n < 0 ? `-${formatNumberWithDots(Math.abs(n))}` : formatNumberWithDots(n)) : text;
+  })();
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={display}
+      onChange={e => commit(e.target.value)}
+      onBlur={() => setText(String(value ?? 0))}
+      placeholder="0"
+      className={className}
+    />
   );
 }
 

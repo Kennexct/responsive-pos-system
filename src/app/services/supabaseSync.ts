@@ -96,6 +96,7 @@ export async function loadFromSupabase<T>(key: string, merchantId?: string): Pro
         sku: row.sku,
         barcode: row.barcode,
         variants: row.variants_json || [],
+        optionGroups: row.option_groups_json || [],
         trackInventory: row.track_inventory,
         allowDiscount: row.allow_discount,
       })) as unknown as T;
@@ -247,6 +248,7 @@ export async function saveToSupabase<T>(key: string, value: T, merchantId?: stri
           sku: p.sku || null,
           barcode: p.barcode || null,
           variants_json: p.variants || [],
+          option_groups_json: p.optionGroups || [],
           track_inventory: p.trackInventory ?? true,
           allow_discount: p.allowDiscount ?? true,
         }));

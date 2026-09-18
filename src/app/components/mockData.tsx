@@ -152,6 +152,45 @@ export interface ProductVariant {
   barcode?: string;
 }
 
+/**
+ * A variant is a separate thing on the shelf: its own SKU, barcode and price.
+ * Retail uses these (Shirt / Red / M). One variant per line, always.
+ */
+
+/** A choice inside an option group, e.g. "Ice" or "+1 shot". */
+export interface OptionChoice {
+  id: string;
+  name: string;
+  /** Added to the line price. May be 0 (free) or negative (discounted choice). */
+  priceDelta: number;
+  isDefault?: boolean;
+  isAvailable?: boolean;
+}
+
+/**
+ * An option group changes how one item is made, not which item it is.
+ * F&B uses these (Temperature: hot/ice · Sugar: less/normal · Extras: +1 shot).
+ * Options never carry stock, SKU or barcode — they are modifiers of the variant that was sold.
+ */
+export interface OptionGroup {
+  id: string;
+  name: string;
+  /** 'single' = pick exactly one (Size, Temperature). 'multi' = pick any number (Extras). */
+  selection: 'single' | 'multi';
+  required: boolean;
+  /** Only for 'multi': the most choices a customer may pick. */
+  maxSelect?: number;
+  choices: OptionChoice[];
+}
+
+export interface SelectedOption {
+  groupId: string;
+  groupName: string;
+  choiceId: string;
+  choiceName: string;
+  priceDelta: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -165,6 +204,7 @@ export interface Product {
   sku?: string;
   barcode?: string;
   variants?: ProductVariant[];
+  optionGroups?: OptionGroup[];
   trackInventory: boolean;
   allowDiscount: boolean;
 }
@@ -177,6 +217,9 @@ export interface CartItem {
   itemDiscountNominal?: number;
   itemDiscountPercent?: number;
   variant?: ProductVariant;
+  selectedOptions?: SelectedOption[];
+  /** Free-text note for the kitchen or barista, e.g. "no straw". */
+  note?: string;
 }
 
 export interface HeldOrder {

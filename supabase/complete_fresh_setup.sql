@@ -188,6 +188,7 @@ CREATE TABLE IF NOT EXISTS products (
   track_inventory     BOOLEAN NOT NULL DEFAULT false,
   allow_discount      BOOLEAN NOT NULL DEFAULT false,
   variants_json       JSONB NOT NULL DEFAULT '[]'::jsonb,
+  option_groups_json  JSONB NOT NULL DEFAULT '[]'::jsonb,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT products_tenant_pkey PRIMARY KEY (merchant_id, id)
@@ -209,18 +210,30 @@ CREATE INDEX IF NOT EXISTS idx_product_variants_merchant_id ON product_variants(
 
 -- ─── 7. CUSTOMERS & LOYALTY ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS customers (
-  merchant_id TEXT NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
-  id          TEXT NOT NULL,
-  name        TEXT NOT NULL,
-  phone       TEXT NOT NULL,
-  email       TEXT,
-  points      INT NOT NULL DEFAULT 0,
-  tier        TEXT NOT NULL DEFAULT 'bronze',
-  total_spent INT NOT NULL DEFAULT 0,
-  visit_count INT NOT NULL DEFAULT 0,
-  notes       TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  merchant_id               TEXT NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+  id                        TEXT NOT NULL,
+  name                      TEXT NOT NULL,
+  phone                     TEXT NOT NULL,
+  email                     TEXT,
+  points                    INT NOT NULL DEFAULT 0,
+  tier                      TEXT NOT NULL DEFAULT 'bronze',
+  total_spent               INT NOT NULL DEFAULT 0,
+  visit_count               INT NOT NULL DEFAULT 0,
+  points_balance            INT NOT NULL DEFAULT 0,
+  total_spend               INT NOT NULL DEFAULT 0,
+  total_transactions        INT NOT NULL DEFAULT 0,
+  average_transaction_value INT NOT NULL DEFAULT 0,
+  tier_id                   TEXT NOT NULL DEFAULT 'bronze',
+  date_of_birth             TEXT,
+  marketing_consent         BOOLEAN NOT NULL DEFAULT false,
+  blacklist_flag            BOOLEAN NOT NULL DEFAULT false,
+  tags                      JSONB NOT NULL DEFAULT '[]'::jsonb,
+  last_purchase_date        TIMESTAMPTZ,
+  favorite_category         TEXT,
+  registration_date         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  notes                     TEXT,
+  created_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT customers_tenant_pkey PRIMARY KEY (merchant_id, id)
 );
 CREATE INDEX IF NOT EXISTS idx_customers_merchant_id ON customers(merchant_id);
@@ -258,6 +271,7 @@ CREATE TABLE IF NOT EXISTS tax_rules (
   is_compound             BOOLEAN NOT NULL DEFAULT false,
   is_active               BOOLEAN NOT NULL DEFAULT true,
   apply_to_service_charge BOOLEAN NOT NULL DEFAULT false,
+  sort_order              INT NOT NULL DEFAULT 0,
   created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT tax_rules_tenant_pkey PRIMARY KEY (merchant_id, id)
 );
@@ -299,8 +313,10 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   merchant_id TEXT NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
   id          TEXT NOT NULL,
   name        TEXT NOT NULL,
+  label       TEXT,
   type        TEXT NOT NULL DEFAULT 'cash',
   is_active   BOOLEAN NOT NULL DEFAULT true,
+  enabled     BOOLEAN NOT NULL DEFAULT true,
   sort_order  INT NOT NULL DEFAULT 0,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT payment_methods_tenant_pkey PRIMARY KEY (merchant_id, id)

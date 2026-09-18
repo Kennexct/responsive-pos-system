@@ -5,6 +5,7 @@ import type { CartItem, OrderType, PaymentMethod, DiscountSettings, PromoCode, C
 import { computeOrderTotals, type PricingLine } from '../lib/pricing';
 import { promoToPricing } from '../lib/cartPricing';
 import { escapeHtml } from '../lib/escapeHtml';
+import { optionsSummary, unitPriceOf } from '../lib/lineItems';
 import { formatIDR } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 
@@ -234,13 +235,15 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   <div class="row"><span>Order type:</span><span>${orderTypeLabel}</span></div>
   <div class="div"></div>
   ${cart.map(item => {
-    const basePrice = item.product.price + (item.variant?.priceModifier || 0);
+    const basePrice = unitPriceOf(item);
     const linePrice = basePrice * item.qty;
     let after = linePrice;
     if (item.itemDiscountNominal) after -= (item.itemDiscountNominal * item.qty);
     else if (item.discount) after -= linePrice * (item.discount / 100);
     
-    return `<div class="row"><span class="bold">${escapeHtml(item.product.name)} ${item.variant ? `(${escapeHtml(item.variant.name)})` : ''}</span></div>
+    const modifiers = optionsSummary(item);
+    return `<div class="row"><span class="bold">${escapeHtml(item.product.name)}</span></div>
+  ${modifiers ? `<div class="row"><span>&nbsp;&nbsp;${escapeHtml(modifiers)}</span></div>` : ''}${item.note ? `<div class="row"><span>&nbsp;&nbsp;* ${escapeHtml(item.note)}</span></div>` : ''}
       <div class="row indent"><span>${item.qty} x ${formatIDR(basePrice)}${item.discount > 0 ? ` (-${item.discount}%)` : item.itemDiscountNominal ? ` (-Rp${item.itemDiscountNominal})` : ''}</span><span>${formatIDR(after)}</span></div>`;
   }).join('')}
   <div class="div"></div>

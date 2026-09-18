@@ -1,5 +1,6 @@
 import type { CartItem, Category, Customer, LoyaltySettings, LoyaltyTier, PromoCode } from '../components/mockData';
 import type { PricingLine, PricingPromo } from './pricing';
+import { unitPriceOf } from './lineItems';
 
 /** Products reference categories by name; categories carry the tax/discount flags. */
 export function cartToPricingLines(cart: CartItem[], categories: Category[]): PricingLine[] {
@@ -8,7 +9,7 @@ export function cartToPricingLines(cart: CartItem[], categories: Category[]): Pr
     const cat = byName.get(item.product.category);
     return {
       id: item.id,
-      unitPrice: item.product.price + (item.variant?.priceModifier ?? 0),
+      unitPrice: unitPriceOf(item),
       qty: item.qty,
       lineDiscountNominal: item.itemDiscountNominal,
       lineDiscountPercent: item.discount,

@@ -4,8 +4,10 @@ import {
   AlertTriangle, PlayCircle, X, Package, Percent, UserPlus, Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { BusinessType, CartItem, HeldOrder, OrderType, Product, User, Category, DiscountSettings, ProductVariant, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry, ServiceChargeSettings, CheckoutResult } from './mockData';
+import type { BusinessType, CartItem, HeldOrder, OrderType, Product, User, Category, SelectedOption, DiscountSettings, ProductVariant, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry, ServiceChargeSettings, CheckoutResult } from './mockData';
 import { computeOrderTotals } from '../lib/pricing';
+import { lineKey, optionsSummary, unitPriceOf } from '../lib/lineItems';
+import { ItemBuilderModal } from './ItemBuilderModal';
 import { cartToPricingLines, resolveCustomerTier } from '../lib/cartPricing';
 import { formatIDR, formatNumberWithDots, formatIndonesianPhone } from './mockData';
 import { CheckoutModal } from './CheckoutModal';
@@ -53,7 +55,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
   const { showToast } = useToast();
   
   // Variant Selection State
-  const [variantProduct, setVariantProduct] = useState<Product | null>(null);
+  const [builderProduct, setBuilderProduct] = useState<Product | null>(null);
 
   const filtered = useMemo(() => {
     let list = products;
@@ -64,39 +66,50 @@ export function POSView({ businessType, products, categories, discountSettings, 
         p.name.toLowerCase().includes(q) ||
         (p.barcode && p.barcode.toLowerCase().includes(q)) ||
         (p.sku && p.sku.toLowerCase().includes(q)) ||
-        (p.variants && p.variants.some(v => (v.barcode && v.barcode.toLowerCase().includes(q)) || (v.sku && v.sku.toLowerCase().includes(q)) || v.name.toLowerCase().includes(q)))
+        (p.variants && p.variants.some(v => (v.barcode && v.barcode.toLowerCase().includes(q)) || (v.sku && v.sku.toLowerCase().includes(q)) || v.name.toLowerCase().includes(q))) ||
+        (p.optionGroups && p.optionGroups.some(g => g.choices.some(c => c.name.toLowerCase().includes(q))))
       );
     }
     return list;
   }, [products, category, search]);
 
   const handleProductClick = (product: Product) => {
-    if (product.variants && product.variants.length > 0) {
-      setVariantProduct(product);
+    // Anything with a choice to make opens the builder; plain items go straight into the order.
+    if ((product.variants?.length ?? 0) > 0 || (product.optionGroups?.length ?? 0) > 0) {
+      setBuilderProduct(product);
     } else {
-      addToCart(product, undefined);
+      addToCart(product);
     }
   };
 
-  const addToCart = (product: Product, variant?: ProductVariant) => {
+  const addToCart = (
+    product: Product,
+    variant?: ProductVariant,
+    options?: SelectedOption[],
+    note?: string,
+    qty = 1,
+  ) => {
     setCart(prev => {
-      // Find exact match based on product AND variant
-      const existing = prev.find(i => i.product.id === product.id && i.variant?.id === variant?.id);
-      if (existing) {
-        if (product.trackInventory && existing.qty + 1 > product.stock) return prev;
-        return prev.map(i => i.id === existing.id ? { ...i, qty: i.qty + 1 } : i);
-      }
-      return [...prev, { 
+      const key = lineKey({ product, variant, selectedOptions: options, note });
+      const existing = prev.find(i => lineKey(i) === key);
+      const inCart = existing?.qty ?? 0;
+      const allowed = product.trackInventory ? Math.max(0, product.stock - inCart) : qty;
+      const addQty = Math.min(qty, allowed);
+      if (addQty <= 0) return prev;
+      if (existing) return prev.map(i => i.id === existing.id ? { ...i, qty: i.qty + addQty } : i);
+      return [...prev, {
         id: Date.now().toString() + Math.random().toString(36).substring(2, 11),
-        product, 
-        qty: 1, 
+        product,
+        qty: addQty,
         discount: 0,
-        variant 
+        variant,
+        selectedOptions: options,
+        note,
       }];
     });
     setPopId(product.id);
     setTimeout(() => setPopId(null), 250);
-    setVariantProduct(null);
+    setBuilderProduct(null);
   };
 
   const updateQty = (id: string, delta: number) =>
@@ -112,7 +125,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
   const setDiscount = (id: string, pct: number, nominal?: number) =>
     setCart(prev => prev.map(i => {
       if (i.id === id) {
-        const basePrice = i.product.price + (i.variant?.priceModifier || 0);
+        const basePrice = unitPriceOf(i);
         const finalNominal = nominal !== undefined ? Math.max(0, Math.min(basePrice, nominal)) : undefined;
         return {
           ...i, 
@@ -224,7 +237,13 @@ export function POSView({ businessType, products, categories, discountSettings, 
                 if (matchedProduct.trackInventory && matchedProduct.stock === 0) {
                   showToast('Product out of stock!', 'error');
                 } else if (matchedVariant) {
-                  addToCart(matchedProduct, matchedVariant);
+                  // A scanned barcode identifies the variant. Options still need a choice,
+                  // so open the builder with that variant already picked instead of guessing.
+                  if ((matchedProduct.optionGroups?.length ?? 0) > 0) {
+                    setBuilderProduct(matchedProduct);
+                  } else {
+                    addToCart(matchedProduct, matchedVariant);
+                  }
                   setSearch('');
                 } else {
                   handleProductClick(matchedProduct);
@@ -371,10 +390,10 @@ export function POSView({ businessType, products, categories, discountSettings, 
                       </span>
                     )}
                     
-                    {/* Variants indicator */}
-                    {product.variants && product.variants.length > 0 && !outOfStock && (
-                      <span className="absolute top-2 right-2 bg-brand-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold z-10">
-                        {product.variants.length} Vars
+                    {/* Tells the cashier a tap opens the builder rather than adding straight away */}
+                    {((product.variants?.length ?? 0) > 0 || (product.optionGroups?.length ?? 0) > 0) && !outOfStock && (
+                      <span className="absolute top-2 right-2 bg-brand-600 text-white text-[11px] px-1.5 py-0.5 rounded font-semibold z-10">
+                        {(product.optionGroups?.length ?? 0) > 0 ? 'Options' : `${product.variants!.length} variants`}
                       </span>
                     )}
 
@@ -467,7 +486,7 @@ export function POSView({ businessType, products, categories, discountSettings, 
                       </div>
                       {held.tableNote && <p className={`text-xs mb-1 ${dm ? 'text-ink-400' : 'text-ink-500'}`}>{held.tableNote}</p>}
                       <p className={`text-xs mb-3 tabular-nums ${dm ? 'text-ink-500' : 'text-ink-400'}`}>
-                        {held.items.reduce((s, i) => s + i.qty, 0)} items, {formatIDR(held.items.reduce((s, i) => s + (i.product.price + (i.variant?.priceModifier || 0)) * i.qty, 0))}
+                        {held.items.reduce((s, i) => s + i.qty, 0)} items, {formatIDR(held.items.reduce((s, i) => s + unitPriceOf(i) * i.qty, 0))}
                       </p>
                       <button
                         onClick={() => resumeOrder(held)}
@@ -484,38 +503,14 @@ export function POSView({ businessType, products, categories, discountSettings, 
         )}
       </AnimatePresence>
       
-      {/* Variant Selection Modal */}
       <AnimatePresence>
-        {variantProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
-              className="absolute inset-0 bg-black/50" onClick={() => setVariantProduct(null)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className={`relative rounded-2xl p-5 w-full max-w-sm shadow-2xl ${surface}`}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className={`font-semibold ${t1}`}>Select Variant</h3>
-                  <p className={`text-xs ${t2}`}>{variantProduct.name}</p>
-                </div>
-                <button onClick={() => setVariantProduct(null)} className={`p-2 -mr-2 rounded-full transition-colors ${dm ? 'text-ink-400 hover:bg-ink-700' : 'text-ink-400 hover:bg-ink-100'}`}>
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="space-y-2">
-                {variantProduct.variants?.map(v => (
-                  <button
-                    key={v.id}
-                    onClick={() => addToCart(variantProduct, v)}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${dm ? 'bg-ink-800 border-ink-700 hover:border-brand-500' : 'bg-white border-ink-200 hover:border-brand-500 hover:shadow-sm'}`}
-                  >
-                    <span className={`text-sm font-medium ${t1}`}>{v.name}</span>
-                    <span className={`text-sm ${t2}`}>{formatIDR(variantProduct.price + v.priceModifier)}</span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </div>
+        {builderProduct && (
+          <ItemBuilderModal
+            product={builderProduct}
+            darkMode={darkMode}
+            onClose={() => setBuilderProduct(null)}
+            onAdd={({ variant, options, note, qty }) => addToCart(builderProduct, variant, options, note, qty)}
+          />
         )}
       </AnimatePresence>
 
@@ -710,7 +705,7 @@ function CartPanel({
           </div>
         ) : (
           cart.map(item => {
-            const basePrice = item.product.price + (item.variant?.priceModifier || 0);
+            const basePrice = unitPriceOf(item);
             const linePrice = basePrice * item.qty;
             let discounted = linePrice;
             
@@ -731,10 +726,13 @@ function CartPanel({
                     }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium leading-tight ${t1}`}>
-                      {item.product.name}
-                      {item.variant && <span className="text-xs ml-1 text-brand-500">({item.variant.name})</span>}
-                    </p>
+                    <p className={`text-sm font-medium leading-tight ${t1}`}>{item.product.name}</p>
+                    {optionsSummary(item) && (
+                      <p className={`text-xs leading-tight mt-0.5 ${t2}`}>{optionsSummary(item)}</p>
+                    )}
+                    {item.note && (
+                      <p className={`text-xs leading-tight mt-0.5 italic ${dm ? 'text-turmeric-300' : 'text-turmeric-700'}`}>{item.note}</p>
+                    )}
                     <div className="flex items-center gap-1 mt-0.5">
                       {(item.discount > 0 || item.itemDiscountNominal) && <span className={`text-xs line-through tabular-nums ${t2}`}>{formatIDR(linePrice)}</span>}
                       <span className="text-sm text-brand-500 tabular-nums font-semibold">{formatIDR(discounted)}</span>

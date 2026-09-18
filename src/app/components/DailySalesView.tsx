@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Search, RefreshCcw, XCircle, ArrowLeft, X, ChevronRight, AlertTriangle, Printer } from 'lucide-react';
 import type { RecentOrder, RefundSettings, CartItem, User } from './mockData';
 import { escapeHtml } from '../lib/escapeHtml';
+import { optionsSummary, unitPriceOf } from '../lib/lineItems';
 import { verifyManagerPin } from '../lib/auth';
 import { formatIDR } from './mockData';
 
@@ -117,13 +118,15 @@ export function DailySalesView({ orders, darkMode, refundSettings, onRefund, onV
   <div class="row"><span>Order type:</span><span>${orderTypeLabel}</span></div>
   <div class="div"></div>
   ${(order.items || []).map(item => {
-    const basePrice = item.product.price + (item.variant?.priceModifier || 0);
+    const basePrice = unitPriceOf(item);
     const linePrice = basePrice * item.qty;
     let after = linePrice;
     if (item.itemDiscountNominal) after -= (item.itemDiscountNominal * item.qty);
     else if (item.discount) after -= linePrice * (item.discount / 100);
     
-    return `<div class="row"><span class="bold">${escapeHtml(item.product.name)} ${item.variant ? `(${escapeHtml(item.variant.name)})` : ''}</span></div>
+    const modifiers = optionsSummary(item);
+    return `<div class="row"><span class="bold">${escapeHtml(item.product.name)}</span></div>
+  ${modifiers ? `<div class="row"><span>&nbsp;&nbsp;${escapeHtml(modifiers)}</span></div>` : ''}${item.note ? `<div class="row"><span>&nbsp;&nbsp;* ${escapeHtml(item.note)}</span></div>` : ''}
       <div class="row indent"><span>${item.qty} x ${formatIDR(basePrice)}${item.discount > 0 ? ` (-${item.discount}%)` : item.itemDiscountNominal ? ` (-Rp${item.itemDiscountNominal})` : ''}</span><span>${formatIDR(after)}</span></div>`;
   }).join('')}
   <div class="div"></div>
