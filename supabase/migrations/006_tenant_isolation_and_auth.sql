@@ -63,6 +63,21 @@ GRANT EXECUTE ON FUNCTION public.is_platform_admin(), public.is_merchant_member(
 
 -- ─── 3. merchant_id everywhere, NOT NULL, per-merchant keys ────────────────
 
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS type business_type DEFAULT 'fnb';
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'merchants' AND column_name = 'business_name') THEN
+    UPDATE merchants SET name = business_name WHERE name IS NULL;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'merchants' AND column_name = 'owner_email') THEN
+    UPDATE merchants SET email = owner_email WHERE email IS NULL;
+  END IF;
+END $$;
+
 ALTER TABLE loyalty_settings  ADD COLUMN IF NOT EXISTS merchant_id TEXT;
 ALTER TABLE loyalty_tiers     ADD COLUMN IF NOT EXISTS merchant_id TEXT;
 ALTER TABLE tax_rules         ADD COLUMN IF NOT EXISTS merchant_id TEXT;
