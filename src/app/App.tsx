@@ -1,5 +1,5 @@
 import { useState, useEffect, type ElementType } from 'react';
-import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu, Monitor, Users, Receipt, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, BarChart2, Settings, Menu, Monitor, Users, Receipt, ShieldCheck, Banknote } from 'lucide-react';
 import { usePersistentState } from './hooks/usePersistentState';
 import { ToastProvider } from './contexts/ToastContext';
 import { Sidebar } from './components/Sidebar';
@@ -15,17 +15,23 @@ import { CustomersView } from './components/CustomersView';
 import { OnboardingWalkthroughModal } from './components/OnboardingWalkthroughModal';
 import { GuidedSetupModal } from './components/GuidedSetupModal';
 import { PlatformAdminView } from './components/PlatformAdminView';
-import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry, MerchantAccount, CheckoutResult, ServiceChargeSettings } from './components/mockData';
-import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS, INITIAL_TAX_RULES, INITIAL_PAYMENTS, INITIAL_MERCHANTS, INITIAL_SERVICE_CHARGE } from './components/mockData';
+import type { BusinessType, ViewType, Product, RecentOrder, CartItem, OrderType, PaymentMethod, User, RolePermissions, Category, DiscountSettings, RefundSettings, Customer, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry, MerchantAccount, CheckoutResult, ServiceChargeSettings, RegisterSession, RegisterSettings, CashMovement, ReceiptNumberFormat } from './components/mockData';
+import { PRODUCTS, RECENT_ORDERS, INITIAL_USERS, DEFAULT_PERMISSIONS, CATEGORIES, INITIAL_CUSTOMERS, INITIAL_LOYALTY_SETTINGS, INITIAL_TAX_RULES, INITIAL_PAYMENTS, INITIAL_MERCHANTS, INITIAL_SERVICE_CHARGE, INITIAL_REGISTER_SETTINGS } from './components/mockData';
 import localforage from 'localforage';
 import { purgeMerchantSupabaseData } from './services/supabaseSync';
 import { reverseCustomerForOrder } from './lib/orders';
+import { DEFAULT_RECEIPT_FORMAT, nextReceiptNumber } from './lib/receiptNumber';
+import { isStale, summariseSession } from './lib/register';
+import { pointsEarnedFor } from './lib/loyalty';
+import { RegisterView } from './components/RegisterView';
+import { OpenRegisterModal, CloseRegisterModal, CashMovementModal } from './components/RegisterModals';
 import { AUTH_MODE, IS_LOCAL_DEMO, loadCloudUser, signOut, verifyManagerPin } from './lib/auth';
 import { isSupabaseConfigured } from './lib/supabase';
 
 const MOBILE_NAV: { id: ViewType; label: string; icon: ElementType }[] = [
   { id: 'superadmin',  label: 'Merchants',    icon: ShieldCheck     },
   { id: 'pos',         label: 'Checkout',     icon: Monitor         },
+  { id: 'register',    label: 'Register',     icon: Banknote        },
   { id: 'dashboard',   label: 'Overview',     icon: LayoutDashboard },
   { id: 'inventory',   label: 'Stock',        icon: Package         },
   { id: 'reports',     label: 'Reports',      icon: BarChart2       },
@@ -34,17 +40,6 @@ const MOBILE_NAV: { id: ViewType; label: string; icon: ElementType }[] = [
   { id: 'settings',    label: 'Settings',     icon: Settings        },
 ];
 
-/**
- * Next sequential invoice number for this merchant, derived from stored orders.
- * The old in-memory counter restarted at 1242 on every page load and produced duplicate invoice numbers.
- */
-function nextOrderNumber(existing: RecentOrder[]): string {
-  const highest = existing.reduce((max, o) => {
-    const n = Number(/(\d+)$/.exec(o.orderNumber ?? '')?.[1] ?? 0);
-    return Number.isFinite(n) && n > max ? n : max;
-  }, 1000);
-  return `INV-${String(highest + 1).padStart(6, '0')}`;
-}
 
 export default function App() {
   const [view, setView]               = useState<ViewType>('pos');
@@ -195,6 +190,45 @@ export default function App() {
   const [taxRules, setTaxRules, trLoaded] = usePersistentState<TaxRule[]>('pos-taxrules', defaultTaxRules, activeMerchantId);
   const [terminalViewMode, setTerminalViewMode, tvmLoaded] = usePersistentState<TerminalViewMode>('pos-terminalview', 'grid', activeMerchantId);
   const [serviceCharge, setServiceCharge] = usePersistentState<ServiceChargeSettings>('pos-servicecharge', INITIAL_SERVICE_CHARGE, activeMerchantId);
+  const [registerSessions, setRegisterSessions] = usePersistentState<RegisterSession[]>('pos-register-sessions', [], activeMerchantId);
+  const [cashMovements, setCashMovements] = usePersistentState<CashMovement[]>('pos-cash-movements', [], activeMerchantId);
+  const [registerSettings, setRegisterSettings] = usePersistentState<RegisterSettings>('pos-register-settings', INITIAL_REGISTER_SETTINGS, activeMerchantId);
+  const [receiptFormat, setReceiptFormat] = usePersistentState<ReceiptNumberFormat>('pos-receipt-format', DEFAULT_RECEIPT_FORMAT, activeMerchantId);
+  const [registerModal, setRegisterModal] = useState<'open' | 'close' | 'cash-in' | 'cash-out' | null>(null);
+
+  const openSession = registerSessions.find(s => s.status === 'open');
+
+  // A shift nobody closed is closed by the system at the next day's start, marked as uncounted,
+  // so tomorrow's cash is never mixed into yesterday's report.
+  useEffect(() => {
+    if (!openSession || !isStale(openSession)) return;
+    const summary = summariseSession(openSession, orders, cashMovements);
+    setRegisterSessions(prev => prev.map(s => s.id === openSession.id ? {
+      ...s,
+      status: 'closed',
+      autoClosed: true,
+      closedAt: new Date().toISOString(),
+      closedByName: 'System',
+      expectedCash: summary.expectedCash,
+      closingNote: 'Left open past the business day and closed without a count.',
+    } : s));
+  }, [openSession, orders, cashMovements, setRegisterSessions]);
+
+  const handleOpenRegister = (session: Omit<RegisterSession, 'id' | 'status'>) => {
+    setRegisterSessions(prev => [...prev, { ...session, id: `reg-${Date.now()}`, status: 'open', merchantId: activeMerchantId }]);
+    setRegisterModal(null);
+  };
+
+  const handleCloseRegister = (result: Partial<RegisterSession>) => {
+    if (!openSession) return;
+    setRegisterSessions(prev => prev.map(s => s.id === openSession.id ? { ...s, ...result } : s));
+    setRegisterModal(null);
+  };
+
+  const handleCashMovement = (movement: Omit<CashMovement, 'id'>) => {
+    setCashMovements(prev => [...prev, { ...movement, id: `cm-${Date.now()}` }]);
+    setRegisterModal(null);
+  };
 
   /**
    * Refunds and voids undo everything the sale did: stock comes back, points earned are
@@ -261,17 +295,15 @@ export default function App() {
     const finalTax = pricing.taxTotal;
     const total = pricing.total;
 
-    let pointsEarned = 0;
-    if (customerId && loyaltySettings.enabled && loyaltySettings.earnRateSpend > 0) {
-      // Earn on goods actually paid for — not on tax or service charge (additionalfeature2.md §4.2)
-      pointsEarned = Math.floor(finalSubtotal / loyaltySettings.earnRateSpend) * loyaltySettings.earnRatePoints;
-    }
+    // Earn on goods actually paid for — never on tax or service charge
+    const pointsEarned = customerId ? pointsEarnedFor(finalSubtotal, loyaltySettings) : 0;
 
     const totalCost = cart.reduce((sum, item) => sum + (item.product.costPrice * item.qty), 0);
 
     const newOrder: RecentOrder = {
       id:            String(Date.now()),
-      orderNumber:   nextOrderNumber(orders),
+      orderNumber:   nextReceiptNumber(orders, receiptFormat),
+      sessionId:     openSession?.id,
       itemCount:     cart.reduce((s, i) => s + i.qty, 0),
       subtotalBeforeDiscount,
       discountTotal,
@@ -391,7 +423,7 @@ export default function App() {
 
   const VIEW_TITLE: Record<ViewType, string> = {
     superadmin: 'Merchants',
-    pos: 'Checkout', dashboard: 'Overview',
+    pos: 'Checkout', register: 'Register', dashboard: 'Overview',
     inventory: 'Products & stock', reports: 'Reports', settings: 'Settings',
     'daily-sales': "Today's sales", customers: 'Customers'
   };
@@ -463,12 +495,27 @@ export default function App() {
                 loyaltySettings={loyaltySettings}
                 paymentMethods={paymentMethods}
                 serviceCharge={serviceCharge}
+                registerReady={!registerSettings.requireOpenRegister || !!openSession}
+                onOpenRegister={() => setRegisterModal('open')}
                 onOrderComplete={handleOrderComplete}
               />
             )}
             {view === 'dashboard'  && <MobileOwnerView orders={orders} products={products} darkMode={darkMode} />}
             {view === 'inventory'  && <InventoryView products={products} onProductsChange={setProducts} categories={categories} setCategories={setCategories} darkMode={darkMode} />}
             {view === 'reports'    && <ReportsView orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} categories={categories} darkMode={darkMode} />}
+            {view === 'register' && currentUser && (
+              <RegisterView
+                sessions={registerSessions}
+                movements={cashMovements}
+                orders={orders}
+                settings={registerSettings}
+                currentUser={currentUser}
+                businessName={bizName || 'VPos'}
+                onOpenRegister={() => setRegisterModal('open')}
+                onCloseRegister={() => setRegisterModal('close')}
+                onCashMovement={type => setRegisterModal(type === 'in' ? 'cash-in' : 'cash-out')}
+              />
+            )}
             {view === 'daily-sales'&& (
               <DailySalesView users={users} merchantId={activeMerchantId} 
                 orders={orders} 
@@ -503,6 +550,10 @@ export default function App() {
                 taxRules={taxRules}
                 serviceCharge={serviceCharge}
                 setServiceCharge={setServiceCharge}
+                registerSettings={registerSettings}
+                setRegisterSettings={setRegisterSettings}
+                receiptFormat={receiptFormat}
+                setReceiptFormat={setReceiptFormat}
                 setTaxRules={setTaxRules}
                 paymentMethods={paymentMethods}
                 setPaymentMethods={setPaymentMethods}
@@ -595,12 +646,27 @@ export default function App() {
                 loyaltySettings={loyaltySettings}
                 paymentMethods={paymentMethods}
                 serviceCharge={serviceCharge}
+                registerReady={!registerSettings.requireOpenRegister || !!openSession}
+                onOpenRegister={() => setRegisterModal('open')}
                 onOrderComplete={handleOrderComplete}
               />
             )}
             {view === 'dashboard' && <Dashboard orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} darkMode={darkMode} />}
             {view === 'inventory' && <InventoryView products={products} onProductsChange={setProducts} categories={categories} setCategories={setCategories} darkMode={darkMode} />}
             {view === 'reports'   && <ReportsView orders={orders} products={products} customers={customers} loyaltySettings={loyaltySettings} categories={categories} darkMode={darkMode} />}
+            {view === 'register' && currentUser && (
+              <RegisterView
+                sessions={registerSessions}
+                movements={cashMovements}
+                orders={orders}
+                settings={registerSettings}
+                currentUser={currentUser}
+                businessName={bizName || 'VPos'}
+                onOpenRegister={() => setRegisterModal('open')}
+                onCloseRegister={() => setRegisterModal('close')}
+                onCashMovement={type => setRegisterModal(type === 'in' ? 'cash-in' : 'cash-out')}
+              />
+            )}
             {view === 'daily-sales'&& (
               <DailySalesView users={users} merchantId={activeMerchantId} 
                 orders={orders} 
@@ -635,6 +701,10 @@ export default function App() {
                 taxRules={taxRules}
                 serviceCharge={serviceCharge}
                 setServiceCharge={setServiceCharge}
+                registerSettings={registerSettings}
+                setRegisterSettings={setRegisterSettings}
+                receiptFormat={receiptFormat}
+                setReceiptFormat={setReceiptFormat}
                 setTaxRules={setTaxRules}
                 paymentMethods={paymentMethods}
                 setPaymentMethods={setPaymentMethods}
@@ -780,6 +850,32 @@ export default function App() {
         </div>
       </div>
     )}
+
+      {currentUser && registerModal === 'open' && (
+        <OpenRegisterModal settings={registerSettings} user={currentUser} onOpen={handleOpenRegister} onClose={() => setRegisterModal(null)} />
+      )}
+      {currentUser && registerModal === 'close' && openSession && (
+        <CloseRegisterModal
+          session={openSession}
+          orders={orders}
+          movements={cashMovements}
+          settings={registerSettings}
+          user={currentUser}
+          users={users}
+          merchantId={activeMerchantId}
+          onCloseRegister={handleCloseRegister}
+          onClose={() => setRegisterModal(null)}
+        />
+      )}
+      {currentUser && openSession && (registerModal === 'cash-in' || registerModal === 'cash-out') && (
+        <CashMovementModal
+          type={registerModal === 'cash-in' ? 'in' : 'out'}
+          sessionId={openSession.id}
+          user={currentUser}
+          onSave={handleCashMovement}
+          onClose={() => setRegisterModal(null)}
+        />
+      )}
     </ToastProvider>
   );
 }

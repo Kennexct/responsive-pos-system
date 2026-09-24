@@ -29,6 +29,9 @@ interface POSViewProps {
   terminalViewMode?: TerminalViewMode;
   paymentMethods: PaymentMethodEntry[];
   serviceCharge?: ServiceChargeSettings;
+  /** False when a register must be opened before selling. */
+  registerReady?: boolean;
+  onOpenRegister?: () => void;
   onOrderComplete: (cart: CartItem[], orderType: OrderType, customerId: string | undefined, result: CheckoutResult) => string | void;
 }
 
@@ -38,7 +41,7 @@ const ORDER_TYPES: { id: OrderType; label: string }[] = [
   { id: 'delivery', label: 'Delivery' },
 ];
 
-export function POSView({ businessType, products, categories, discountSettings, currentUser, bizName, darkMode, customers, setCustomers, loyaltySettings, taxRules = [], terminalViewMode = 'grid', paymentMethods, serviceCharge, onOrderComplete }: POSViewProps) {
+export function POSView({ businessType, products, categories, discountSettings, currentUser, bizName, darkMode, customers, setCustomers, loyaltySettings, taxRules = [], terminalViewMode = 'grid', paymentMethods, serviceCharge, registerReady = true, onOpenRegister, onOrderComplete }: POSViewProps) {
   const [category, setCategory]       = useState('All');
   const [search, setSearch]           = useState('');
   const [cart, setCart]               = useState<CartItem[]>([]);
@@ -454,6 +457,8 @@ export function POSView({ businessType, products, categories, discountSettings, 
         tierDiscountAmt={tierDiscountAmt}
         tax={tax}
         serviceChargeAmt={cartTotals.serviceCharge}
+        registerReady={registerReady}
+        onOpenRegister={onOpenRegister}
         total={total}
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
@@ -587,6 +592,8 @@ interface CartPanelProps {
   tierDiscountAmt: number;
   tax: number;
   serviceChargeAmt: number;
+  registerReady: boolean;
+  onOpenRegister?: () => void;
   total: number;
   isOpen: boolean;
   onClose: () => void;
@@ -596,7 +603,7 @@ function CartPanel({
   cart, orderType, businessType, darkMode, discountSettings,
   customers, setCustomers, selectedCustomerId, onSelectCustomer,
   onOrderTypeChange, onUpdateQty, onSetDiscount, onRemoveItem, onClearCart, onHoldOrder, onCheckout,
-  tableNote, onTableNoteChange, subtotal, tierDiscountAmt, tax, serviceChargeAmt, total, isOpen, onClose,
+  tableNote, onTableNoteChange, subtotal, tierDiscountAmt, tax, serviceChargeAmt, registerReady, onOpenRegister, total, isOpen, onClose,
 }: CartPanelProps) {
   const [editDiscountId, setEditDiscountId] = useState<string | null>(null);
   const [discountVal, setDiscountVal] = useState('');
@@ -808,6 +815,16 @@ function CartPanel({
           <span className={`text-[28px] leading-none font-extrabold tracking-tight tabular-nums ${dm ? 'text-ink-50' : 'text-ink-900'}`}>{formatIDR(total)}</span>
         </div>
 
+        {!registerReady && (
+          <div className="mx-4 mb-3 rounded-md border border-turmeric-300 bg-turmeric-50 p-3 dark:border-turmeric-500/40 dark:bg-turmeric-500/10">
+            <p className="text-sm font-medium text-turmeric-900 dark:text-turmeric-100">Open the register first</p>
+            <p className="text-xs mt-0.5 text-turmeric-800 dark:text-turmeric-200">Count the cash in the drawer so this shift can be balanced later.</p>
+            <button type="button" onClick={onOpenRegister} className="mt-2 h-9 px-3 rounded-md bg-turmeric-500 text-ink-950 text-sm font-semibold cursor-pointer hover:bg-turmeric-400">
+              Open register
+            </button>
+          </div>
+        )}
+
         <div className="px-4 pb-4 flex gap-2">
           <button
             type="button"
@@ -820,7 +837,7 @@ function CartPanel({
           <button
             type="button"
             onClick={onCheckout}
-            disabled={cart.length === 0}
+            disabled={cart.length === 0 || !registerReady}
             className={`flex-[2] rounded-md h-12 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-base font-semibold ${dm ? 'bg-brand-400 text-ink-950 hover:bg-brand-300' : 'bg-brand-600 text-white hover:bg-brand-700'}`}
           >
             Take payment

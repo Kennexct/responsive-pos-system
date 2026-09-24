@@ -1,6 +1,6 @@
 import { useState, type ElementType } from 'react';
 import {
-  ShoppingCart, LayoutDashboard, Package, Settings,
+  ShoppingCart, LayoutDashboard, Package, Settings, Banknote,
   ChevronLeft, ChevronRight, X, LogOut, Moon, Sun, Users, Receipt, PieChart, ShieldCheck
 } from 'lucide-react';
 import type { BusinessType, ViewType, User } from './mockData';
@@ -25,6 +25,7 @@ type NavItem = { id: ViewType; label: string; icon: ElementType };
 const SELL: NavItem[] = [
   { id: 'pos',         label: 'Checkout',    icon: ShoppingCart },
   { id: 'daily-sales', label: 'Today\'s sales', icon: Receipt },
+  { id: 'register',    label: 'Register',    icon: Banknote },
   { id: 'customers',   label: 'Customers',   icon: Users },
 ];
 const MANAGE: NavItem[] = [

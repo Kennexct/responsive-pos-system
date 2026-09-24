@@ -1,7 +1,9 @@
 import { useState, type ElementType } from 'react';
-import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Tag, AlertTriangle } from 'lucide-react';
-import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry, ServiceChargeSettings, Product } from './mockData';
-import { formatIndonesianPhone } from './mockData';
+import { Store, DollarSign, Receipt, CreditCard, Users, Plus, Trash2, Check, X, Shield, Moon, Sun, Percent, RefreshCcw, Tag, AlertTriangle, Gift, Banknote } from 'lucide-react';
+import type { BusinessType, User, RolePermissions, ViewType, Role, Category, DiscountSettings, RefundSettings, PromoCode, LoyaltySettings, TaxRule, TerminalViewMode, PaymentMethodEntry, ServiceChargeSettings, Product, RegisterSettings, ReceiptNumberFormat, ResetCycle } from './mockData';
+import { formatIndonesianPhone, formatIDR, formatNumberWithDots } from './mockData';
+import { redeemPreview } from '../lib/loyalty';
+import { formatReceiptNumber } from '../lib/receiptNumber';
 import { ConfirmationModal } from './ConfirmationModal';
 import { IS_LOCAL_DEMO, saveStaffMember } from '../lib/auth';
 import { useToast } from '../contexts/ToastContext';
@@ -28,6 +30,10 @@ interface SettingsViewProps {
   taxRules?: TaxRule[];
   setTaxRules?: React.Dispatch<React.SetStateAction<TaxRule[]>>;
   serviceCharge?: ServiceChargeSettings;
+  registerSettings?: RegisterSettings;
+  setRegisterSettings?: React.Dispatch<React.SetStateAction<RegisterSettings>>;
+  receiptFormat?: ReceiptNumberFormat;
+  setReceiptFormat?: React.Dispatch<React.SetStateAction<ReceiptNumberFormat>>;
   setServiceCharge?: React.Dispatch<React.SetStateAction<ServiceChargeSettings>>;
   paymentMethods: PaymentMethodEntry[];
   setPaymentMethods: React.Dispatch<React.SetStateAction<PaymentMethodEntry[]>>;
@@ -41,7 +47,7 @@ interface SettingsViewProps {
   onPurgeAllData?: (ownerPin: string) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
 }
 
-type SettingsTab = 'business' | 'currency' | 'tax' | 'discounts' | 'refunds' | 'payments' | 'users' | 'categories';
+type SettingsTab = 'business' | 'currency' | 'tax' | 'discounts' | 'refunds' | 'payments' | 'users' | 'categories' | 'loyalty' | 'register';
 
 const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
   { id: 'business',  label: 'Business Profile', icon: Store      },
@@ -52,6 +58,8 @@ const TABS: { id: SettingsTab; label: string; icon: ElementType }[] = [
   { id: 'currency',  label: 'Currency',         icon: DollarSign },
   { id: 'discounts', label: 'Promos & Discounts', icon: Percent    },
   { id: 'refunds',   label: 'Refunds & Voids',  icon: RefreshCcw },
+  { id: 'loyalty',   label: 'Points & Loyalty', icon: Gift       },
+  { id: 'register',  label: 'Register & Receipts', icon: Banknote },
 ];
 
 interface TaxRate            { id: string; name: string; rate: number; inclusive: boolean; isDefault: boolean; }
@@ -68,6 +76,8 @@ export function SettingsView({
   loyaltySettings, setLoyaltySettings,
   taxRules = [], setTaxRules,
   serviceCharge, setServiceCharge,
+  registerSettings, setRegisterSettings,
+  receiptFormat, setReceiptFormat,
   paymentMethods, setPaymentMethods,
   terminalViewMode = 'grid', setTerminalViewMode,
   darkMode, onToggleDark,
@@ -649,6 +659,192 @@ export function SettingsView({
             )}
 
             {/* ── Refunds & Voids ── */}
+            {tab === 'loyalty' && loyaltySettings && setLoyaltySettings && (
+              <div className="space-y-5">
+                <div>
+                  <h3 className={t1}>Points &amp; Loyalty</h3>
+                  <p className={`text-sm ${t2}`}>How customers earn points, and the rules a cashier cannot go around when they spend them.</p>
+                </div>
+
+                <div className={`flex items-center justify-between border rounded-xl px-4 py-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+                  <div>
+                    <span className={`text-sm font-medium block ${t1}`}>Loyalty programme</span>
+                    <span className={`text-xs ${t2}`}>Off hides points everywhere, including the receipt.</span>
+                  </div>
+                  <Toggle darkMode={darkMode} checked={loyaltySettings.enabled} onChange={() => setLoyaltySettings(p => ({ ...p, enabled: !p.enabled }))} />
+                </div>
+
+                {loyaltySettings.enabled && (
+                  <>
+                    <section className={`border rounded-xl p-4 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+                      <h4 className={`text-sm font-semibold mb-1 ${t1}`}>Earning</h4>
+                      <p className={`text-xs mb-3 ${t2}`}>Points are earned on goods only, never on tax or service charge.</p>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <NumberField label="Spend needed for points" suffix="rupiah" darkMode={dm} value={loyaltySettings.earnRateSpend}
+                          onChange={v => setLoyaltySettings(p => ({ ...p, earnRateSpend: Math.max(1, v) }))} />
+                        <NumberField label="Points given" suffix="points" darkMode={dm} value={loyaltySettings.earnRatePoints}
+                          onChange={v => setLoyaltySettings(p => ({ ...p, earnRatePoints: Math.max(0, v) }))} />
+                      </div>
+                      <p className={`text-xs mt-2 ${t2}`}>
+                        Spending {formatIDR(loyaltySettings.earnRateSpend)} earns {loyaltySettings.earnRatePoints} point{loyaltySettings.earnRatePoints === 1 ? '' : 's'}.
+                      </p>
+                    </section>
+
+                    <section className={`border rounded-xl p-4 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                          <h4 className={`text-sm font-semibold ${t1}`}>Redeeming</h4>
+                          <p className={`text-xs ${t2}`}>Points come off the goods total, so tax is still charged on what was actually sold.</p>
+                        </div>
+                        <Toggle darkMode={darkMode} checked={loyaltySettings.redeemEnabled !== false}
+                          onChange={() => setLoyaltySettings(p => ({ ...p, redeemEnabled: p.redeemEnabled === false }))} />
+                      </div>
+
+                      {loyaltySettings.redeemEnabled !== false && (
+                        <>
+                          <div className="grid sm:grid-cols-2 gap-3">
+                            <NumberField label="One point is worth" suffix="rupiah" darkMode={dm} value={loyaltySettings.redemptionValue}
+                              onChange={v => setLoyaltySettings(p => ({ ...p, redemptionValue: Math.max(0, v) }))} />
+                            <NumberField label="Fewest points per bill" suffix="points" darkMode={dm} value={loyaltySettings.minRedeemPoints ?? 0}
+                              onChange={v => setLoyaltySettings(p => ({ ...p, minRedeemPoints: Math.max(0, v) }))} />
+                            <NumberField label="Redeem in multiples of" suffix="points" darkMode={dm} value={loyaltySettings.redeemStepPoints ?? 1}
+                              onChange={v => setLoyaltySettings(p => ({ ...p, redeemStepPoints: Math.max(1, v) }))} />
+                            <NumberField label="Most of a bill points can cover" suffix="%" darkMode={dm} value={loyaltySettings.maxRedeemPercent ?? 100}
+                              onChange={v => setLoyaltySettings(p => ({ ...p, maxRedeemPercent: Math.min(100, Math.max(1, v)) }))} />
+                          </div>
+
+                          <div className={`mt-4 rounded-lg p-3 text-sm ${dm ? 'bg-ink-800' : 'bg-ink-100'}`}>
+                            <p className={`font-medium mb-1 ${t1}`}>On a {formatIDR(100000)} bill, a customer with 500 points</p>
+                            {(() => {
+                              const preview = redeemPreview(
+                                { id: 'preview', name: '', phone: '', pointsBalance: 500, totalSpend: 0, registrationDate: '' } as never,
+                                loyaltySettings, 100000, 500,
+                              );
+                              return preview.points > 0
+                                ? <p className={t2}>can pay {formatIDR(preview.value)} with {preview.points} points.</p>
+                                : <p className={t2}>{preview.reason}</p>;
+                            })()}
+                          </div>
+                        </>
+                      )}
+                    </section>
+
+                    <section className={`border rounded-xl p-4 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+                      <h4 className={`text-sm font-semibold mb-1 ${t1}`}>Tiers</h4>
+                      <p className={`text-xs mb-3 ${t2}`}>A tier discount is applied to the cart automatically once the customer has spent enough.</p>
+                      <div className="space-y-2">
+                        {loyaltySettings.tiers.map((tier, i) => (
+                          <div key={tier.id} className="grid grid-cols-[1fr_auto_auto] gap-2 items-end">
+                            <label className="block">
+                              {i === 0 && <span className={`text-xs block mb-1 ${t2}`}>Tier</span>}
+                              <input value={tier.name}
+                                onChange={e => setLoyaltySettings(p => ({ ...p, tiers: p.tiers.map(t => t.id === tier.id ? { ...t, name: e.target.value } : t) }))}
+                                className={`w-full border rounded-lg px-3 h-11 text-sm focus:outline-none focus:border-brand-400 ${dm ? 'bg-ink-800 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`} />
+                            </label>
+                            <label className="block w-36">
+                              {i === 0 && <span className={`text-xs block mb-1 ${t2}`}>Spend from</span>}
+                              <input inputMode="numeric" value={formatNumberWithDots(tier.minSpend)}
+                                onChange={e => setLoyaltySettings(p => ({ ...p, tiers: p.tiers.map(t => t.id === tier.id ? { ...t, minSpend: Number(e.target.value.replace(/\D/g, '')) || 0 } : t) }))}
+                                className={`w-full border rounded-lg px-3 h-11 text-sm tabular-nums focus:outline-none focus:border-brand-400 ${dm ? 'bg-ink-800 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`} />
+                            </label>
+                            <label className="block w-24">
+                              {i === 0 && <span className={`text-xs block mb-1 ${t2}`}>Discount %</span>}
+                              <input type="number" min={0} max={100} value={tier.discountPercent}
+                                onChange={e => setLoyaltySettings(p => ({ ...p, tiers: p.tiers.map(t => t.id === tier.id ? { ...t, discountPercent: Math.min(100, Math.max(0, Number(e.target.value) || 0)) } : t) }))}
+                                className={`w-full border rounded-lg px-3 h-11 text-sm tabular-nums focus:outline-none focus:border-brand-400 ${dm ? 'bg-ink-800 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`} />
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </>
+                )}
+              </div>
+            )}
+
+            {tab === 'register' && registerSettings && setRegisterSettings && receiptFormat && setReceiptFormat && (
+              <div className="space-y-5">
+                <div>
+                  <h3 className={t1}>Register &amp; Receipts</h3>
+                  <p className={`text-sm ${t2}`}>Shift rules for the cash drawer, and how receipt numbers are built.</p>
+                </div>
+
+                <section className={`border rounded-xl p-4 space-y-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+                  <h4 className={`text-sm font-semibold ${t1}`}>Cash drawer</h4>
+                  <ToggleRow darkMode={dm} title="Open a register before selling"
+                    hint="Checkout stays blocked until someone counts the starting cash."
+                    checked={registerSettings.requireOpenRegister}
+                    onChange={() => setRegisterSettings(p => ({ ...p, requireOpenRegister: !p.requireOpenRegister }))} />
+                  <ToggleRow darkMode={dm} title="Blind count at closing"
+                    hint="The expected amount stays hidden until the cashier submits their count, so the count is real evidence."
+                    checked={registerSettings.blindCount}
+                    onChange={() => setRegisterSettings(p => ({ ...p, blindCount: !p.blindCount }))} />
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <NumberField label="Difference needing approval" suffix="rupiah" darkMode={dm} value={registerSettings.varianceThreshold}
+                      onChange={v => setRegisterSettings(p => ({ ...p, varianceThreshold: Math.max(0, v) }))} />
+                    <NumberField label="Usual starting float" suffix="rupiah" darkMode={dm} value={registerSettings.defaultFloat}
+                      onChange={v => setRegisterSettings(p => ({ ...p, defaultFloat: Math.max(0, v) }))} />
+                  </div>
+                  <p className={`text-xs ${t2}`}>
+                    Closing a shift that is off by more than {formatIDR(registerSettings.varianceThreshold)} needs an owner or manager PIN and a written reason.
+                  </p>
+                </section>
+
+                <section className={`border rounded-xl p-4 space-y-3 ${dm ? 'border-ink-700' : 'border-ink-200'}`}>
+                  <h4 className={`text-sm font-semibold ${t1}`}>Receipt numbers</h4>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className={`text-xs block mb-1 ${t2}`}>Prefix</span>
+                      <input value={receiptFormat.prefix} maxLength={10}
+                        onChange={e => setReceiptFormat(p => ({ ...p, prefix: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))}
+                        placeholder="DC"
+                        className={`w-full border rounded-lg px-3 h-11 text-sm focus:outline-none focus:border-brand-400 ${dm ? 'bg-ink-800 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`} />
+                    </label>
+                    <label className="block">
+                      <span className={`text-xs block mb-1 ${t2}`}>Separator</span>
+                      <select value={receiptFormat.separator}
+                        onChange={e => setReceiptFormat(p => ({ ...p, separator: e.target.value }))}
+                        className={`w-full border rounded-lg px-3 h-11 text-sm focus:outline-none focus:border-brand-400 ${dm ? 'bg-ink-800 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`}>
+                        <option value="">None (DC0001)</option>
+                        <option value="-">Dash (DC-0001)</option>
+                        <option value="/">Slash (DC/0001)</option>
+                        <option value=".">Dot (DC.0001)</option>
+                      </select>
+                    </label>
+                    <NumberField label="Digits" darkMode={dm} value={receiptFormat.padding}
+                      onChange={v => setReceiptFormat(p => ({ ...p, padding: Math.min(10, Math.max(1, v)) }))} />
+                    <label className="block">
+                      <span className={`text-xs block mb-1 ${t2}`}>Start again</span>
+                      <select value={receiptFormat.resetCycle}
+                        onChange={e => setReceiptFormat(p => ({ ...p, resetCycle: e.target.value as ResetCycle }))}
+                        className={`w-full border rounded-lg px-3 h-11 text-sm focus:outline-none focus:border-brand-400 ${dm ? 'bg-ink-800 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`}>
+                        <option value="never">Never</option>
+                        <option value="daily">Every day</option>
+                        <option value="monthly">Every month</option>
+                        <option value="yearly">Every year</option>
+                      </select>
+                    </label>
+                    <label className="block">
+                      <span className={`text-xs block mb-1 ${t2}`}>Terminal code</span>
+                      <input value={receiptFormat.deviceCode ?? ''} maxLength={4}
+                        onChange={e => setReceiptFormat(p => ({ ...p, deviceCode: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))}
+                        placeholder="T2"
+                        className={`w-full border rounded-lg px-3 h-11 text-sm focus:outline-none focus:border-brand-400 ${dm ? 'bg-ink-800 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`} />
+                      <span className={`text-xs mt-1 block ${t2}`}>Set this on a second till so two devices never issue the same number.</span>
+                    </label>
+                  </div>
+
+                  <div className={`rounded-lg p-3 ${dm ? 'bg-ink-800' : 'bg-ink-100'}`}>
+                    <p className={`text-xs mb-1 ${t2}`}>Next receipts will look like</p>
+                    <p className={`text-lg font-bold tabular-nums ${t1}`}>
+                      {formatReceiptNumber(receiptFormat, 1)}, {formatReceiptNumber(receiptFormat, 2)}, {formatReceiptNumber(receiptFormat, 3)}
+                    </p>
+                  </div>
+                  <p className={`text-xs ${t2}`}>Changing the format never renumbers receipts that already exist.</p>
+                </section>
+              </div>
+            )}
+
             {tab === 'refunds' && (
               <div className="space-y-4">
                 <h3 className={t1}>Refunds & Voids</h3>
@@ -1051,6 +1247,35 @@ function Field({ label, value, onChange, placeholder, type = 'text', maxLength, 
         className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-400 transition-colors ${darkMode ? 'bg-ink-700 border-ink-600 text-ink-100 placeholder-ink-500' : 'bg-white border-ink-200 text-ink-800 placeholder-ink-400'}`}
       />
     </div>
+  );
+}
+
+function ToggleRow({ title, hint, checked, onChange, darkMode }: { title: string; hint: string; checked: boolean; onChange: () => void; darkMode: boolean }) {
+  return (
+    <div className={`flex items-center justify-between gap-4 border rounded-lg px-3 py-3 ${darkMode ? 'border-ink-700' : 'border-ink-200'}`}>
+      <div>
+        <span className={`text-sm font-medium block ${darkMode ? 'text-ink-100' : 'text-ink-900'}`}>{title}</span>
+        <span className={`text-xs ${darkMode ? 'text-ink-400' : 'text-ink-500'}`}>{hint}</span>
+      </div>
+      <Toggle darkMode={darkMode} checked={checked} onChange={onChange} />
+    </div>
+  );
+}
+
+function NumberField({ label, value, onChange, suffix, darkMode }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; darkMode: boolean }) {
+  return (
+    <label className="block">
+      <span className={`text-xs block mb-1 ${darkMode ? 'text-ink-400' : 'text-ink-500'}`}>{label}</span>
+      <span className="relative block">
+        <input
+          inputMode="numeric"
+          value={formatNumberWithDots(value)}
+          onChange={e => onChange(Number(e.target.value.replace(/\D/g, '')) || 0)}
+          className={`w-full border rounded-lg px-3 h-11 text-sm tabular-nums focus:outline-none focus:border-brand-400 ${suffix ? 'pr-14' : ''} ${darkMode ? 'bg-ink-800 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`}
+        />
+        {suffix && <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${darkMode ? 'text-ink-500' : 'text-ink-400'}`}>{suffix}</span>}
+      </span>
+    </label>
   );
 }
 

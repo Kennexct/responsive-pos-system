@@ -12,6 +12,8 @@ const KEY_TO_TABLE: Record<string, string> = {
   'pos-discounts': 'discount_settings',
   'pos-refunds': 'refund_settings',
   'pos-loyalty': 'loyalty_settings',
+  'pos-register-sessions': 'register_sessions',
+  'pos-cash-movements': 'cash_movements',
 };
 
 export async function loadFromSupabase<T>(key: string, merchantId?: string): Promise<T | null> {
@@ -76,6 +78,7 @@ export async function loadFromSupabase<T>(key: string, merchantId?: string): Pro
         pointsEarned: row.points_earned,
         pointsRedeemed: row.points_redeemed,
         pointsDiscountAmt: row.points_discount_amt,
+        sessionId: row.session_id ?? undefined,
         promoDiscountAmt: row.promo_discount_amt ?? 0,
         serviceCharge: row.service_charge ?? 0,
         taxBreakdown: row.tax_breakdown ?? [],
@@ -140,6 +143,41 @@ export async function loadFromSupabase<T>(key: string, merchantId?: string): Pro
         role: row.role,
         pin: '',
         merchantId: row.merchant_id,
+      })) as unknown as T;
+    }
+
+    if (key === 'pos-register-sessions') {
+      return data.map((row: any) => ({
+        id: row.id,
+        merchantId: row.merchant_id,
+        openedAt: row.opened_at,
+        openedById: row.opened_by_id ?? '',
+        openedByName: row.opened_by_name,
+        openingFloat: row.opening_float ?? 0,
+        openingNote: row.opening_note ?? undefined,
+        status: row.status,
+        closedAt: row.closed_at ?? undefined,
+        closedById: row.closed_by_id ?? undefined,
+        closedByName: row.closed_by_name ?? undefined,
+        countedCash: row.counted_cash ?? undefined,
+        denominationCounts: row.denomination_counts ?? {},
+        expectedCash: row.expected_cash ?? undefined,
+        variance: row.variance ?? undefined,
+        closingNote: row.closing_note ?? undefined,
+        approvedByName: row.approved_by_name ?? undefined,
+        autoClosed: row.auto_closed ?? false,
+      })) as unknown as T;
+    }
+
+    if (key === 'pos-cash-movements') {
+      return data.map((row: any) => ({
+        id: row.id,
+        sessionId: row.session_id,
+        type: row.type,
+        amount: row.amount,
+        reason: row.reason,
+        at: row.at,
+        byName: row.by_name,
       })) as unknown as T;
     }
 
@@ -227,6 +265,7 @@ export async function saveToSupabase<T>(key: string, value: T, merchantId?: stri
           points_redeemed: o.pointsRedeemed || 0,
           points_discount_amt: o.pointsDiscountAmt || 0,
           items_json: o.items || [],
+          session_id: o.sessionId ?? null,
           promo_discount_amt: o.promoDiscountAmt || 0,
           service_charge: o.serviceCharge || 0,
           tax_breakdown: o.taxBreakdown || [],
@@ -291,6 +330,40 @@ export async function saveToSupabase<T>(key: string, value: T, merchantId?: stri
           email: u.email,
           role: u.role,
           // PIN is set separately through the set_staff_pin RPC and stored hashed.
+        }));
+        await upsert(rows);
+      } else if (key === 'pos-register-sessions') {
+        const rows = value.map((s: any) => ({
+          id: String(s.id),
+          merchant_id: mId,
+          opened_at: s.openedAt,
+          opened_by_id: s.openedById || null,
+          opened_by_name: s.openedByName,
+          opening_float: s.openingFloat ?? 0,
+          opening_note: s.openingNote ?? null,
+          status: s.status,
+          closed_at: s.closedAt ?? null,
+          closed_by_id: s.closedById ?? null,
+          closed_by_name: s.closedByName ?? null,
+          counted_cash: s.countedCash ?? null,
+          denomination_counts: s.denominationCounts ?? {},
+          expected_cash: s.expectedCash ?? null,
+          variance: s.variance ?? null,
+          closing_note: s.closingNote ?? null,
+          approved_by_name: s.approvedByName ?? null,
+          auto_closed: !!s.autoClosed,
+        }));
+        await upsert(rows);
+      } else if (key === 'pos-cash-movements') {
+        const rows = value.map((m: any) => ({
+          id: String(m.id),
+          merchant_id: mId,
+          session_id: m.sessionId,
+          type: m.type,
+          amount: m.amount,
+          reason: m.reason,
+          at: m.at || new Date().toISOString(),
+          by_name: m.byName,
         }));
         await upsert(rows);
       } else if (key === 'pos-taxrules') {

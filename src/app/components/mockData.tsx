@@ -1,5 +1,5 @@
 export type BusinessType = 'retail' | 'fnb';
-export type ViewType = 'pos' | 'dashboard' | 'daily-sales' | 'inventory' | 'reports' | 'customers' | 'settings' | 'superadmin';
+export type ViewType = 'pos' | 'register' | 'dashboard' | 'daily-sales' | 'inventory' | 'reports' | 'customers' | 'settings' | 'superadmin';
 export type OrderType = 'dine-in' | 'takeaway' | 'delivery';
 export type PaymentMethod = 'cash' | 'qris' | 'card' | 'bank-transfer';
 
@@ -68,9 +68,9 @@ export type RolePermissions = Record<Role, ViewType[]>;
 
 export const DEFAULT_PERMISSIONS: RolePermissions = {
   superadmin: ['superadmin', 'dashboard', 'reports', 'settings'],
-  owner: ['pos', 'dashboard', 'daily-sales', 'inventory', 'reports', 'customers', 'settings'],
-  manager: ['pos', 'dashboard', 'daily-sales', 'inventory', 'reports', 'customers'],
-  cashier: ['pos', 'daily-sales', 'customers'],
+  owner: ['pos', 'register', 'dashboard', 'daily-sales', 'inventory', 'reports', 'customers', 'settings'],
+  manager: ['pos', 'register', 'dashboard', 'daily-sales', 'inventory', 'reports', 'customers'],
+  cashier: ['pos', 'register', 'daily-sales', 'customers'],
 };
 
 export const INITIAL_USERS: User[] = [
@@ -111,14 +111,87 @@ export interface LoyaltySettings {
   earnRateSpend: number; // e.g. 10000 spend = 1 point
   earnRatePoints: number; // e.g. 1 point
   redemptionValue: number; // e.g. 1 point = 100 rupiah
+  /** Redemption rules — enforced by lib/loyalty.ts everywhere points are spent. */
+  redeemEnabled: boolean;
+  /** Fewest points a customer may spend in one bill. 0 = no minimum. */
+  minRedeemPoints: number;
+  /** Points can only be spent in multiples of this. 1 = any amount. */
+  redeemStepPoints: number;
+  /** Most of the goods total that points may cover, as a percent. 100 = the whole bill. */
+  maxRedeemPercent: number;
   tiers: LoyaltyTier[];
 }
+
+export type ResetCycle = 'never' | 'daily' | 'monthly' | 'yearly';
+
+export interface ReceiptNumberFormat {
+  prefix: string;
+  separator: string;
+  padding: number;
+  resetCycle: ResetCycle;
+  includeDate: boolean;
+  /** Set on a second terminal so two tills can never issue the same number. */
+  deviceCode?: string;
+}
+
+export interface RegisterSession {
+  id: string;
+  merchantId?: string;
+  openedAt: string;
+  openedById: string;
+  openedByName: string;
+  openingFloat: number;
+  openingNote?: string;
+  status: 'open' | 'closed';
+  closedAt?: string;
+  closedById?: string;
+  closedByName?: string;
+  countedCash?: number;
+  denominationCounts?: Record<string, number>;
+  expectedCash?: number;
+  variance?: number;
+  closingNote?: string;
+  approvedByName?: string;
+  /** Set when the system closed a session nobody counted. */
+  autoClosed?: boolean;
+}
+
+export interface CashMovement {
+  id: string;
+  sessionId: string;
+  type: 'in' | 'out';
+  amount: number;
+  reason: string;
+  at: string;
+  byName: string;
+}
+
+export interface RegisterSettings {
+  /** Block checkout until a register is open. */
+  requireOpenRegister: boolean;
+  /** Hide the expected amount until the cashier submits their count. */
+  blindCount: boolean;
+  /** Variance above this needs an owner or manager PIN and a reason. */
+  varianceThreshold: number;
+  defaultFloat: number;
+}
+
+export const INITIAL_REGISTER_SETTINGS: RegisterSettings = {
+  requireOpenRegister: true,
+  blindCount: true,
+  varianceThreshold: 5000,
+  defaultFloat: 200000,
+};
 
 export const INITIAL_LOYALTY_SETTINGS: LoyaltySettings = {
   enabled: true,
   earnRateSpend: 10000,
   earnRatePoints: 1,
   redemptionValue: 100,
+  redeemEnabled: true,
+  minRedeemPoints: 50,
+  redeemStepPoints: 10,
+  maxRedeemPercent: 50,
   tiers: [
     { id: 'bronze', name: 'Bronze', minSpend: 0, discountPercent: 0 },
     { id: 'silver', name: 'Silver', minSpend: 1000000, discountPercent: 5 },
@@ -255,6 +328,8 @@ export interface RecentOrder {
   pointsRedeemed?: number;
   pointsDiscountAmt?: number;
   promoDiscountAmt?: number;
+  /** Register session this sale belongs to, so cash can be reconciled to a shift. */
+  sessionId?: string;
   serviceCharge?: number;
   taxBreakdown?: { id: string; name: string; rate: number; isInclusive: boolean; amount: number }[];
 }

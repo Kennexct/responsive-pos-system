@@ -6,6 +6,7 @@ import { computeOrderTotals, type PricingLine } from '../lib/pricing';
 import { promoToPricing } from '../lib/cartPricing';
 import { escapeHtml } from '../lib/escapeHtml';
 import { optionsSummary, unitPriceOf } from '../lib/lineItems';
+import { redeemPreview } from '../lib/loyalty';
 import { formatIDR } from './mockData';
 import { ConfirmationModal } from './ConfirmationModal';
 
@@ -140,13 +141,10 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
   });
   const promoDiscountAmt = withPromo.promoDiscount;
 
-  let pointsRedeemed = 0;
-  if (Number(pointsToRedeem) > 0 && customer && loyaltySettings?.enabled && loyaltySettings.redemptionValue > 0) {
-    const requestedPoints = Math.min(Math.floor(Number(pointsToRedeem)), customer.pointsBalance);
-    // Points can cover the goods, never more — service charge and tax are still paid.
-    const maxPointsUsable = Math.floor(withPromo.netSubtotal / loyaltySettings.redemptionValue);
-    pointsRedeemed = Math.max(0, Math.min(requestedPoints, maxPointsUsable));
-  }
+  // Every redemption rule from Settings lives in redeemPreview: on/off, minimum,
+  // step, share of the bill, balance and what is still owed.
+  const redemption = redeemPreview(customer, loyaltySettings, withPromo.netSubtotal, Number(pointsToRedeem) || 0);
+  const pointsRedeemed = redemption.points;
 
   const pricing = pointsRedeemed > 0
     ? computeOrderTotals({
@@ -342,7 +340,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
         </div>
 
         {/* Points Input */}
-        {customer && loyaltySettings?.enabled && customer.pointsBalance > 0 && (
+        {customer && loyaltySettings?.enabled && loyaltySettings.redeemEnabled !== false && customer.pointsBalance > 0 && (
           <div className="mt-2 mb-3">
             <div className={`p-3 rounded-xl border transition-colors ${Number(pointsToRedeem) > 0 ? 'border-turmeric-500 bg-turmeric-500/5' : dm ? 'border-ink-700 bg-ink-800' : 'border-ink-200 bg-ink-50'}`}>
               <div className="flex items-center justify-between mb-2">
@@ -351,7 +349,7 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                     Redeem Points
                   </div>
                   <div className={`text-xs ${t2}`}>
-                    {customer.pointsBalance} pts available (max {formatIDR(customer.pointsBalance * loyaltySettings.redemptionValue)})
+                    {customer.pointsBalance} points available. This bill allows up to {redemption.maxPoints} ({formatIDR(redemption.maxPoints * loyaltySettings.redemptionValue)}).
                   </div>
                 </div>
               </div>
@@ -366,12 +364,15 @@ export function CheckoutModal({ cart, orderType, cashierName, bizName, darkMode,
                   className={`flex-1 w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-turmeric-400 ${dm ? 'bg-ink-900 border-ink-700 text-ink-100' : 'bg-white border-ink-200 text-ink-900'}`}
                 />
                 <button 
-                  onClick={() => setPointsToRedeem(String(customer.pointsBalance))}
+                  onClick={() => setPointsToRedeem(String(redemption.maxPoints))}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${dm ? 'border-ink-700 text-ink-300 hover:bg-ink-700' : 'border-ink-200 text-ink-600 hover:bg-ink-100'}`}
                 >
                   Max
                 </button>
               </div>
+              {redemption.reason && (
+                <p className={`text-xs mt-2 ${dm ? 'text-turmeric-300' : 'text-turmeric-700'}`}>{redemption.reason}</p>
+              )}
             </div>
           </div>
         )}
